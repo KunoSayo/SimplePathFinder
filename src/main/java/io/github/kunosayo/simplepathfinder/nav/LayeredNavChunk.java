@@ -23,7 +23,7 @@ public final class LayeredNavChunk {
     public static final StreamCodec<ByteBuf, LayeredNavChunk> STREAM_CODEC = StreamCodec
             .composite(ArrayCodecs.intArrayCodec(LevelNavData.CHUNK_AREA),
                     layeredNavChunk -> layeredNavChunk.walkY,
-                    ArrayCodecs.floatArrayCodec(LevelNavData.CHUNK_AREA << 1),
+                    ArrayCodecs.intArrayCodec(LevelNavData.CHUNK_AREA << 1),
                     layeredNavChunk -> layeredNavChunk.distances,
                     ByteBufCodecs.VAR_INT, layeredNavChunk -> layeredNavChunk.layer,
                     LayeredNavChunk::new);
@@ -58,16 +58,16 @@ public final class LayeredNavChunk {
     int[] walkY;
 
     // Store +x+z+x+z..
-    float[] distances;
+    int[] distances;
     int layer = 0;
     public NavChunk parentChunk = null;
 
-    LayeredNavChunk(int[] walkY, float[] distances) {
+    LayeredNavChunk(int[] walkY, int[] distances) {
         this.walkY = walkY;
         this.distances = distances;
     }
 
-    LayeredNavChunk(int[] walkY, float[] distances, int layer) {
+    LayeredNavChunk(int[] walkY, int[] distances, int layer) {
         this.walkY = walkY;
         this.distances = distances;
         this.layer = layer;
@@ -88,11 +88,11 @@ public final class LayeredNavChunk {
         return walkY[convertToIndex(x, z)];
     }
 
-    public float getDistance(int x, int z, boolean isZ) {
+    public int getDistance(int x, int z, boolean isZ) {
         return distances[getDistanceIdx(x, z, isZ)];
     }
 
-    public float getDistance(BlockPos pos, boolean isZ) {
+    public int getDistance(BlockPos pos, boolean isZ) {
         var inner = new ChunkInnerPos(pos);
         return distances[getDistanceIdx(inner.x, inner.z, isZ)];
     }
@@ -110,11 +110,11 @@ public final class LayeredNavChunk {
         var fluid = standBlock.getFluidState();
         if (!fluid.isEmpty()) {
             if (fluid.getType().isSame(Fluids.WATER) || fluid.getType().isSame(Fluids.FLOWING_WATER)) {
-                return new DistanceResult(4.0f, walkY);
+                return new DistanceResult(4, walkY);
             }
-            return new DistanceResult(10.0f, walkY);
+            return new DistanceResult(1, walkY);
         }
-        return new DistanceResult(1.0f, walkY);
+        return new DistanceResult(1, walkY);
     }
 
     private static DistanceResult getDistance(Level level, int sx, int sy, int sz, int tx, int tz) {
@@ -252,9 +252,9 @@ public final class LayeredNavChunk {
 
     public static LayeredNavChunk getDefault() {
         int[] walkY = new int[LevelNavData.CHUNK_AREA];
-        float[] distance = new float[LevelNavData.CHUNK_AREA << 1];
-        Arrays.fill(distance, -1.0f);
-        Arrays.fill(walkY, -9961);
+        int[] distance = new int[LevelNavData.CHUNK_AREA << 1];
+        Arrays.fill(distance, -1);
+        Arrays.fill(walkY, -1);
         return new LayeredNavChunk(walkY, distance);
     }
 
@@ -266,11 +266,11 @@ public final class LayeredNavChunk {
         return isWalkYValid(getWalkY(pos.getX(), pos.getZ()));
     }
 
-    private record DistanceResult(float distance, int walkY) {
-        public static final DistanceResult CANNOT_REACH = new DistanceResult(-1.0f, -1);
+    private record DistanceResult(int distance, int walkY) {
+        public static final DistanceResult CANNOT_REACH = new DistanceResult(-1, -1);
 
         public boolean canReach() {
-            return distance >= 0.0f;
+            return distance >= 0;
         }
     }
 }

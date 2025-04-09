@@ -26,7 +26,7 @@ public class NavPathFinder {
         var startChunk = new ChunkPos(start);
         levelNavData.getNavChunk(startChunk, false).ifPresent(navChunk -> {
             navChunk.getLayerNav(start).ifPresent(layeredNavChunk -> {
-                searchNodes.add(new SearchNode(0.0, start, layeredNavChunk, null));
+                searchNodes.add(new SearchNode(0, start, layeredNavChunk, null));
             });
         });
 
@@ -37,7 +37,7 @@ public class NavPathFinder {
 
         int situation = LayeredNavChunk.getPosSituation(a, b);
         boolean isZ = (situation & 1) == 1;
-        float distance;
+        int distance;
         if (situation > 1) {
             distance = bNavChunk.getDistance(b, isZ);
         } else {
@@ -86,7 +86,7 @@ public class NavPathFinder {
                 if (!edgeInfo.isValid()) {
                     continue;
                 }
-                double extraCost = node.getExtraCost(edgeInfo.targetPos);
+                long extraCost = node.getExtraCost(edgeInfo.targetPos);
                 searchNodes.add(new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node));
             }
 
@@ -94,9 +94,9 @@ public class NavPathFinder {
         return Optional.empty();
     }
 
-    public record EdgeInfo(float distance, BlockPos targetPos, NavChunk targetNavChunk, LayeredNavChunk targetLayeredChunk) {
+    public record EdgeInfo(int distance, BlockPos targetPos, NavChunk targetNavChunk, LayeredNavChunk targetLayeredChunk) {
         boolean isValid() {
-            return distance >= 0.0;
+            return distance >= 0;
         }
     }
 }
@@ -116,13 +116,13 @@ record SearchedPos(int layer, BlockPos pos) {
 }
 
 class SearchNode implements Comparable<SearchNode> {
-    final double cost;
+    final long cost;
     final BlockPos pos;
     final LayeredNavChunk layer;
     @Nullable
     final SearchNode lastNode;
 
-    public SearchNode(double cost, BlockPos pos, LayeredNavChunk layer, @Nullable SearchNode lastNode) {
+    public SearchNode(long cost, BlockPos pos, LayeredNavChunk layer, @Nullable SearchNode lastNode) {
         this.cost = cost;
         this.pos = pos;
         this.layer = layer;
@@ -131,17 +131,17 @@ class SearchNode implements Comparable<SearchNode> {
 
     @Override
     public int compareTo(@NotNull SearchNode o) {
-        return Double.compare(cost, o.cost);
+        return Long.compare(cost, o.cost);
     }
 
-    public double getExtraCost(BlockPos next) {
+    public long getExtraCost(BlockPos next) {
         if (lastNode == null) {
-            return 0.0;
+            return 0;
         }
         if ((next.subtract(pos)).equals(pos.subtract(lastNode.pos))) {
-            return 0.0;
+            return 0;
         }
-        return 3.0;
+        return 3;
     }
 
 }
