@@ -10,6 +10,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -55,6 +56,11 @@ public class LevelNavData {
         }));
     }
 
+    public Optional<LayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
+        return Optional.ofNullable(navChunks.get(pos))
+                .flatMap(navChunk -> navChunk.layers.stream().filter(navChunk1 -> navChunk1.layer == layer).findAny());
+    }
+
     public LevelNavData(HashMap<ChunkPos, NavChunk> navChunks) {
         this.navChunks = navChunks;
         navChunks.forEach((chunkPos, navChunk) -> {
@@ -62,13 +68,21 @@ public class LevelNavData {
         });
     }
 
+    private static BlockPos getGroundPos(Level level, BlockPos groundPos) {
+        while (groundPos.getY() >= -64 && NavUtil.considerSafeCross(level, groundPos)) {
+            groundPos = groundPos.offset(0, -1, 0);
+        }
+        return groundPos;
+    }
+
     public boolean buildForPlayer(Player player, int layer) {
         var level = player.level();
         var groundPos = player.blockPosition();
 
-        while (groundPos.getY() >= -64 && NavUtil.isNoCollision(level, groundPos)) {
+        while (groundPos.getY() >= -64 && NavUtil.considerSafeCross(level, groundPos)) {
             groundPos = groundPos.offset(0, -1, 0);
         }
+
 
         if (NavUtil.isNoCollision(level, groundPos)) {
             player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.failed"));
@@ -111,4 +125,32 @@ public class LevelNavData {
         return finder.search();
     }
 
+    public boolean buildFromLayerStart(Level level, LevelNavData levelNavData, int layer, ChunkPos acp) {
+
+        boolean[] result = new boolean[]{false};
+        getNavChunk(acp, true).ifPresent(navChunk -> navChunk
+                .getLayer(layer, LayeredNavChunk::getDefault).ifPresent(layeredNavChunk -> {
+                    layeredNavChunk.parentChunk = navChunk;
+                    layeredNavChunk.layer = layer;
+                    levelNavData.getNavChunk(new ChunkPos(acp.x - 1, acp.z), layer)
+                            .ifPresentOrElse(navChunk1 -> {
+                                int y = navChunk1.getWalkY(15, 0);
+                                var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(0));
+                                var groundPos = getGroundPos(level, blockPos);
+                                layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
+                                result[0] = true;
+                            }, () -> levelNavData.getNavChunk(new ChunkPos(acp.x, acp.z - 1), layer).ifPresent(navChunk1 -> {
+                                int y = navChunk1.getWalkY(0, 15);
+                                var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(0));
+                                var groundPos = getGroundPos(level, blockPos);
+                                layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
+                                result[0] = true;
+                            }));
+
+
+                }));
+
+
+        return result[0];
+    }
 }

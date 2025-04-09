@@ -110,9 +110,9 @@ public final class LayeredNavChunk {
         var fluid = standBlock.getFluidState();
         if (!fluid.isEmpty()) {
             if (fluid.getType().isSame(Fluids.WATER) || fluid.getType().isSame(Fluids.FLOWING_WATER)) {
-                return new DistanceResult(2.0f, walkY);
+                return new DistanceResult(4.0f, walkY);
             }
-            return new DistanceResult(3.0f, walkY);
+            return new DistanceResult(10.0f, walkY);
         }
         return new DistanceResult(1.0f, walkY);
     }
