@@ -60,7 +60,7 @@ public class ClientListener {
         if (player != null && player.getMainHandItem().is(ModItems.DEBUG_NAV)) {
             if (state == RenderLevelStageEvent.Stage.AFTER_SKY) {
                 var level = player.level();
-                LevelNavData data = null;
+                LevelNavData data;
                 if (level instanceof ServerLevel sl) {
                     data = LevelNavDataSavedData.loadFromLevel(sl).levelNavData;
                 } else {

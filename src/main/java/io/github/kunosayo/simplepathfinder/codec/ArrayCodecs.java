@@ -1,7 +1,6 @@
 package io.github.kunosayo.simplepathfinder.codec;
 
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.bytes.ByteArrays;
 import net.minecraft.network.VarInt;
 import net.minecraft.network.codec.StreamCodec;
 

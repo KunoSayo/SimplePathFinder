@@ -6,6 +6,7 @@ import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -20,6 +21,22 @@ public final class SimplePathFinderCommand {
         dispatcher.register(Commands.literal("spf")
                 .then(Commands.literal("admin")
                         .requires(commandSourceStack -> commandSourceStack.hasPermission(2))
+
+                        .then(Commands.literal("stats")
+                                .executes(context -> {
+                                    var src = context.getSource().source;
+                                    if (src instanceof Player player) {
+                                        if (player.level() instanceof ServerLevel sl) {
+                                            var data = LevelNavDataSavedData.loadFromLevel(sl);
+                                            long total = data.levelNavData.getTotalLayers();
+                                            long chunks = data.levelNavData.getTotalNavChunks();
+                                            long bytes = data.levelNavData.getEncodedBytes();
+                                            src.sendSystemMessage(Component.literal(String.format("[SPF][NavData] Chunks: %d, Layers: %d\nBytes: %d", chunks, total, bytes)));
+                                        }
+                                    }
+
+                                    return 1;
+                                }))
                         .then(Commands.literal("nav")
                                 .then(Commands.literal("build")
                                         .then(Commands.argument("layer", IntegerArgumentType.integer())

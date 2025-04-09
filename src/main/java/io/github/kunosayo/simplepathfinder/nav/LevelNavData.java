@@ -3,6 +3,7 @@ package io.github.kunosayo.simplepathfinder.nav;
 import io.github.kunosayo.simplepathfinder.config.NavBuildConfig;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.VarInt;
 import net.minecraft.network.chat.Component;
@@ -152,5 +153,23 @@ public class LevelNavData {
 
 
         return result[0];
+    }
+
+    public long getTotalLayers() {
+        long totals = 0;
+        for (NavChunk value : this.navChunks.values()) {
+            totals += value.layers.size();
+        }
+        return totals;
+    }
+
+    public long getTotalNavChunks() {
+        return this.navChunks.size();
+    }
+
+    public long getEncodedBytes() {
+        var buffer = Unpooled.buffer();
+        STREAM_CODEC.encode(buffer, this);
+        return buffer.writerIndex();
     }
 }
