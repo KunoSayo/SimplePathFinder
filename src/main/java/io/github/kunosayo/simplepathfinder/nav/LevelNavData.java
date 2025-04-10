@@ -172,4 +172,8 @@ public class LevelNavData {
         STREAM_CODEC.encode(buffer, this);
         return buffer.writerIndex();
     }
+
+    public boolean removeNavChunk(Player player) {
+        return this.navChunks.remove(new ChunkPos(player.blockPosition())) != null;
+    }
 }

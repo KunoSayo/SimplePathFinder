@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.client.listener;
 
+import com.mojang.brigadier.tree.CommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
@@ -8,6 +9,7 @@ import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ComponentRenderUtils;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
@@ -45,7 +47,7 @@ public class ClientListener {
     @SubscribeEvent
     public static void registerClientCommands(RegisterClientCommandsEvent event) {
         var dispatcher = event.getDispatcher();
-        dispatcher.register(Commands.literal("spf").then(
+        CommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf").then(
                 Commands.literal("nav")
                         .then(Commands.argument("target", BlockPosArgument.blockPos())
                                 .executes(context -> {
@@ -56,6 +58,8 @@ public class ClientListener {
                                     return 0;
                                 }))
         ));
+
+        dispatcher.register(Commands.literal("nav").redirect(root.getChild("nav")));
     }
 
 

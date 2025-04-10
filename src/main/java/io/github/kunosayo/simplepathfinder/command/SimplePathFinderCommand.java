@@ -2,6 +2,7 @@ package io.github.kunosayo.simplepathfinder.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.minecraft.commands.CommandSourceStack;
@@ -17,8 +18,7 @@ public final class SimplePathFinderCommand {
 
 
     public static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
-
-        dispatcher.register(Commands.literal("spf")
+        LiteralCommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf")
                 .then(Commands.literal("admin")
                         .requires(commandSourceStack -> commandSourceStack.hasPermission(2))
 
@@ -38,6 +38,27 @@ public final class SimplePathFinderCommand {
                                     return 1;
                                 }))
                         .then(Commands.literal("nav")
+                                .then(Commands.literal("remove")
+                                        .then(Commands.literal("current").executes(context -> {
+                                            if (context.getSource().source instanceof Player player) {
+                                                var level = player.level();
+                                                if (level instanceof ServerLevel sl) {
+                                                    var data = LevelNavDataSavedData.loadFromLevel(sl);
+                                                    if (data.levelNavData.removeNavChunk(player)) {
+                                                        data.setDirty();
+                                                        player.sendSystemMessage(Component.translatable("simple_path_finder.remove.current.success"));
+                                                        if (player instanceof ServerPlayer sp && !level.isClientSide) {
+                                                            PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
+                                                        }
+                                                        return 1;
+                                                    } else {
+                                                        player.sendSystemMessage(Component.translatable("simple_path_finder.failed.not_found"));
+                                                    }
+                                                }
+                                            }
+                                            return 0;
+                                        })))
+
                                 .then(Commands.literal("build")
                                         .then(Commands.argument("layer", IntegerArgumentType.integer())
                                                 .then(Commands.argument("dx", IntegerArgumentType.integer())
@@ -111,11 +132,7 @@ public final class SimplePathFinderCommand {
                                                     }
                                                     return 0;
                                                 }))
-
-                                        .then(Commands.literal("c")).executes(context -> {
-                                            return 0;
-                                        })
-                                )))
-        );
+                                ))));
+        dispatcher.register(Commands.literal("simple_path_finder").redirect(root));
     }
 }
