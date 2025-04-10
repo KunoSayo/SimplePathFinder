@@ -209,7 +209,7 @@ public final class LayeredNavChunk {
 
             void dfs(int x, int y, int z) {
                 // in fact, we run bfs
-                q.push(new int[]{x, y, z});
+                q.addLast(new int[]{x, y, z});
             }
 
             void markDistance(int x, int z, int tx, int tz, int distance) {
