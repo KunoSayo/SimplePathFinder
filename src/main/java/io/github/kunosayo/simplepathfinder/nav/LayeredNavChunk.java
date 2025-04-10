@@ -258,7 +258,7 @@ public final class LayeredNavChunk {
     public static LayeredNavChunk getDefault() {
         short[] walkY = new short[LevelNavData.CHUNK_AREA];
         int[] distance = new int[LevelNavData.CHUNK_AREA << 1];
-        Arrays.fill(distance, 0);
+        Arrays.fill(distance, -1);
         Arrays.fill(walkY, (short) -9961);
         return new LayeredNavChunk(walkY, distance);
     }
