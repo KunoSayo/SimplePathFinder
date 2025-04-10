@@ -227,8 +227,8 @@ public final class LayeredNavChunk {
                     var distance = getDistance(level,
                             chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z),
                             chunkPos.getBlockX(tx), chunkPos.getBlockZ(tz));
+                    distances[getDistanceIdx(x, z, tz != z)] = distance.distance;
                     if (distance.canReach()) {
-                        distances[getDistanceIdx(x, z, tz != z)] = distance.distance;
                         if (tx >= 16 || tz >= 16) {
                             continue;
                         }
