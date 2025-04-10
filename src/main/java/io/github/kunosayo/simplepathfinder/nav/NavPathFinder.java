@@ -39,9 +39,9 @@ public class NavPathFinder {
         boolean isZ = (situation & 1) == 1;
         int distance;
         if (situation > 1) {
-            distance = bNavChunk.getDistance(b, isZ);
+            distance = bNavChunk.getDistanceChecked(b, isZ);
         } else {
-            distance = navChunk.getDistance(a, isZ);
+            distance = navChunk.getDistanceChecked(a, isZ);
         }
 
         if (distance < 0.0) {

@@ -87,4 +87,16 @@ public final class NavChunk {
                 .map(layeredNavChunk -> layeredNavChunk.getDistance(inner.x, inner.z, isZ))
                 .findAny().orElse(-1);
     }
+    /***
+     * Return the distance sampled from the pos with +x or +z
+     * @param pos the pos to sample distance
+     * @param isZ is +z
+     * @return the distance or -1 if not found or cannot walk
+     */
+    public int getDistanceChecked(BlockPos pos, boolean isZ) {
+        var inner = new ChunkInnerPos(pos);
+        return layers.stream().filter(layeredNavChunk -> layeredNavChunk.getWalkY(inner.x, inner.z) == pos.getY())
+                .map(layeredNavChunk -> layeredNavChunk.getDistanceChecked(inner.x, inner.z, isZ))
+                .findAny().orElse(-1);
+    }
 }

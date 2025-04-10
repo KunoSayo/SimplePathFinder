@@ -2,9 +2,9 @@ package io.github.kunosayo.simplepathfinder.client.listener;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
+import io.github.kunosayo.simplepathfinder.init.ModItems;
 import io.github.kunosayo.simplepathfinder.nav.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
-import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
