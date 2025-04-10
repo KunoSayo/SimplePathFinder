@@ -26,9 +26,9 @@ import java.util.UUID;
 @Mod(SimplePathFinder.MOD_ID)
 public final class SimplePathFinder {
     @Nullable
-    public static LevelNavData clientNavData = null;
+    public static volatile LevelNavData clientNavData = null;
     @Nullable
-    public static NavResult clientNavResult = null;
+    public static volatile NavResult clientNavResult = null;
     private static final HashSet<UUID> playerGotNav = new HashSet<>();
     public static final String MOD_ID = "simple_path_finder";
 

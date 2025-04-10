@@ -80,7 +80,7 @@ public class NavPathFinder {
                 continue;
             }
             if (node.pos.distManhattan(this.end) <= 1) {
-                return Optional.of(new NavResult(node));
+                return Optional.of(new NavResult(node, this.end));
             }
             for (EdgeInfo edgeInfo : getEdge(node.layer.parentChunk, node.layer, node.pos, new ChunkPos(node.pos))) {
                 if (!edgeInfo.isValid()) {
@@ -94,7 +94,8 @@ public class NavPathFinder {
         return Optional.empty();
     }
 
-    public record EdgeInfo(int distance, BlockPos targetPos, NavChunk targetNavChunk, LayeredNavChunk targetLayeredChunk) {
+    public record EdgeInfo(int distance, BlockPos targetPos, NavChunk targetNavChunk,
+                           LayeredNavChunk targetLayeredChunk) {
         boolean isValid() {
             return distance >= 0;
         }

@@ -30,6 +30,16 @@ public class ClientListener {
         return SimplePathFinder.clientNavData;
     }
 
+    private static void doNav(Player player, BlockPos target) {
+        var data = getNavData(player);
+        if (data == null) {
+            return;
+        }
+        data.findNav(player.blockPosition(), target).ifPresent(navResult -> {
+            SimplePathFinder.clientNavResult = navResult;
+        });
+    }
+
     @SubscribeEvent
     public static void registerClientCommands(RegisterClientCommandsEvent event) {
         var dispatcher = event.getDispatcher();
@@ -39,13 +49,7 @@ public class ClientListener {
                                 .executes(context -> {
                                     var target = BlockPosArgument.getBlockPos(context, "target");
                                     if (context.getSource().source instanceof Player player) {
-                                        var data = getNavData(player);
-                                        if (data == null) {
-                                            return 0;
-                                        }
-                                        data.findNav(player.blockPosition(), target).ifPresent(navResult -> {
-                                            SimplePathFinder.clientNavResult = navResult;
-                                        });
+                                        doNav(player, target);
                                     }
                                     return 0;
                                 }))
@@ -75,6 +79,24 @@ public class ClientListener {
                         }
                         return;
                     }
+                    if (amount == 63) {
+                        if (SimplePathFinder.clientNavResult != null) {
+                            doNav(player, SimplePathFinder.clientNavResult.getNavTarget());
+                            SimplePathFinder.clientNavResult.render(event.getLevelRenderer(), player);
+                        }
+                    }
+                    if (amount >= 62) {
+                        if (SimplePathFinder.clientNavResult != null) {
+                            SimplePathFinder.clientNavResult.render(event.getLevelRenderer(), player);
+                        }
+                    }
+                    int layerRangeLeft;
+                    int layerRangeRight = Integer.MAX_VALUE;
+                    if (amount > 16 && amount <= 48) {
+                        layerRangeLeft = layerRangeRight = amount - 32;
+                    } else {
+                        layerRangeLeft = Integer.MIN_VALUE;
+                    }
                     amount = Math.min(amount, 16);
                     var currentChunkPos = new ChunkPos(player.blockPosition());
 
@@ -84,9 +106,13 @@ public class ClientListener {
                             if (dis < amount) {
 
                                 var chunkPos = new ChunkPos(currentChunkPos.x + offsetX, currentChunkPos.z + offsetZ);
+                                int finalLayerRangeRight = layerRangeRight;
                                 data.getNavChunk(chunkPos, false)
                                         .ifPresent(navChunk -> {
                                             for (LayeredNavChunk layer : navChunk.layers) {
+                                                if (layer.getLayer() > finalLayerRangeRight || layer.getLayer() < layerRangeLeft) {
+                                                    continue;
+                                                }
                                                 for (int x = 0; x < 16; x++) {
                                                     for (int z = 0; z < 16; z++) {
                                                         int y = layer.getWalkY(x, z);

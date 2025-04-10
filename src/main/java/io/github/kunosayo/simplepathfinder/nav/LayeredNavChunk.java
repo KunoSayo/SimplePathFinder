@@ -244,7 +244,7 @@ public final class LayeredNavChunk {
 
             void run() {
                 while (!q.isEmpty()) {
-                    var pos = q.pop();
+                    var pos = q.pollFirst();
                     once(pos[0], pos[1], pos[2]);
                 }
             }

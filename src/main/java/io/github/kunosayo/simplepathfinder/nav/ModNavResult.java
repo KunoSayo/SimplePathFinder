@@ -11,12 +11,9 @@ import java.util.List;
 
 public class ModNavResult {
     public final List<BlockPos> posInThePath;
+    public final BlockPos navTarget;
 
-    public ModNavResult(List<BlockPos> posInThePath) {
-        this.posInThePath = posInThePath;
-    }
-
-    public ModNavResult(SearchNode endNode) {
+    public ModNavResult(SearchNode endNode, BlockPos navTarget) {
         List<BlockPos> tempPaths;
         tempPaths = new ArrayList<>();
         SearchNode cur = endNode;
@@ -26,6 +23,7 @@ public class ModNavResult {
         }
         tempPaths = tempPaths.reversed();
         posInThePath = tempPaths;
+        this.navTarget = navTarget;
     }
 
     public void render(LevelRenderer lr, Player player) {

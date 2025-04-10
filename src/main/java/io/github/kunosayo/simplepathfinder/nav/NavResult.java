@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.pathfinder.Path;
 
@@ -19,13 +20,21 @@ public class NavResult {
         this.minecraftPath = null;
     }
 
-    public NavResult(SearchNode endNode) {
-        this(new ModNavResult(endNode));
+    public NavResult(SearchNode endNode, BlockPos target) {
+        this(new ModNavResult(endNode, target));
     }
 
     public void render(LevelRenderer lr, Player player) {
         if (modNavResult != null) {
             modNavResult.render(lr, player);
+        }
+    }
+
+    public BlockPos getNavTarget() {
+        if (minecraftPath == null) {
+            return modNavResult.navTarget;
+        } else {
+            return minecraftPath.getTarget();
         }
     }
 }
