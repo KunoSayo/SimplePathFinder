@@ -59,7 +59,7 @@ public class NavPathFinder {
             if (!isSame) {
                 thatChunk = levelNavData.getNavChunk(new ChunkPos(t), false).orElse(null);
                 if (thatChunk == null) {
-                    return Collections.emptyList();
+                    continue;
                 }
             }
             for (int yOffset = -1; yOffset <= 1; yOffset++) {

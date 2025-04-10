@@ -6,6 +6,8 @@ import io.github.kunosayo.simplepathfinder.init.ModItems;
 import io.github.kunosayo.simplepathfinder.nav.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.ComponentRenderUtils;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
@@ -83,6 +85,7 @@ public class ClientListener {
                         if (SimplePathFinder.clientNavResult != null) {
                             doNav(player, SimplePathFinder.clientNavResult.getNavTarget());
                             SimplePathFinder.clientNavResult.render(event.getLevelRenderer(), player);
+                            return;
                         }
                     }
                     if (amount >= 62) {
@@ -116,8 +119,17 @@ public class ClientListener {
                                                 for (int x = 0; x < 16; x++) {
                                                     for (int z = 0; z < 16; z++) {
                                                         int y = layer.getWalkY(x, z);
+
                                                         var blockPos = new BlockPos(chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z));
                                                         if (LayeredNavChunk.isWalkYValid(y)) {
+                                                            if (layer.getDistance(x, z, false) < 0) {
+                                                                lr.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
+                                                                        true, blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
+                                                            }
+                                                            if (layer.getDistance(x, z, true) < 0) {
+                                                                lr.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
+                                                                        true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0, 0.0, 0.0, 0.0);
+                                                            }
                                                             if (layer.getLayer() >= 0) {
                                                                 lr.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f + layer.getLayer() * 0.125f, 1.0f - layer.getLayer() * 0.125f, 0.0f),
                                                                         true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);

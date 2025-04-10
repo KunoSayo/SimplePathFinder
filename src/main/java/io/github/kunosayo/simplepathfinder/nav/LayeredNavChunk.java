@@ -212,6 +212,13 @@ public final class LayeredNavChunk {
                 q.push(new int[]{x, y, z});
             }
 
+            void markDistance(int x, int z, int tx, int tz, int distance) {
+                boolean isZ = z != tz;
+                int fromX = Math.min(x, tx);
+                int fromZ = Math.min(z, tz);
+                distances[getDistanceIdx(fromX, fromZ, isZ)] = distance;
+            }
+
             void once(int x, int y, int z) {
                 // the x, z in [0, 15]
                 // the y is real world
@@ -227,7 +234,7 @@ public final class LayeredNavChunk {
                     var distance = getDistance(level,
                             chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z),
                             chunkPos.getBlockX(tx), chunkPos.getBlockZ(tz));
-                    distances[getDistanceIdx(x, z, tz != z)] = distance.distance;
+                    markDistance(x, z, tx, tz, distance.distance);
                     if (distance.canReach()) {
                         if (tx >= 16 || tz >= 16) {
                             continue;

@@ -32,6 +32,7 @@ public class NavResult {
 
     public BlockPos getNavTarget() {
         if (minecraftPath == null) {
+            assert modNavResult != null;
             return modNavResult.navTarget;
         } else {
             return minecraftPath.getTarget();
