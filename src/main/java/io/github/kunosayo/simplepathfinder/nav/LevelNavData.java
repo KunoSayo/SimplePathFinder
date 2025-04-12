@@ -133,7 +133,9 @@ public class LevelNavData {
                 .getLayer(layer, LayeredNavChunk::getDefault).ifPresent(layeredNavChunk -> {
                     layeredNavChunk.parentChunk = navChunk;
                     layeredNavChunk.layer = layer;
+
                     levelNavData.getNavChunk(new ChunkPos(acp.x - 1, acp.z), layer)
+                            .filter(navChunk1 -> navChunk1.canWalk(15, 0))
                             .ifPresentOrElse(navChunk1 -> {
                                 int y = navChunk1.getWalkY(15, 0);
                                 var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(0));
@@ -148,6 +150,9 @@ public class LevelNavData {
                                 result[0] = true;
                             }));
 
+                    if (!layeredNavChunk.isAnyValid()) {
+                        navChunk.removeNavChunk(layeredNavChunk);
+                    }
 
                 }));
 

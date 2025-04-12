@@ -278,6 +278,17 @@ public final class LayeredNavChunk {
         return isWalkYValid(getWalkY(x, z));
     }
 
+    public boolean isAnyValid() {
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 16; j++) {
+                if (canWalk(i, j)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private record DistanceResult(int distance, short walkY) {
         public static final DistanceResult CANNOT_REACH = new DistanceResult(-1, (short) -1);
 
