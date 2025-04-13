@@ -13,8 +13,16 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public final class NavChunk {
+    private static final StreamCodec<ByteBuf, LayeredNavChunk> TYPED_LAYERED_NAV_CHUNK_CODEC = StreamCodec.of((buffer, value) -> {
+        buffer.writeByte(0);
+        LayeredNavChunk.STREAM_CODEC.encode(buffer, value);
+    }, buffer -> {
+        // todo: use interface.
+        buffer.readByte();
+        return LayeredNavChunk.STREAM_CODEC.decode(buffer);
+    });
     public static final StreamCodec<ByteBuf, NavChunk> STREAM_CODEC = StreamCodec
-            .composite(ByteBufCodecs.<ByteBuf, LayeredNavChunk>list().apply(LayeredNavChunk.STREAM_CODEC),
+            .composite(ByteBufCodecs.<ByteBuf, LayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
                     navChunk -> navChunk.layers, NavChunk::new);
     public List<LayeredNavChunk> layers = new ArrayList<>();
     public ChunkPos chunkPos;
