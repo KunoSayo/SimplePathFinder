@@ -1,8 +1,8 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
-import it.unimi.dsi.fastutil.longs.LongOpenHashBigSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import org.jetbrains.annotations.NotNull;
@@ -10,13 +10,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.PriorityQueue;
 import java.util.stream.Stream;
 
 public class NavPathFinder {
     private final LongOpenHashSet visitedPos = new LongOpenHashSet();
     private final LevelNavData levelNavData;
-    private final PriorityQueue<SearchNode> searchNodes = new PriorityQueue<>();
+    private final ObjectHeapPriorityQueue<SearchNode> searchNodes = new ObjectHeapPriorityQueue<>();
     private final BlockPos start;
     private final BlockPos end;
 
@@ -31,7 +30,7 @@ public class NavPathFinder {
         levelNavData.getNavChunk(startChunk, false)
                 .flatMap(navChunk -> navChunk.getLayerNav(start))
                 .ifPresent(layeredNavChunk -> {
-                    searchNodes.add(new SearchNode(0, start, layeredNavChunk, null));
+                    searchNodes.enqueue(new SearchNode(0, start, layeredNavChunk, null));
                 });
 
     }
@@ -78,7 +77,7 @@ public class NavPathFinder {
         init();
 
         while (!searchNodes.isEmpty()) {
-            var node = searchNodes.poll();
+            var node = searchNodes.dequeue();
 
             if (!this.visitedPos.add(SearchedPos.toLong(node.layer.layer, node.pos))) {
                 continue;
@@ -91,7 +90,7 @@ public class NavPathFinder {
                     return;
                 }
                 long extraCost = node.getExtraCost(edgeInfo.targetPos);
-                searchNodes.add(new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node));
+                searchNodes.enqueue(new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node));
             });
         }
         return Optional.empty();
