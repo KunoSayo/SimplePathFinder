@@ -8,6 +8,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -60,6 +61,32 @@ public final class NavChunk {
     public Stream<LayeredNavChunk> getLayers(BlockPos target) {
         var inner = new ChunkInnerPos(target);
         return this.layers.stream().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
+    }
+
+    public void getLayers(BlockPos target, Consumer<LayeredNavChunk> layeredChunkConsumer) {
+        var inner = new ChunkInnerPos(target);
+        //noinspection ForLoopReplaceableByForEach
+        for (int i = 0; i < this.layers.size(); i++) {
+            var layer = layers.get(i);
+
+            if (Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY() ) <= 1) {
+                layeredChunkConsumer.accept(layer);
+            }
+        }
+    }
+
+    public void getLayers(BlockPos target, int distance, Consumer<NavPathFinder.EdgeInfo> edgeInfoConsumer) {
+        var inner = new ChunkInnerPos(target);
+        //noinspection ForLoopReplaceableByForEach
+        for (int i = 0; i < this.layers.size(); i++) {
+            var layer = layers.get(i);
+
+            final int y = layer.getWalkY(inner.x, inner.z);
+            final int delta = y - target.getY();
+            if (-1 <= delta && delta <= 1) {
+                edgeInfoConsumer.accept(new NavPathFinder.EdgeInfo(distance, new BlockPos(target.getX(), y, target.getZ()), this, layer));
+            }
+        }
     }
 
 

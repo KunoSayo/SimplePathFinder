@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class NavPathFinder {
@@ -35,7 +36,7 @@ public class NavPathFinder {
 
     }
 
-    private Stream<EdgeInfo> getEdge(NavChunk navChunk, NavChunk bNavChunk, BlockPos a, BlockPos b) {
+    private void getEdge(NavChunk navChunk, NavChunk bNavChunk, BlockPos a, BlockPos b, Consumer<EdgeInfo> edgeInfoConsumer) {
         // the y of b should be the same as a
 
         int situation = LayeredNavChunk.getPosSituation(a, b);
@@ -47,17 +48,13 @@ public class NavPathFinder {
             distance = navChunk.getDistance(a, isZ);
         }
 
-        if (distance < 0.0) {
-            return Stream.empty();
+        if (distance < 0) {
+            return;
         }
-        return bNavChunk.getLayers(b)
-                .map(
-                        layeredNavChunk -> new EdgeInfo(distance, new BlockPos(b.getX(), layeredNavChunk.getWalkY(new ChunkInnerPos(b)), b.getZ()), bNavChunk, layeredNavChunk)
-                );
+        bNavChunk.getLayers(b, distance, edgeInfoConsumer);
     }
 
-    private Stream<EdgeInfo> getEdge(NavChunk navChunk, LayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca) {
-        Stream<EdgeInfo> result = Stream.empty();
+    private void getEdge(NavChunk navChunk, LayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca, Consumer<EdgeInfo> edgeInfoConsumer) {
         for (int i = 0; i < 4; i++) {
             var t = a.offset(LayeredNavChunk.SEARCH_DX[i], 0, LayeredNavChunk.SEARCH_DZ[i]);
             boolean isSame = NavUtil.isSameChunk(a, t);
@@ -68,9 +65,9 @@ public class NavPathFinder {
                     continue;
                 }
             }
-            result = Stream.concat(result, getEdge(navChunk, thatChunk, a, t));
+
+            getEdge(navChunk, thatChunk, a, t, edgeInfoConsumer);
         }
-        return result;
     }
 
     Optional<NavResult> search() {
@@ -85,9 +82,12 @@ public class NavPathFinder {
             if (node.pos().distManhattan(this.end) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            getEdge(node.layer().parentChunk, node.layer(), node.pos(), new ChunkPos(node.pos())).forEach(edgeInfo -> {
-                if (!edgeInfo.isValid()) {
-                    return;
+            getEdge(node.layer().parentChunk, node.layer(), node.pos(), new ChunkPos(node.pos()), edgeInfo -> {
+                if (node.lastNode() != null) {
+                    var lastPos = node.lastNode().pos();
+                    if (lastPos.getX() == edgeInfo.targetPos.getX() && lastPos.getZ() == edgeInfo.targetPos.getZ()) {
+                        return;
+                    }
                 }
                 long extraCost = node.getExtraCost(edgeInfo.targetPos);
                 searchNodes.enqueue(new SearchNode(extraCost + edgeInfo.distance + node.cost(), edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node));
@@ -98,9 +98,6 @@ public class NavPathFinder {
 
     public record EdgeInfo(int distance, BlockPos targetPos, NavChunk targetNavChunk,
                            LayeredNavChunk targetLayeredChunk) {
-        boolean isValid() {
-            return distance >= 0;
-        }
     }
 }
 
