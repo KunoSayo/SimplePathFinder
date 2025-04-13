@@ -79,18 +79,18 @@ public class NavPathFinder {
         while (!searchNodes.isEmpty()) {
             var node = searchNodes.dequeue();
 
-            if (!this.visitedPos.add(SearchedPos.toLong(node.layer.layer, node.pos))) {
+            if (!this.visitedPos.add(SearchedPos.toLong(node.layer().layer, node.pos()))) {
                 continue;
             }
-            if (node.pos.distManhattan(this.end) <= 1) {
+            if (node.pos().distManhattan(this.end) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            getEdge(node.layer.parentChunk, node.layer, node.pos, new ChunkPos(node.pos)).forEach(edgeInfo -> {
+            getEdge(node.layer().parentChunk, node.layer(), node.pos(), new ChunkPos(node.pos())).forEach(edgeInfo -> {
                 if (!edgeInfo.isValid()) {
                     return;
                 }
                 long extraCost = node.getExtraCost(edgeInfo.targetPos);
-                searchNodes.enqueue(new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node));
+                searchNodes.enqueue(new SearchNode(extraCost + edgeInfo.distance + node.cost(), edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node));
             });
         }
         return Optional.empty();
@@ -118,18 +118,13 @@ record SearchedPos(int layer, BlockPos pos) {
     }
 
     public static long toLong(byte layer, BlockPos pos) {
-        return BlockPos.asLong(pos.getX(), layer, pos.getZ());
+        return BlockPos.asLong(pos.getX(), ((int) layer) + 128, pos.getZ());
     }
 }
 
-class SearchNode implements Comparable<SearchNode> {
-    final long cost;
-    final BlockPos pos;
-    final LayeredNavChunk layer;
-    @Nullable
-    final SearchNode lastNode;
-
-    public SearchNode(long cost, BlockPos pos, LayeredNavChunk layer, @Nullable SearchNode lastNode) {
+record SearchNode(long cost, BlockPos pos, LayeredNavChunk layer,
+                  io.github.kunosayo.simplepathfinder.nav.@Nullable SearchNode lastNode) implements Comparable<SearchNode> {
+    SearchNode(long cost, BlockPos pos, LayeredNavChunk layer, @Nullable SearchNode lastNode) {
         this.cost = cost;
         this.pos = pos;
         this.layer = layer;
