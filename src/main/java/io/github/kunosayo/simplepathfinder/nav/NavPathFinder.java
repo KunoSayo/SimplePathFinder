@@ -47,7 +47,10 @@ public class NavPathFinder {
         if (distance < 0.0) {
             return Stream.empty();
         }
-        return bNavChunk.getLayers(b).map(layeredNavChunk -> new EdgeInfo(distance, b, bNavChunk, layeredNavChunk));
+        return bNavChunk.getLayers(b)
+                .map(
+                        layeredNavChunk -> new EdgeInfo(distance, new BlockPos(b.getX(), layeredNavChunk.getWalkY(new ChunkInnerPos(b)), b.getZ()), bNavChunk, layeredNavChunk)
+                );
     }
 
     private Stream<EdgeInfo> getEdge(NavChunk navChunk, LayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca) {

@@ -289,6 +289,10 @@ public final class LayeredNavChunk {
         return false;
     }
 
+    public int getWalkY(ChunkInnerPos chunkInnerPos) {
+        return getWalkY(chunkInnerPos.x, chunkInnerPos.z);
+    }
+
     private record DistanceResult(int distance, short walkY) {
         public static final DistanceResult CANNOT_REACH = new DistanceResult(-1, (short) -1);
 
