@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
@@ -15,7 +16,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class SimplePathFinderCommand {
-
+    private static final IntegerArgumentType LAYER_ARG = IntegerArgumentType.integer(Byte.MIN_VALUE, Byte.MAX_VALUE);
 
     public static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralCommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf")
@@ -60,11 +61,11 @@ public final class SimplePathFinderCommand {
                                         })))
 
                                 .then(Commands.literal("build")
-                                        .then(Commands.argument("layer", IntegerArgumentType.integer())
+                                        .then(Commands.argument("layer", LAYER_ARG)
                                                 .then(Commands.argument("dx", IntegerArgumentType.integer(0, 15))
                                                         .then(Commands.argument("dz", IntegerArgumentType.integer(0, 15))
                                                                 .executes(context -> {
-                                                                    int layer = context.getArgument("layer", Integer.class);
+                                                                    byte layer = context.getArgument("layer", Integer.class).byteValue();
                                                                     int dx = context.getArgument("dx", Integer.class);
                                                                     int dz = context.getArgument("dz", Integer.class);
 
@@ -99,9 +100,9 @@ public final class SimplePathFinderCommand {
                                                                     return 0;
                                                                 }))))
                                         .then(Commands.literal("current")
-                                                .then(Commands.argument("layer", IntegerArgumentType.integer())
+                                                .then(Commands.argument("layer", LAYER_ARG)
                                                         .executes(context -> {
-                                                            int layer = context.getArgument("layer", Integer.class);
+                                                            byte layer = context.getArgument("layer", Integer.class).byteValue();
                                                             if (context.getSource().source instanceof Player player) {
                                                                 var level = player.level();
                                                                 if (level instanceof ServerLevel sl) {
@@ -122,7 +123,7 @@ public final class SimplePathFinderCommand {
                                                         var level = player.level();
                                                         if (level instanceof ServerLevel sl) {
                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
-                                                            if (data.levelNavData.buildForPlayer(player, 0)) {
+                                                            if (data.levelNavData.buildForPlayer(player, (byte) 0)) {
                                                                 data.setDirty();
                                                                 if (player instanceof ServerPlayer sp && !level.isClientSide) {
                                                                     PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));

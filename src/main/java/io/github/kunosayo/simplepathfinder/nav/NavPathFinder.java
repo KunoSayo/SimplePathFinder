@@ -1,16 +1,20 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
+import it.unimi.dsi.fastutil.longs.LongOpenHashBigSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.stream.Stream;
 
 public class NavPathFinder {
-    private final HashSet<SearchedPos> visitedPos = new HashSet<>();
+    private final LongOpenHashSet visitedPos = new LongOpenHashSet();
     private final LevelNavData levelNavData;
     private final PriorityQueue<SearchNode> searchNodes = new PriorityQueue<>();
     private final BlockPos start;
@@ -24,11 +28,11 @@ public class NavPathFinder {
 
     private void init() {
         var startChunk = new ChunkPos(start);
-        levelNavData.getNavChunk(startChunk, false).ifPresent(navChunk -> {
-            navChunk.getLayerNav(start).ifPresent(layeredNavChunk -> {
-                searchNodes.add(new SearchNode(0, start, layeredNavChunk, null));
-            });
-        });
+        levelNavData.getNavChunk(startChunk, false)
+                .flatMap(navChunk -> navChunk.getLayerNav(start))
+                .ifPresent(layeredNavChunk -> {
+                    searchNodes.add(new SearchNode(0, start, layeredNavChunk, null));
+                });
 
     }
 
@@ -76,7 +80,7 @@ public class NavPathFinder {
         while (!searchNodes.isEmpty()) {
             var node = searchNodes.poll();
 
-            if (!this.visitedPos.add(new SearchedPos(node.layer.layer, node.pos))) {
+            if (!this.visitedPos.add(SearchedPos.toLong(node.layer.layer, node.pos))) {
                 continue;
             }
             if (node.pos.distManhattan(this.end) <= 1) {
@@ -112,6 +116,10 @@ record SearchedPos(int layer, BlockPos pos) {
     @Override
     public int hashCode() {
         return Objects.hash(layer, pos);
+    }
+
+    public static long toLong(byte layer, BlockPos pos) {
+        return BlockPos.asLong(pos.getX(), layer, pos.getZ());
     }
 }
 

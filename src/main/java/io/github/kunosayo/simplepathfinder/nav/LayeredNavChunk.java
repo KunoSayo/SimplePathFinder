@@ -26,7 +26,7 @@ public final class LayeredNavChunk {
                     layeredNavChunk -> layeredNavChunk.walkY,
                     ArrayCodecs.intArrayCodec(LevelNavData.CHUNK_AREA << 1),
                     layeredNavChunk -> layeredNavChunk.distances,
-                    ByteBufCodecs.VAR_INT, layeredNavChunk -> layeredNavChunk.layer,
+                    ByteBufCodecs.BYTE, layeredNavChunk -> layeredNavChunk.layer,
                     LayeredNavChunk::new);
     public static final int[] SEARCH_DX = {1, -1, 0, 0};
     public static final int[] SEARCH_DZ = {0, 0, 1, -1};
@@ -60,7 +60,7 @@ public final class LayeredNavChunk {
 
     // Store +x+z+x+z..
     int[] distances;
-    int layer = 0;
+    byte layer = 0;
     public NavChunk parentChunk = null;
 
     LayeredNavChunk(short[] walkY, int[] distances) {
@@ -68,7 +68,7 @@ public final class LayeredNavChunk {
         this.distances = distances;
     }
 
-    LayeredNavChunk(short[] walkY, int[] distances, int layer) {
+    LayeredNavChunk(short[] walkY, int[] distances, byte layer) {
         this.walkY = walkY;
         this.distances = distances;
         this.layer = layer;

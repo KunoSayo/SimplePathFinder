@@ -76,7 +76,7 @@ public class LevelNavData {
         return groundPos;
     }
 
-    public boolean buildForPlayer(Player player, int layer) {
+    public boolean buildForPlayer(Player player, byte layer) {
         var level = player.level();
         var groundPos = player.blockPosition();
 
@@ -126,7 +126,7 @@ public class LevelNavData {
         return finder.search();
     }
 
-    public boolean buildFromLayerStart(Level level, LevelNavData levelNavData, int layer, ChunkPos acp) {
+    public boolean buildFromLayerStart(Level level, LevelNavData levelNavData, byte layer, ChunkPos acp) {
 
         boolean[] result = new boolean[]{false};
         getNavChunk(acp, true).ifPresent(navChunk -> navChunk
