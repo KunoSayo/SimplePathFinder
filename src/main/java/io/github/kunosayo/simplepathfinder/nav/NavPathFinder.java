@@ -33,15 +33,15 @@ public class NavPathFinder {
     }
 
     private Stream<EdgeInfo> getEdge(NavChunk navChunk, NavChunk bNavChunk, BlockPos a, BlockPos b) {
-
+        // the y of b should be the same as a
 
         int situation = LayeredNavChunk.getPosSituation(a, b);
         boolean isZ = (situation & 1) == 1;
         int distance;
         if (situation > 1) {
-            distance = bNavChunk.getDistanceChecked(b, isZ);
+            distance = bNavChunk.getDistance(b, isZ);
         } else {
-            distance = navChunk.getDistanceChecked(a, isZ);
+            distance = navChunk.getDistance(a, isZ);
         }
 
         if (distance < 0.0) {
@@ -50,8 +50,8 @@ public class NavPathFinder {
         return bNavChunk.getLayers(b).map(layeredNavChunk -> new EdgeInfo(distance, b, bNavChunk, layeredNavChunk));
     }
 
-    private List<EdgeInfo> getEdge(NavChunk navChunk, LayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca) {
-        List<EdgeInfo> list = new ArrayList<>(4);
+    private Stream<EdgeInfo> getEdge(NavChunk navChunk, LayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca) {
+        Stream<EdgeInfo> result = Stream.empty();
         for (int i = 0; i < 4; i++) {
             var t = a.offset(LayeredNavChunk.SEARCH_DX[i], 0, LayeredNavChunk.SEARCH_DZ[i]);
             boolean isSame = NavUtil.isSameChunk(a, t);
@@ -62,12 +62,9 @@ public class NavPathFinder {
                     continue;
                 }
             }
-            for (int yOffset = -1; yOffset <= 1; yOffset++) {
-                var b = t.offset(0, yOffset, 0);
-                list.addAll(getEdge(navChunk, thatChunk, a, b).toList());
-            }
+            result = Stream.concat(result, getEdge(navChunk, thatChunk, a, t));
         }
-        return list;
+        return result;
     }
 
     Optional<NavResult> search() {
@@ -82,14 +79,13 @@ public class NavPathFinder {
             if (node.pos.distManhattan(this.end) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            for (EdgeInfo edgeInfo : getEdge(node.layer.parentChunk, node.layer, node.pos, new ChunkPos(node.pos))) {
+            getEdge(node.layer.parentChunk, node.layer, node.pos, new ChunkPos(node.pos)).forEach(edgeInfo -> {
                 if (!edgeInfo.isValid()) {
-                    continue;
+                    return;
                 }
                 long extraCost = node.getExtraCost(edgeInfo.targetPos);
                 searchNodes.add(new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node));
-            }
-
+            });
         }
         return Optional.empty();
     }

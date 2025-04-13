@@ -59,7 +59,7 @@ public final class NavChunk {
 
     public Stream<LayeredNavChunk> getLayers(BlockPos target) {
         var inner = new ChunkInnerPos(target);
-        return this.layers.stream().filter(layer -> layer.getWalkY(inner.x, inner.z) == target.getY());
+        return this.layers.stream().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
     }
 
 
@@ -83,9 +83,16 @@ public final class NavChunk {
      */
     public int getDistance(BlockPos pos, boolean isZ) {
         var inner = new ChunkInnerPos(pos);
-        return layers.stream().filter(layeredNavChunk -> layeredNavChunk.getWalkY(inner.x, inner.z) == pos.getY())
-                .map(layeredNavChunk -> layeredNavChunk.getDistance(inner.x, inner.z, isZ))
-                .findAny().orElse(-1);
+        //noinspection ForLoopReplaceableByForEach
+        for (int i = 0; i < layers.size(); i++) {
+            var layeredNavChunk = layers.get(i);
+            final int delta = (layeredNavChunk.getWalkY(inner.x, inner.z) - pos.getY());
+            if (-1 <= delta && delta <= 1) {
+                // we checked for the walk y is checked.
+                return layeredNavChunk.getDistance(inner.x, inner.z, isZ);
+            }
+        }
+        return -1;
     }
 
     /***
@@ -96,9 +103,16 @@ public final class NavChunk {
      */
     public int getDistanceChecked(BlockPos pos, boolean isZ) {
         var inner = new ChunkInnerPos(pos);
-        return layers.stream().filter(layeredNavChunk -> layeredNavChunk.getWalkY(inner.x, inner.z) == pos.getY())
-                .map(layeredNavChunk -> layeredNavChunk.getDistanceChecked(inner.x, inner.z, isZ))
-                .findAny().orElse(-1);
+        //noinspection ForLoopReplaceableByForEach
+        for (int i = 0; i < layers.size(); i++) {
+            var layeredNavChunk = layers.get(i);
+            final int delta = layeredNavChunk.getWalkY(inner.x, inner.z) - pos.getY();
+            if (-1 <= delta && delta <= 1) {
+                // we checked for the walk y is checked.
+                return layeredNavChunk.getDistanceChecked(inner.x, inner.z, isZ);
+            }
+        }
+        return -1;
     }
 
     public void removeNavChunk(LayeredNavChunk layeredNavChunk) {
