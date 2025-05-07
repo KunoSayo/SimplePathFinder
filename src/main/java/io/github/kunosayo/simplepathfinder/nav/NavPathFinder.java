@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public class NavPathFinder {
-    private final LongOpenHashSet visitedPos = new LongOpenHashSet(1024);
+    private final LongOpenHashSet visitedPos = new LongOpenHashSet(1024, 0.5f);
     private final LevelNavData levelNavData;
     private final ObjectHeapPriorityQueue<SearchNode> searchNodes = new ObjectHeapPriorityQueue<>();
     private final BlockPos start;
