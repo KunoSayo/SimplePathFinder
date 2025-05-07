@@ -21,4 +21,8 @@ public class ChunkInnerPos {
     public BlockPos toBlockPos(int y, ChunkPos chunkPos) {
         return new BlockPos(chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z));
     }
+
+    public static int getInnerPos(int value) {
+        return Mth.positiveModulo(value, 16);
+    }
 }

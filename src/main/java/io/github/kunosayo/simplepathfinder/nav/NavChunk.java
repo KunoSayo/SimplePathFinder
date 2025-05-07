@@ -84,12 +84,13 @@ public final class NavChunk {
     }
 
     public void getLayers(BlockPos target, int distance, Consumer<NavPathFinder.EdgeInfo> edgeInfoConsumer) {
-        var inner = new ChunkInnerPos(target);
+        int innerX = ChunkInnerPos.getInnerPos(target.getX());
+        int innerZ = ChunkInnerPos.getInnerPos(target.getZ());
         //noinspection ForLoopReplaceableByForEach
         for (int i = 0; i < this.layers.size(); i++) {
             var layer = layers.get(i);
 
-            final int y = layer.getWalkY(inner.x, inner.z);
+            final int y = layer.getWalkY(innerX, innerZ);
             final int delta = y - target.getY();
             if (-1 <= delta && delta <= 1) {
                 edgeInfoConsumer.accept(new NavPathFinder.EdgeInfo(distance, new BlockPos(target.getX(), y, target.getZ()), this, layer));
