@@ -20,7 +20,7 @@ public class NavResult {
         this.minecraftPath = null;
     }
 
-    public NavResult(SearchNode endNode, BlockPos target) {
+    public NavResult(NavPathFinder.SearchNode endNode, BlockPos target) {
         this(new ModNavResult(endNode, target));
     }
 

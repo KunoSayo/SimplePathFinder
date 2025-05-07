@@ -13,10 +13,10 @@ public class ModNavResult {
     public final List<BlockPos> posInThePath;
     public final BlockPos navTarget;
 
-    ModNavResult(SearchNode endNode, BlockPos navTarget) {
+    ModNavResult(NavPathFinder.SearchNode endNode, BlockPos navTarget) {
         List<BlockPos> tempPaths;
         tempPaths = new ArrayList<>();
-        SearchNode cur = endNode;
+        NavPathFinder.SearchNode cur = endNode;
         while (cur != null) {
             tempPaths.add(cur.pos());
             cur = cur.lastNode();
