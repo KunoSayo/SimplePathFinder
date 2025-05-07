@@ -11,10 +11,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 public class NavPathFinder {
-    private final LongOpenHashSet visitedPos = new LongOpenHashSet();
+    private final LongOpenHashSet visitedPos = new LongOpenHashSet(1024);
     private final LevelNavData levelNavData;
     private final ObjectHeapPriorityQueue<SearchNode> searchNodes = new ObjectHeapPriorityQueue<>();
     private final BlockPos start;
@@ -115,7 +114,12 @@ record SearchedPos(int layer, BlockPos pos) {
     }
 
     public static long toLong(byte layer, BlockPos pos) {
-        return BlockPos.asLong(pos.getX(), ((int) layer) + 128, pos.getZ());
+
+//        return BlockPos.asLong(pos.getX(), ((int) layer) + 128, pos.getZ());
+
+        // y use 8 bit
+        // 27 bit for x and y
+        return (((long) pos.getX() & 0x7FFFFFF) << 27) | (pos.getZ() & 0x7FFFFFF) | ((long) layer << 54);
     }
 }
 

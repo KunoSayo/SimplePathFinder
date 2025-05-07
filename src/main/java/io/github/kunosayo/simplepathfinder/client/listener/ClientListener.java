@@ -6,6 +6,7 @@ import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import io.github.kunosayo.simplepathfinder.nav.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ComponentRenderUtils;
@@ -23,6 +24,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import org.apache.logging.log4j.LogManager;
 
 
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT, modid = SimplePathFinder.MOD_ID)
@@ -39,9 +41,12 @@ public class ClientListener {
         if (data == null) {
             return;
         }
+        long startTime = System.currentTimeMillis();
         data.findNav(player.blockPosition(), target).ifPresent(navResult -> {
             SimplePathFinder.clientNavResult = navResult;
         });
+        long endTime = System.currentTimeMillis();
+        LogManager.getLogger().info("nav in " + (endTime - startTime) + "ms");
     }
 
     @SubscribeEvent
@@ -79,22 +84,23 @@ public class ClientListener {
                 var lr = event.getLevelRenderer();
                 if (data != null) {
                     int amount = player.getMainHandItem().getCount();
+                    NavResult clientNavResult = SimplePathFinder.clientNavResult;
                     if (amount == 64) {
-                        if (SimplePathFinder.clientNavResult != null) {
-                            SimplePathFinder.clientNavResult.render(event.getLevelRenderer(), player);
+                        if (clientNavResult != null) {
+                            clientNavResult.render(event.getLevelRenderer(), player);
                         }
                         return;
                     }
                     if (amount == 63) {
-                        if (SimplePathFinder.clientNavResult != null) {
-                            doNav(player, SimplePathFinder.clientNavResult.getNavTarget());
-                            SimplePathFinder.clientNavResult.render(event.getLevelRenderer(), player);
+                        if (clientNavResult != null) {
+                            doNav(player, clientNavResult.getNavTarget());
+                            clientNavResult.render(event.getLevelRenderer(), player);
                             return;
                         }
                     }
                     if (amount >= 62) {
-                        if (SimplePathFinder.clientNavResult != null) {
-                            SimplePathFinder.clientNavResult.render(event.getLevelRenderer(), player);
+                        if (clientNavResult != null) {
+                            clientNavResult.render(event.getLevelRenderer(), player);
                         }
                     }
                     int layerRangeLeft;
