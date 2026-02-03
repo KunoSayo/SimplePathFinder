@@ -110,8 +110,8 @@ public class LevelNavData {
                         chunk.setParentChunk(navChunk);
                         chunk.setLayer(layer);
                         chunk.parse(level, finalGroundPos.offset(0, 1, 0));
-                    player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.success"));
-                    result[0] = true;
+                        player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.success"));
+                        result[0] = true;
                     }
                 }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"))), () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited")));
 
@@ -141,25 +141,25 @@ public class LevelNavData {
                         chunk.setParentChunk(navChunk);
                         chunk.setLayer(layer);
 
-                    levelNavData.getNavChunk(new ChunkPos(acp.x - 1, acp.z), layer)
-                            .filter(navChunk1 -> navChunk1.canWalk(15, 0))
-                            .ifPresentOrElse(navChunk1 -> {
-                                int y = navChunk1.getWalkY(15, 0);
-                                var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(0));
-                                var groundPos = getGroundPos(level, blockPos);
-                                layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
-                                result[0] = true;
-                            }, () -> levelNavData.getNavChunk(new ChunkPos(acp.x, acp.z - 1), layer).ifPresent(navChunk1 -> {
-                                int y = navChunk1.getWalkY(0, 15);
-                                var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(0));
-                                var groundPos = getGroundPos(level, blockPos);
-                                layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
-                                result[0] = true;
-                            }));
+                        levelNavData.getNavChunk(new ChunkPos(acp.x - 1, acp.z), layer)
+                                .filter(navChunk1 -> navChunk1.canWalk(15, 0))
+                                .ifPresentOrElse(navChunk1 -> {
+                                    int y = navChunk1.getWalkY(15, 0);
+                                    var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(0));
+                                    var groundPos = getGroundPos(level, blockPos);
+                                    layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
+                                    result[0] = true;
+                                }, () -> levelNavData.getNavChunk(new ChunkPos(acp.x, acp.z - 1), layer).ifPresent(navChunk1 -> {
+                                    int y = navChunk1.getWalkY(0, 15);
+                                    var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(0));
+                                    var groundPos = getGroundPos(level, blockPos);
+                                    layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
+                                    result[0] = true;
+                                }));
 
-                    if (!chunk.isAnyValid()) {
-                        navChunk.removeNavChunk(chunk);
-                    }
+                        if (!chunk.isAnyValid()) {
+                            navChunk.removeNavChunk(chunk);
+                        }
                     }
                 }));
 
@@ -185,7 +185,11 @@ public class LevelNavData {
         return buffer.writerIndex();
     }
 
+    public boolean removeNavChunk(ChunkPos pos) {
+        return this.navChunks.remove(pos) != null;
+    }
+
     public boolean removeNavChunk(Player player) {
-        return this.navChunks.remove(new ChunkPos(player.blockPosition())) != null;
+        return removeNavChunk(player.chunkPosition());
     }
 }
