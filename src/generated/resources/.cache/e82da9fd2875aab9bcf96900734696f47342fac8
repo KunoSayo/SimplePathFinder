@@ -1,0 +1,6 @@
+// 1.21	2026-02-03T20:55:12.7408484	Item Models: simple_path_finder
+744fcbaebd95fae62e2d4cbe57af5eecf8d92c98 assets/simple_path_finder/models/item/debug_nav.json
+7aec82e37cbfc0f5a043a756cd477db656daa53a assets/simple_path_finder/models/item/navigation.json
+518e669e900fdb7a05d0c2df00b4b0958091e6da assets/simple_path_finder/models/item/navigation_add.json
+34131503d6b09e886f3ccf806e6d526b4ec3ea62 assets/simple_path_finder/models/item/navigation_default.json
+db0d4600d1b5cb1b89c45ed2a841cc0654a5ccf4 assets/simple_path_finder/models/item/navigation_remove.json

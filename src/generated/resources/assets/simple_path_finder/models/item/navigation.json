@@ -1,0 +1,26 @@
+{
+  "parent": "minecraft:item/handheld",
+  "overrides": [
+    {
+      "model": "simple_path_finder:item/navigation_default",
+      "predicate": {
+        "simple_path_finder:navigation_mode": 0.0
+      }
+    },
+    {
+      "model": "simple_path_finder:item/navigation_add",
+      "predicate": {
+        "simple_path_finder:navigation_mode": 1.0
+      }
+    },
+    {
+      "model": "simple_path_finder:item/navigation_remove",
+      "predicate": {
+        "simple_path_finder:navigation_mode": 2.0
+      }
+    }
+  ],
+  "textures": {
+    "layer0": "minecraft:item/compass_12"
+  }
+}
