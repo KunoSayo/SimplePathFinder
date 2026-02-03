@@ -20,7 +20,7 @@ import static io.github.kunosayo.simplepathfinder.util.NavUtil.considerSafeGroun
 /**
  * The nav data in chunks
  */
-public final class LayeredNavChunk {
+public final class LayeredNavChunk implements ILayeredNavChunk {
     public static final StreamCodec<ByteBuf, LayeredNavChunk> STREAM_CODEC = StreamCodec
             .composite(ArrayCodecs.shortArrayCodec(LevelNavData.CHUNK_AREA),
                     layeredNavChunk -> layeredNavChunk.walkY,
@@ -53,6 +53,7 @@ public final class LayeredNavChunk {
         return 2;
     }
 
+
     /**
      * The y is air, (y-1) is ground.
      */
@@ -62,6 +63,21 @@ public final class LayeredNavChunk {
     int[] distances;
     byte layer = 0;
     public NavChunk parentChunk = null;
+
+    @Override
+    public NavChunk getParentChunk() {
+        return parentChunk;
+    }
+
+    @Override
+    public void setLayer(byte layer) {
+        this.layer = layer;
+    }
+
+    @Override
+    public void setParentChunk(NavChunk parentChunk) {
+        this.parentChunk = parentChunk;
+    }
 
     LayeredNavChunk(short[] walkY, int[] distances) {
         this.walkY = walkY;
@@ -74,10 +90,6 @@ public final class LayeredNavChunk {
         this.layer = layer;
     }
 
-    public static boolean isWalkYValid(int y) {
-        return y != -9961;
-    }
-
     /**
      * Return the walk y at location
      *
@@ -85,18 +97,22 @@ public final class LayeredNavChunk {
      * @param z in [0, 15]
      * @return the walk y, or -9961 if cannot reach
      */
+    @Override
     public int getWalkY(int x, int z) {
         return walkY[convertToIndex(x, z)];
     }
 
+    @Override
     public int getDistance(int x, int z, boolean isZ) {
         return distances[getDistanceIdx(x, z, isZ)];
     }
 
+    @Override
     public int getDistanceChecked(int x, int z, boolean isZ) {
         return canWalk(x, z) ? distances[getDistanceIdx(x, z, isZ)] : -1;
     }
 
+    @Override
     public int getDistance(BlockPos pos, boolean isZ) {
         var inner = new ChunkInnerPos(pos);
         return distances[getDistanceIdx(inner.x, inner.z, isZ)];
@@ -197,6 +213,7 @@ public final class LayeredNavChunk {
 
     }
 
+    @Override
     public void parse(Level level, BlockPos trustedCenter) {
         boolean[] visited = new boolean[LevelNavData.CHUNK_AREA];
         final int startX = Mth.positiveModulo(trustedCenter.getX(), 16);
@@ -262,7 +279,7 @@ public final class LayeredNavChunk {
         solver.run();
     }
 
-    public static LayeredNavChunk getDefault() {
+    public static ILayeredNavChunk getDefault() {
         short[] walkY = new short[LevelNavData.CHUNK_AREA];
         int[] distance = new int[LevelNavData.CHUNK_AREA << 1];
         Arrays.fill(distance, -1);
@@ -270,27 +287,14 @@ public final class LayeredNavChunk {
         return new LayeredNavChunk(walkY, distance);
     }
 
-    public int getLayer() {
+    @Override
+    public byte getLayer() {
         return layer;
     }
 
+    @Override
     public boolean canWalk(int x, int z) {
         return isWalkYValid(getWalkY(x, z));
-    }
-
-    public boolean isAnyValid() {
-        for (int i = 0; i < 16; i++) {
-            for (int j = 0; j < 16; j++) {
-                if (canWalk(i, j)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public int getWalkY(ChunkInnerPos chunkInnerPos) {
-        return getWalkY(chunkInnerPos.x, chunkInnerPos.z);
     }
 
     private record DistanceResult(int distance, short walkY) {

@@ -29,11 +29,15 @@ public class NavPathFinder {
         var startChunk = new ChunkPos(start);
         levelNavData.getNavChunk(startChunk, false)
                 .flatMap(navChunk -> navChunk.getLayerNav(start))
-                .ifPresent(layeredNavChunk -> searchNodes.enqueue(new SearchNode(0, start, layeredNavChunk, null)));
+                .ifPresent(layeredNavChunk -> {
+                    if (layeredNavChunk instanceof LayeredNavChunk) {
+                        searchNodes.enqueue(new SearchNode(0, start, (LayeredNavChunk) layeredNavChunk, null));
+                    }
+                });
 
     }
 
-    private void getEdge(NavChunk navChunk, NavChunk bNavChunk, BlockPos a, BlockPos b, Consumer<EdgeInfo> edgeInfoConsumer) {
+    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, BlockPos a, BlockPos b, Consumer<EdgeInfo> edgeInfoConsumer) {
         // the y of b should be the same as a
 
         int situation = LayeredNavChunk.getPosSituation(a, b);
@@ -51,16 +55,17 @@ public class NavPathFinder {
         bNavChunk.getLayers(b, distance, edgeInfoConsumer);
     }
 
-    private void getEdge(NavChunk navChunk, LayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca, Consumer<EdgeInfo> edgeInfoConsumer) {
+    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca, Consumer<EdgeInfo> edgeInfoConsumer) {
         for (int i = 0; i < 4; i++) {
             var t = a.offset(LayeredNavChunk.SEARCH_DX[i], 0, LayeredNavChunk.SEARCH_DZ[i]);
             boolean isSame = NavUtil.isSameChunk(a, t);
-            NavChunk thatChunk = navChunk;
+            var thatChunk = navChunk;
             if (!isSame) {
-                thatChunk = levelNavData.getNavChunk(new ChunkPos(t), false).orElse(null);
-                if (thatChunk == null) {
+                Optional<NavChunk> thatChunkOpt = levelNavData.getNavChunk(new ChunkPos(t), false);
+                if (thatChunkOpt.isEmpty()) {
                     continue;
                 }
+                thatChunk = thatChunkOpt.get();
             }
 
             getEdge(navChunk, thatChunk, a, t, edgeInfoConsumer);
@@ -73,20 +78,20 @@ public class NavPathFinder {
         while (!searchNodes.isEmpty()) {
             var node = searchNodes.dequeue();
 
-            if (!this.visitedPos.add(SearchedPos.toLong(node.layer().layer, node.pos()))) {
+            if (!this.visitedPos.add(SearchedPos.toLong(node.layer().getLayer(), node.pos()))) {
                 continue;
             }
             if (node.pos().distManhattan(this.end) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            getEdge(node.layer().parentChunk, node.layer(), node.pos(), new ChunkPos(node.pos()), edgeInfo -> {
+            getEdge(node.layer().getParentChunk(), node.layer(), node.pos(), new ChunkPos(node.pos()), edgeInfo -> {
                 if (node.lastNode != null) {
                     var lastPos = node.lastNode.pos;
                     if (lastPos.getX() == edgeInfo.targetPos.getX() && lastPos.getZ() == edgeInfo.targetPos.getZ()) {
                         return;
                     }
                 }
-                if (visitedPos.contains(SearchedPos.toLong(edgeInfo.targetLayeredChunk.layer, edgeInfo.targetPos))) {
+                if (visitedPos.contains(SearchedPos.toLong(edgeInfo.targetLayeredChunk.getLayer(), edgeInfo.targetPos))) {
                     return;
                 }
 
@@ -98,8 +103,8 @@ public class NavPathFinder {
         return Optional.empty();
     }
 
-    public record EdgeInfo(int distance, BlockPos targetPos, NavChunk targetNavChunk,
-                           LayeredNavChunk targetLayeredChunk) {
+    public record EdgeInfo(int distance, BlockPos targetPos, INavChunk targetNavChunk,
+                           ILayeredNavChunk targetLayeredChunk) {
     }
 
     public record SearchedPos(int layer, BlockPos pos) {
@@ -125,7 +130,7 @@ public class NavPathFinder {
         }
     }
 
-    public record SearchNode(long cost, BlockPos pos, LayeredNavChunk layer,
+    public record SearchNode(long cost, BlockPos pos, ILayeredNavChunk layer,
                              @Nullable SearchNode lastNode) implements Comparable<SearchNode> {
         @Override
         public int compareTo(@NotNull SearchNode o) {

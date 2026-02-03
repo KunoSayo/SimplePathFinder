@@ -2,14 +2,12 @@ package io.github.kunosayo.simplepathfinder.client.listener;
 
 import com.mojang.brigadier.tree.CommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.client.event.NavigationRenderTriggerEvent;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
-import io.github.kunosayo.simplepathfinder.nav.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.ComponentRenderUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
@@ -24,6 +22,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import org.apache.logging.log4j.LogManager;
 
 
@@ -72,7 +71,14 @@ public class ClientListener {
     public static void onTick(RenderLevelStageEvent event) {
         var state = event.getStage();
         var player = Minecraft.getInstance().player;
-        if (player != null && player.getMainHandItem().is(ModItems.DEBUG_NAV)) {
+        if (player == null) {
+            return;
+        }
+        if (player.getMainHandItem().is(ModItems.DEBUG_NAV) || player.getMainHandItem().is(ModItems.NAVIGATION)) {
+            var renderNavEvent = new NavigationRenderTriggerEvent(player);
+            if (NeoForge.EVENT_BUS.post(renderNavEvent).isCanceled()) {
+                return;
+            }
             if (state == RenderLevelStageEvent.Stage.AFTER_SKY) {
                 var level = player.level();
                 LevelNavData data;
@@ -110,7 +116,7 @@ public class ClientListener {
                     } else {
                         layerRangeLeft = Integer.MIN_VALUE;
                     }
-                    amount = Math.min(amount, 16);
+                    amount = Math.min(Math.max(amount, 3), 16);
                     var currentChunkPos = new ChunkPos(player.blockPosition());
 
                     for (int offsetX = -amount; offsetX <= amount; offsetX++) {
@@ -122,7 +128,7 @@ public class ClientListener {
                                 int finalLayerRangeRight = layerRangeRight;
                                 data.getNavChunk(chunkPos, false)
                                         .ifPresent(navChunk -> {
-                                            for (LayeredNavChunk layer : navChunk.layers) {
+                                            for (var layer : navChunk.layers) {
                                                 if (layer.getLayer() > finalLayerRangeRight || layer.getLayer() < layerRangeLeft) {
                                                     continue;
                                                 }
@@ -131,7 +137,7 @@ public class ClientListener {
                                                         int y = layer.getWalkY(x, z);
 
                                                         var blockPos = new BlockPos(chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z));
-                                                        if (LayeredNavChunk.isWalkYValid(y)) {
+                                                        if (layer.isWalkYValid(y)) {
                                                             if (layer.getDistance(x, z, false) < 0) {
                                                                 lr.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
                                                                         true, blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);

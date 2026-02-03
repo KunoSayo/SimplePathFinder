@@ -57,9 +57,9 @@ public class LevelNavData {
         }));
     }
 
-    public Optional<LayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
+    public Optional<ILayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
         return Optional.ofNullable(navChunks.get(pos))
-                .flatMap(navChunk -> navChunk.layers.stream().filter(navChunk1 -> navChunk1.layer == layer).findAny());
+                .flatMap(navChunk -> navChunk.layers.stream().filter(navChunk1 -> navChunk1.getLayer() == layer).findAny());
     }
 
     public LevelNavData(HashMap<ChunkPos, NavChunk> navChunks) {
@@ -102,12 +102,15 @@ public class LevelNavData {
         net.minecraft.core.BlockPos finalGroundPos = groundPos;
         boolean[] result = new boolean[]{false};
         getNavChunk(new ChunkPos(groundPos), true).ifPresentOrElse(navChunk -> navChunk
-                .getLayer(layer, LayeredNavChunk::getDefault).ifPresentOrElse(layeredNavChunk -> {
-                    layeredNavChunk.parentChunk = navChunk;
-                    layeredNavChunk.layer = layer;
-                    layeredNavChunk.parse(level, finalGroundPos.offset(0, 1, 0));
+                .getLayer(layer, () -> (LayeredNavChunk) LayeredNavChunk.getDefault()).ifPresentOrElse(layeredNavChunk -> {
+                    if (layeredNavChunk instanceof LayeredNavChunk) {
+                        LayeredNavChunk chunk = (LayeredNavChunk) layeredNavChunk;
+                        chunk.setParentChunk(navChunk);
+                        chunk.setLayer(layer);
+                        chunk.parse(level, finalGroundPos.offset(0, 1, 0));
                     player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.success"));
                     result[0] = true;
+                    }
                 }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"))), () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited")));
 
 
@@ -130,9 +133,11 @@ public class LevelNavData {
 
         boolean[] result = new boolean[]{false};
         getNavChunk(acp, true).ifPresent(navChunk -> navChunk
-                .getLayer(layer, LayeredNavChunk::getDefault).ifPresent(layeredNavChunk -> {
-                    layeredNavChunk.parentChunk = navChunk;
-                    layeredNavChunk.layer = layer;
+                .getLayer(layer, () -> (LayeredNavChunk) LayeredNavChunk.getDefault()).ifPresent(layeredNavChunk -> {
+                    if (layeredNavChunk instanceof LayeredNavChunk) {
+                        LayeredNavChunk chunk = (LayeredNavChunk) layeredNavChunk;
+                        chunk.setParentChunk(navChunk);
+                        chunk.setLayer(layer);
 
                     levelNavData.getNavChunk(new ChunkPos(acp.x - 1, acp.z), layer)
                             .filter(navChunk1 -> navChunk1.canWalk(15, 0))
@@ -150,10 +155,10 @@ public class LevelNavData {
                                 result[0] = true;
                             }));
 
-                    if (!layeredNavChunk.isAnyValid()) {
-                        navChunk.removeNavChunk(layeredNavChunk);
+                    if (!chunk.isAnyValid()) {
+                        navChunk.removeNavChunk(chunk);
                     }
-
+                    }
                 }));
 
 
@@ -163,7 +168,7 @@ public class LevelNavData {
     public long getTotalLayers() {
         long totals = 0;
         for (NavChunk value : this.navChunks.values()) {
-            totals += value.layers.size();
+            totals += value.getLayerCount();
         }
         return totals;
     }

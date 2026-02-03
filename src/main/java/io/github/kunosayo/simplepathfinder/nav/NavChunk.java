@@ -12,35 +12,56 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public final class NavChunk {
-    private static final StreamCodec<ByteBuf, LayeredNavChunk> TYPED_LAYERED_NAV_CHUNK_CODEC = StreamCodec.of((buffer, value) -> {
-        buffer.writeByte(0);
-        LayeredNavChunk.STREAM_CODEC.encode(buffer, value);
+public final class NavChunk implements INavChunk {
+    private static final StreamCodec<ByteBuf, ILayeredNavChunk> TYPED_LAYERED_NAV_CHUNK_CODEC = StreamCodec.of((buffer, value) -> {
+        if (value instanceof LayeredNavChunk layeredNavChunk) {
+            buffer.writeByte(0);
+            LayeredNavChunk.STREAM_CODEC.encode(buffer, layeredNavChunk);
+            return;
+        }
+
+        throw new IllegalArgumentException("Not supported nav chunk");
     }, buffer -> {
         // todo: use interface.
-        buffer.readByte();
-        return LayeredNavChunk.STREAM_CODEC.decode(buffer);
+        byte type = buffer.readByte();
+        if (type == 0) {
+            return LayeredNavChunk.STREAM_CODEC.decode(buffer);
+        }
+
+        throw new IllegalArgumentException("Not supported nav chunk");
     });
     public static final StreamCodec<ByteBuf, NavChunk> STREAM_CODEC = StreamCodec
-            .composite(ByteBufCodecs.<ByteBuf, LayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
+            .composite(ByteBufCodecs.<ByteBuf, ILayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
                     navChunk -> navChunk.layers, NavChunk::new);
-    public List<LayeredNavChunk> layers = new ArrayList<>();
+    public List<ILayeredNavChunk> layers = new ArrayList<>();
     public ChunkPos chunkPos;
+
 
     public NavChunk(ChunkPos pos) {
         this.chunkPos = pos;
     }
 
-    private NavChunk(List<LayeredNavChunk> layers) {
+    private NavChunk(List<ILayeredNavChunk> layers) {
         this.layers = layers;
-        for (LayeredNavChunk layer : this.layers) {
-            layer.parentChunk = this;
+        for (ILayeredNavChunk layer : this.layers) {
+            layer.setParentChunk(this);
         }
     }
 
-    public Optional<LayeredNavChunk> getLayer(int layer, Supplier<LayeredNavChunk> supplier) {
-        for (LayeredNavChunk layeredNavChunk : layers) {
-            if (layeredNavChunk.layer == layer) {
+    @Override
+    public ChunkPos getChunkPos() {
+        return chunkPos;
+    }
+
+    @Override
+    public void setChunkPos(ChunkPos chunkPos) {
+        this.chunkPos = chunkPos;
+    }
+
+    @Override
+    public Optional<ILayeredNavChunk> getLayer(int layer, Supplier<LayeredNavChunk> supplier) {
+        for (var layeredNavChunk : layers) {
+            if (layeredNavChunk.getLayer() == layer) {
                 return Optional.of(layeredNavChunk);
             }
         }
@@ -59,26 +80,31 @@ public final class NavChunk {
         return l <= a && a <= r;
     }
 
-    public Optional<LayeredNavChunk> getLayerNav(BlockPos pos) {
+    @Override
+    public Optional<ILayeredNavChunk> getLayerNav(BlockPos pos) {
         var inner = new ChunkInnerPos(pos);
         // return the layer with walk y in range and possible max.
         return layers.stream().filter(layeredNavChunk -> isInRange(layeredNavChunk.getWalkY(inner.x, inner.z), pos.getY() - 2, pos.getY()))
-                .max(Comparator.comparingInt(o -> o.getWalkY(inner.x, inner.z)));
+                .max(Comparator.comparingInt(o -> o.getWalkY(inner.x, inner.z)))
+                .map(layeredNavChunk -> (ILayeredNavChunk) layeredNavChunk);
     }
 
-    public Stream<LayeredNavChunk> getLayers(BlockPos target) {
+    @Override
+    public Stream<ILayeredNavChunk> getLayers(BlockPos target) {
         var inner = new ChunkInnerPos(target);
-        return this.layers.stream().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
+        return this.layers.stream().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1)
+                .map(layer -> (ILayeredNavChunk) layer);
     }
 
-    public void getLayers(BlockPos target, Consumer<LayeredNavChunk> layeredChunkConsumer) {
+    @Override
+    public void getLayers(BlockPos target, Consumer<ILayeredNavChunk> consumer) {
         var inner = new ChunkInnerPos(target);
         //noinspection ForLoopReplaceableByForEach
         for (int i = 0; i < this.layers.size(); i++) {
             var layer = layers.get(i);
 
-            if (Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY() ) <= 1) {
-                layeredChunkConsumer.accept(layer);
+            if (Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1) {
+                consumer.accept(layer);
             }
         }
     }
@@ -99,9 +125,12 @@ public final class NavChunk {
     }
 
 
-    public Optional<LayeredNavChunk> getNearestLayer(int bx, int y, int bz) {
+    @Override
+    public Optional<ILayeredNavChunk> getNearestLayer(int bx, int y, int bz) {
         var pos = new ChunkInnerPos(bx, bz);
-        return layers.stream().filter(layeredNavChunk -> Math.abs(y - layeredNavChunk.getWalkY(pos.x, pos.z)) <= 1).findAny();
+        return layers.stream().filter(layeredNavChunk -> Math.abs(y - layeredNavChunk.getWalkY(pos.x, pos.z)) <= 1)
+                .findAny()
+                .map(layeredNavChunk -> (ILayeredNavChunk) layeredNavChunk);
     }
 
     public OptionalInt getNearestWalkY(int bx, int y, int bz) {
@@ -131,27 +160,15 @@ public final class NavChunk {
         return -1;
     }
 
-    /***
-     * Return the distance sampled from the pos with +x or +z
-     * @param pos the pos to sample distance
-     * @param isZ is +z
-     * @return the distance or -1 if not found or cannot walk
-     */
-    public int getDistanceChecked(BlockPos pos, boolean isZ) {
-        var inner = new ChunkInnerPos(pos);
-        //noinspection ForLoopReplaceableByForEach
-        for (int i = 0; i < layers.size(); i++) {
-            var layeredNavChunk = layers.get(i);
-            final int delta = layeredNavChunk.getWalkY(inner.x, inner.z) - pos.getY();
-            if (-1 <= delta && delta <= 1) {
-                // we checked for the walk y is checked.
-                return layeredNavChunk.getDistanceChecked(inner.x, inner.z, isZ);
-            }
+    @Override
+    public void removeNavChunk(ILayeredNavChunk layeredNavChunk) {
+        if (layeredNavChunk instanceof LayeredNavChunk) {
+            this.layers.remove((LayeredNavChunk) layeredNavChunk);
         }
-        return -1;
     }
 
-    public void removeNavChunk(LayeredNavChunk layeredNavChunk) {
-        this.layers.remove(layeredNavChunk);
+    @Override
+    public int getLayerCount() {
+        return this.layers.size();
     }
 }
