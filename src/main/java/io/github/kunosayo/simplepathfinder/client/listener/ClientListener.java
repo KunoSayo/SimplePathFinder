@@ -5,6 +5,8 @@ import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.event.NavigationRenderTriggerEvent;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
+import io.github.kunosayo.simplepathfinder.item.NavigationItem;
+import io.github.kunosayo.simplepathfinder.item.NavigationMode;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import net.minecraft.client.Minecraft;
@@ -20,6 +22,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -66,6 +69,35 @@ public class ClientListener {
         dispatcher.register(Commands.literal("nav").redirect(root.getChild("nav")));
     }
 
+    @SubscribeEvent
+    public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
+        var minecraft = Minecraft.getInstance();
+        var player = minecraft.player;
+
+        if (player == null) {
+            return;
+        }
+
+        // 检查玩家是否按住了Shift键
+        if (!player.isShiftKeyDown()) {
+            return;
+        }
+
+        // 检查玩家手中是否有导航物品
+        var mainHandItem = player.getMainHandItem();
+        if (mainHandItem.is(ModItems.NAVIGATION) || mainHandItem.is(ModItems.DEBUG_NAV)) {
+            // 取消默认的滚动行为
+            event.setCanceled(true);
+
+            // 根据滚动方向切换模式
+            double scrollDelta = event.getScrollDeltaY();
+            boolean forward = scrollDelta > 0; // 向下滚动切换到下一个模式
+            NavigationItem.switchNavigationMode(mainHandItem, forward);
+
+            // 更新玩家物品栏
+            player.inventoryMenu.sendAllDataToRemote();
+        }
+    }
 
     @SubscribeEvent
     public static void onTick(RenderLevelStageEvent event) {

@@ -1,6 +1,9 @@
-package io.github.kunosayo.simplepathfinder.nav;
+package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.codec.ArrayCodecs;
+import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
+import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.NavChunk;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;

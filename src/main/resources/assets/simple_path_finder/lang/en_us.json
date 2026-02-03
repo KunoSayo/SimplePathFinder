@@ -1,8 +1,0 @@
-{
-  "simple_path_finder.build.nav.success": "成功构建导航区块",
-  "simple_path_finder.build.nav.limited": "当前导航区块数量超过上限",
-  "simple_path_finder.build.nav.failed": "当前环境不易于构造寻路",
-  "simple_path_finder.remove.current.success": "成功移除当前所在区块导航",
-  "simple_path_finder.failed.not_found": "未能找到导航区块",
-  "item.simple_path_finder.debug_nav": "导航调试棍"
-}

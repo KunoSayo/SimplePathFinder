@@ -1,0 +1,18 @@
+{
+  "item.navigation_mode.add_nav": "添加导航",
+  "item.navigation_mode.add_nav.desc": "在点击位置添加导航点",
+  "item.navigation_mode.default": "默认显示",
+  "item.navigation_mode.default.desc": "显示导航路径",
+  "item.navigation_mode.remove_nav": "移除导航",
+  "item.navigation_mode.remove_nav.desc": "移除导航路径",
+  "item.simple_path_finder.debug_nav": "导航调试棍",
+  "item.simple_path_finder.navigation": "导航罗盘",
+  "simple_path_finder": "简单路径查找器",
+  "simple_path_finder.build.nav.failed": "当前环境不易于构造寻路",
+  "simple_path_finder.build.nav.limited": "当前导航区块数量超过上限",
+  "simple_path_finder.build.nav.success": "成功构建导航区块",
+  "simple_path_finder.failed.not_found": "未能找到导航区块",
+  "simple_path_finder.remove.current.success": "成功移除当前所在区块导航",
+  "tooltip.navigation.current_mode": "当前模式：",
+  "tooltip.navigation.switch_mode": "按住Shift + 滚动鼠标滚轮切换模式"
+}

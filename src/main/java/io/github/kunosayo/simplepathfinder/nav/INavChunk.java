@@ -1,5 +1,7 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
+import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
+import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 

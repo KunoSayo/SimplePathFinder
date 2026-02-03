@@ -1,0 +1,18 @@
+{
+  "item.navigation_mode.add_nav": "Add Navigation",
+  "item.navigation_mode.add_nav.desc": "Add navigation at clicked position",
+  "item.navigation_mode.default": "Default Display",
+  "item.navigation_mode.default.desc": "Displays navigation path",
+  "item.navigation_mode.remove_nav": "Remove Navigation",
+  "item.navigation_mode.remove_nav.desc": "Remove navigation path",
+  "item.simple_path_finder.debug_nav": "Debug Navigation Stick",
+  "item.simple_path_finder.navigation": "Navigation Compass",
+  "simple_path_finder": "Simple Path Finder",
+  "simple_path_finder.build.nav.failed": "Current environment is not suitable for pathfinding",
+  "simple_path_finder.build.nav.limited": "Current navigation chunk count exceeds limit",
+  "simple_path_finder.build.nav.success": "Successfully built navigation chunk",
+  "simple_path_finder.failed.not_found": "Navigation chunk not found",
+  "simple_path_finder.remove.current.success": "Successfully removed navigation in current chunk",
+  "tooltip.navigation.current_mode": "Current Mode:",
+  "tooltip.navigation.switch_mode": "Hold Shift + Scroll to switch mode"
+}

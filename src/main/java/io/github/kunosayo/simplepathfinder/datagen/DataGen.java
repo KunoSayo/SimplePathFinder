@@ -1,24 +1,21 @@
 package io.github.kunosayo.simplepathfinder.datagen;
 
-
-import io.github.kunosayo.simplepathfinder.SimplePathFinder;
-import net.minecraft.data.PackOutput;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
-@EventBusSubscriber(modid = SimplePathFinder.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = "simple_path_finder", bus = EventBusSubscriber.Bus.MOD)
 public class DataGen {
     @SubscribeEvent
     public static void gatherData(GatherDataEvent event) {
-        var generator = event.getGenerator();
-        PackOutput output = generator.getPackOutput();
-        ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
-        var provider = event.getLookupProvider();
+        // 创建双语生成器
+        LangGen bilingualProvider = new LangGen(event.getGenerator().getPackOutput());
 
+        // 初始化所有翻译
+        bilingualProvider.initializeTranslations();
 
+        // 注册英文和中文语言提供者
+        event.getGenerator().addProvider(true, bilingualProvider.getEnglishProvider());
+        event.getGenerator().addProvider(true, bilingualProvider.getChineseProvider());
     }
-
 }
