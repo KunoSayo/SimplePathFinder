@@ -4,6 +4,7 @@ import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.data.PackOutput;
 import net.minecraft.world.item.Item;
+import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.common.data.LanguageProvider;
 
 import java.util.ArrayList;
@@ -71,6 +72,13 @@ public class LangGen {
     /**
      * 快速添加物品双语翻译
      */
+    public void addItem(DeferredItem<Item> item, String chineseName, String englishName) {
+        add(item.get().getDescriptionId(), chineseName, englishName);
+    }
+
+    /**
+     * 添加物品双语翻译（接受Item类型）
+     */
     public void addItem(Item item, String chineseName, String englishName) {
         add(item.getDescriptionId(), chineseName, englishName);
     }
@@ -95,9 +103,11 @@ public class LangGen {
         add(SimplePathFinder.MOD_ID, "简单路径查找器", "Simple Path Finder");
 
         // 物品名称
-        addItem(ModItems.NAVIGATION.get(), "导航罗盘", "Navigation Compass");
+        addItem(ModItems.NAVIGATION, "导航罗盘", "Navigation Compass");
         // DEBUG_NAV物品翻译（使用registerSimpleItem注册时，addItem方法会自动添加"item."前缀）
-        addItem(ModItems.DEBUG_NAV.get(), "导航调试棍", "Debug Navigation Stick");
+        addItem(ModItems.DEBUG_NAV, "导航调试棍", "Debug Navigation Stick");
+        // PLAYER_LOCATOR物品翻译
+        addItem(ModItems.PLAYER_LOCATOR, "玩家定位器", "Player Locator");
 
         // 导航模式
         add("item.navigation_mode.default", "默认显示", "Default Display");
@@ -112,6 +122,14 @@ public class LangGen {
         // 控制提示
         add("tooltip.navigation.switch_mode", "按住Shift + 滚动鼠标滚轮切换模式", "Hold Shift + Scroll to switch mode");
         add("tooltip.navigation.current_mode", "当前模式：", "Current Mode:");
+
+        // 玩家定位器提示
+        add("tooltip.player_locator.bound", "已绑定", "Bound");
+        add("tooltip.player_locator.unbound", "未绑定", "Unbound");
+        add("tooltip.player_locator.usage", "按住Shift + 右键绑定玩家", "Hold Shift + Right-click to bind player");
+
+        // 玩家定位器系统消息
+        add("item.simple_path_finder.player_locator.bound", "已将定位器绑定到玩家：", "Locator bound to player: ");
 
         // 系统消息
         add("simple_path_finder.build.nav.success", "成功构建导航区块", "Successfully built navigation chunk");
