@@ -3,6 +3,7 @@ package io.github.kunosayo.simplepathfinder.nav;
 import io.github.kunosayo.simplepathfinder.config.NavBuildConfig;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
+import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -181,6 +182,12 @@ public class LevelNavData {
     public long getEncodedBytes() {
         var buffer = Unpooled.buffer();
         STREAM_CODEC.encode(buffer, this);
+        return buffer.writerIndex();
+    }
+
+    public long getEncodedCompressedBytes() {
+        var buffer = Unpooled.buffer();
+        SyncLevelNavDataPacket.STREAM_CODEC.encode(buffer, new SyncLevelNavDataPacket(this));
         return buffer.writerIndex();
     }
 

@@ -34,7 +34,9 @@ public final class SimplePathFinderCommand {
                                             long total = data.levelNavData.getTotalLayers();
                                             long chunks = data.levelNavData.getTotalNavChunks();
                                             long bytes = data.levelNavData.getEncodedBytes();
-                                            context.getSource().source.sendSystemMessage(Component.literal(String.format("[SPF][NavData] Chunks: %d, Layers: %d\nBytes: %d", chunks, total, bytes)));
+                                            long compressed = data.levelNavData.getEncodedCompressedBytes();
+                                            context.getSource().source.sendSystemMessage(Component.literal(String.format("[SPF][NavData] Chunks: %d, Layers: %d\nBytes: %d (Compressed %d)",
+                                                    chunks, total, bytes, compressed)));
                                         }
                                     }
 
