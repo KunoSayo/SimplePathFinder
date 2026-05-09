@@ -22,7 +22,7 @@ import java.util.Optional;
 
 public class LevelNavData {
     public static final StreamCodec<ByteBuf, ChunkPos> CHUNK_POS_STREAM_CODEC = StreamCodec
-            .composite(ByteBufCodecs.VAR_LONG, ChunkPos::toLong, ChunkPos::new);
+            .composite(ByteBufCodecs.VAR_LONG, ChunkPos::pack, ChunkPos::unpack);
 
     public static final StreamCodec<ByteBuf, LevelNavData> STREAM_CODEC = StreamCodec.composite(ByteBufCodecs.map(HashMap::new, CHUNK_POS_STREAM_CODEC, NavChunk.STREAM_CODEC),
             levelNavData -> levelNavData.navChunks, LevelNavData::new);
@@ -103,7 +103,7 @@ public class LevelNavData {
 
         net.minecraft.core.BlockPos finalGroundPos = groundPos;
         boolean[] result = new boolean[]{false};
-        getNavChunk(new ChunkPos(groundPos), true).ifPresentOrElse(navChunk -> navChunk
+        getNavChunk(ChunkPos.containing(groundPos), true).ifPresentOrElse(navChunk -> navChunk
                 .getLayer(layer, () -> (LayeredNavChunk) LayeredNavChunk.getDefault()).ifPresentOrElse(layeredNavChunk -> {
                     if (layeredNavChunk instanceof LayeredNavChunk) {
                         LayeredNavChunk chunk = (LayeredNavChunk) layeredNavChunk;
@@ -120,7 +120,7 @@ public class LevelNavData {
     }
 
     public Optional<NavResult> findNav(BlockPos from, BlockPos to) {
-        var startChunk = new ChunkPos(from);
+        var startChunk = ChunkPos.containing(from);
         var startNavChunk = this.navChunks.get(startChunk);
         if (startNavChunk == null) {
             return Optional.empty();
@@ -136,12 +136,11 @@ public class LevelNavData {
         boolean[] result = new boolean[]{false};
         getNavChunk(acp, true).ifPresent(navChunk -> navChunk
                 .getLayer(layer, () -> (LayeredNavChunk) LayeredNavChunk.getDefault()).ifPresent(layeredNavChunk -> {
-                    if (layeredNavChunk instanceof LayeredNavChunk) {
-                        LayeredNavChunk chunk = (LayeredNavChunk) layeredNavChunk;
+                    if (layeredNavChunk instanceof LayeredNavChunk chunk) {
                         chunk.setParentChunk(navChunk);
                         chunk.setLayer(layer);
 
-                        levelNavData.getNavChunk(new ChunkPos(acp.x - 1, acp.z), layer)
+                        levelNavData.getNavChunk(new ChunkPos(acp.x() - 1, acp.z()), layer)
                                 .filter(navChunk1 -> navChunk1.canWalk(15, 0))
                                 .ifPresentOrElse(navChunk1 -> {
                                     int y = navChunk1.getWalkY(15, 0);
@@ -149,7 +148,7 @@ public class LevelNavData {
                                     var groundPos = getGroundPos(level, blockPos);
                                     layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
                                     result[0] = true;
-                                }, () -> levelNavData.getNavChunk(new ChunkPos(acp.x, acp.z - 1), layer).ifPresent(navChunk1 -> {
+                                }, () -> levelNavData.getNavChunk(new ChunkPos(acp.x(), acp.z() - 1), layer).ifPresent(navChunk1 -> {
                                     int y = navChunk1.getWalkY(0, 15);
                                     var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(0));
                                     var groundPos = getGroundPos(level, blockPos);

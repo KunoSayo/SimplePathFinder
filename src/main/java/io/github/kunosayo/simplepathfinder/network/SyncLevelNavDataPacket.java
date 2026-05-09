@@ -6,12 +6,12 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 
 public class SyncLevelNavDataPacket implements CustomPacketPayload {
-    public static final Type<SyncLevelNavDataPacket> NETWORK_TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SimplePathFinder.MOD_ID, "sync_level_nav"));
+    public static final Type<SyncLevelNavDataPacket> NETWORK_TYPE = new Type<>(Identifier.fromNamespaceAndPath(SimplePathFinder.MOD_ID, "sync_level_nav"));
 
 
     public static final StreamCodec<ByteBuf, SyncLevelNavDataPacket> STREAM_CODEC = StreamCodec

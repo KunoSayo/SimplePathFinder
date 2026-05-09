@@ -6,7 +6,6 @@ import io.github.kunosayo.simplepathfinder.client.event.NavigationRenderTriggerE
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
-import io.github.kunosayo.simplepathfinder.item.NavigationMode;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import net.minecraft.client.Minecraft;
@@ -29,7 +28,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import org.apache.logging.log4j.LogManager;
 
 
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT, modid = SimplePathFinder.MOD_ID)
+@EventBusSubscriber(value = Dist.CLIENT, modid = SimplePathFinder.MOD_ID)
 public class ClientListener {
     private static LevelNavData getNavData(Player player) {
         if (player.level() instanceof ServerLevel sl) {
@@ -48,7 +47,7 @@ public class ClientListener {
             SimplePathFinder.clientNavResult = navResult;
         });
         long endTime = System.currentTimeMillis();
-        LogManager.getLogger().info("nav in " + (endTime - startTime) + "ms");
+        LogManager.getLogger().info("nav in {}ms", endTime - startTime);
     }
 
     @SubscribeEvent
@@ -100,8 +99,7 @@ public class ClientListener {
     }
 
     @SubscribeEvent
-    public static void onTick(RenderLevelStageEvent event) {
-        var state = event.getStage();
+    public static void onTick(RenderLevelStageEvent.AfterSky event) {
         var player = Minecraft.getInstance().player;
         if (player == null) {
             return;
@@ -111,7 +109,7 @@ public class ClientListener {
             if (NeoForge.EVENT_BUS.post(renderNavEvent).isCanceled()) {
                 return;
             }
-            if (state == RenderLevelStageEvent.Stage.AFTER_SKY) {
+            if (event instanceof RenderLevelStageEvent.AfterSky) {
                 var level = player.level();
                 LevelNavData data;
                 if (level instanceof ServerLevel sl) {
@@ -149,14 +147,14 @@ public class ClientListener {
                         layerRangeLeft = Integer.MIN_VALUE;
                     }
                     amount = Math.min(Math.max(amount, 3), 16);
-                    var currentChunkPos = new ChunkPos(player.blockPosition());
+                    var currentChunkPos = ChunkPos.containing(player.blockPosition());
 
                     for (int offsetX = -amount; offsetX <= amount; offsetX++) {
                         for (int offsetZ = -amount; offsetZ <= amount; offsetZ++) {
                             final int dis = Math.abs(offsetX) + Math.abs(offsetZ);
                             if (dis < amount) {
 
-                                var chunkPos = new ChunkPos(currentChunkPos.x + offsetX, currentChunkPos.z + offsetZ);
+                                var chunkPos = new ChunkPos(currentChunkPos.x() + offsetX, currentChunkPos.z() + offsetZ);
                                 int finalLayerRangeRight = layerRangeRight;
                                 data.getNavChunk(chunkPos, false)
                                         .ifPresent(navChunk -> {
@@ -171,19 +169,19 @@ public class ClientListener {
                                                         var blockPos = new BlockPos(chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z));
                                                         if (layer.isWalkYValid(y)) {
                                                             if (layer.getDistance(x, z, false) < 0) {
-                                                                lr.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
-                                                                        true, blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
+                                                                level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
+                                                                        true, true, blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
                                                             }
                                                             if (layer.getDistance(x, z, true) < 0) {
-                                                                lr.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
-                                                                        true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0, 0.0, 0.0, 0.0);
+                                                                level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
+                                                                        true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0, 0.0, 0.0, 0.0);
                                                             }
                                                             if (layer.getLayer() >= 0) {
-                                                                lr.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f + layer.getLayer() * 0.125f, 1.0f - layer.getLayer() * 0.125f, 0.0f),
-                                                                        true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
+                                                                level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f + layer.getLayer() * 0.125f, 1.0f - layer.getLayer() * 0.125f, 0.0f),
+                                                                        true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
                                                             } else {
-                                                                lr.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f - layer.getLayer() * 0.125f, 0.0f, 1.0f + layer.getLayer() * 0.125f),
-                                                                        true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
+                                                                level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f - layer.getLayer() * 0.125f, 0.0f, 1.0f + layer.getLayer() * 0.125f),
+                                                                        true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
                                                             }
                                                         }
                                                     }

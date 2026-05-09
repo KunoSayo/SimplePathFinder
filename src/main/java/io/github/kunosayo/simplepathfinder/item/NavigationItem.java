@@ -2,48 +2,55 @@ package io.github.kunosayo.simplepathfinder.item;
 
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 public class NavigationItem extends Item {
-    public NavigationItem(Properties properties) {
-        super(properties);
+    public NavigationItem(Identifier id) {
+        var key = ResourceKey.create(Registries.ITEM, id);
+        super(new Properties().setId(key).stacksTo(1));
     }
 
     @Override
-    public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level level, @NotNull Player player, @NotNull InteractionHand hand) {
+    public @NotNull InteractionResult use(@NotNull Level level, @NotNull Player player, @NotNull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             // 如果是服务端，处理物品功能
             handleNavigationItem(level, (ServerPlayer) player, stack);
         }
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        return InteractionResult.SUCCESS_SERVER;
     }
 
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, Item.@NotNull TooltipContext context, @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
+    public void appendHoverText(@NonNull ItemStack itemStack, @NonNull TooltipContext context, @NonNull TooltipDisplay display, Consumer<Component> builder, @NonNull TooltipFlag tooltipFlag) {
         // 获取当前模式
-        NavigationMode currentMode = getNavigationMode(stack);
+        NavigationMode currentMode = getNavigationMode(itemStack);
 
         // 添加当前模式提示
-        tooltip.add(Component.translatable("tooltip.navigation.current_mode")
+        builder.accept(Component.translatable("tooltip.navigation.current_mode")
                 .append(Component.translatable(currentMode.getTranslationKey()).withColor(modeToColor(currentMode))));
 
         // 添加切换模式提示
-        tooltip.add(Component.translatable("tooltip.navigation.switch_mode")
+        builder.accept(Component.translatable("tooltip.navigation.switch_mode")
                 .withStyle(style -> style.withColor(0x7F7F7F)));
     }
+
 
     /**
      * 获取导航模式

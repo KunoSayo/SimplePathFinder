@@ -11,6 +11,8 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.PermissionLevel;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -21,7 +23,7 @@ public final class SimplePathFinderCommand {
     public static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralCommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf")
                 .then(Commands.literal("admin")
-                        .requires(commandSourceStack -> commandSourceStack.hasPermission(2))
+                        .requires(commandSourceStack -> commandSourceStack.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 
                         .then(Commands.literal("stats")
                                 .executes(context -> {
@@ -48,7 +50,7 @@ public final class SimplePathFinderCommand {
                                                     if (data.levelNavData.removeNavChunk(player)) {
                                                         data.setDirty();
                                                         player.sendSystemMessage(Component.translatable("simple_path_finder.remove.current.success"));
-                                                        if (player instanceof ServerPlayer sp && !level.isClientSide) {
+                                                        if (player instanceof ServerPlayer sp && !level.isClientSide()) {
                                                             PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
                                                         }
                                                         return 1;
@@ -73,7 +75,7 @@ public final class SimplePathFinderCommand {
                                                                         var level = player.level();
                                                                         if (level instanceof ServerLevel sl) {
                                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
-                                                                            var cp = new ChunkPos(player.blockPosition());
+                                                                            var cp = ChunkPos.containing(player.blockPosition());
                                                                             if (data.levelNavData.buildForPlayer(player, layer)) {
                                                                                 data.setDirty();
 
@@ -83,14 +85,14 @@ public final class SimplePathFinderCommand {
                                                                                     if (x == 0 && z == 0) {
                                                                                         continue;
                                                                                     }
-                                                                                    var acp = new ChunkPos(x + cp.x, z + cp.z);
+                                                                                    var acp = new ChunkPos(x + cp.x(), z + cp.z());
                                                                                     if (data.levelNavData.buildFromLayerStart(level, data.levelNavData, layer, acp)) {
                                                                                         data.setDirty();
                                                                                     }
                                                                                 }
                                                                             }
                                                                             if (data.isDirty()) {
-                                                                                if (player instanceof ServerPlayer sp && !level.isClientSide) {
+                                                                                if (player instanceof ServerPlayer sp && !level.isClientSide()) {
                                                                                     PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
                                                                                 }
                                                                             }
@@ -109,7 +111,7 @@ public final class SimplePathFinderCommand {
                                                                     var data = LevelNavDataSavedData.loadFromLevel(sl);
                                                                     if (data.levelNavData.buildForPlayer(player, layer)) {
                                                                         data.setDirty();
-                                                                        if (player instanceof ServerPlayer sp && !level.isClientSide) {
+                                                                        if (player instanceof ServerPlayer sp && !level.isClientSide()) {
                                                                             PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
                                                                         }
                                                                     }
@@ -125,7 +127,7 @@ public final class SimplePathFinderCommand {
                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
                                                             if (data.levelNavData.buildForPlayer(player, (byte) 0)) {
                                                                 data.setDirty();
-                                                                if (player instanceof ServerPlayer sp && !level.isClientSide) {
+                                                                if (player instanceof ServerPlayer sp && !level.isClientSide()) {
                                                                     PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
                                                                 }
                                                             }

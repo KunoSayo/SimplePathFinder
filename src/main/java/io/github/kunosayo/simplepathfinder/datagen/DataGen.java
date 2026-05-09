@@ -2,13 +2,13 @@ package io.github.kunosayo.simplepathfinder.datagen;
 
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
+import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
-@EventBusSubscriber(modid = "simple_path_finder", bus = EventBusSubscriber.Bus.MOD)
-public class DataGen {
+@EventBusSubscriber(modid = "simple_path_finder")
+public class DataGen implements IModBusEvent {
     @SubscribeEvent
-    public static void gatherData(GatherDataEvent event) {
+    public static void gatherData(GatherDataEvent.Client event) {
         // 创建双语生成器
         LangGen bilingualProvider = new LangGen(event.getGenerator().getPackOutput());
 
@@ -20,6 +20,6 @@ public class DataGen {
         event.getGenerator().addProvider(true, bilingualProvider.getChineseProvider());
 
         // 注册物品模型生成器 - 仅在客户端生成时运行
-        event.getGenerator().addProvider(event.includeClient(), new ItemModelGen(event.getGenerator().getPackOutput(), event.getExistingFileHelper()));
+//        event.getGenerator().addProvider(true, new ItemModelGen(event.getGenerator().getPackOutput()));
     }
 }

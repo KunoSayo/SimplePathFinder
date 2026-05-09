@@ -28,7 +28,7 @@ public class NavPathFinder {
     }
 
     private void init() {
-        var startChunk = new ChunkPos(start);
+        var startChunk = ChunkPos.containing(start);
         levelNavData.getNavChunk(startChunk, false)
                 .flatMap(navChunk -> navChunk.getLayerNav(start))
                 .ifPresent(layeredNavChunk -> {
@@ -63,7 +63,7 @@ public class NavPathFinder {
             boolean isSame = NavUtil.isSameChunk(a, t);
             var thatChunk = navChunk;
             if (!isSame) {
-                Optional<NavChunk> thatChunkOpt = levelNavData.getNavChunk(new ChunkPos(t), false);
+                Optional<NavChunk> thatChunkOpt = levelNavData.getNavChunk(ChunkPos.containing(t), false);
                 if (thatChunkOpt.isEmpty()) {
                     continue;
                 }
@@ -86,7 +86,7 @@ public class NavPathFinder {
             if (node.pos().distManhattan(this.end) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            getEdge(node.layer().getParentChunk(), node.layer(), node.pos(), new ChunkPos(node.pos()), edgeInfo -> {
+            getEdge(node.layer().getParentChunk(), node.layer(), node.pos(), ChunkPos.containing(node.pos()), edgeInfo -> {
                 if (node.lastNode != null) {
                     var lastPos = node.lastNode.pos;
                     if (lastPos.getX() == edgeInfo.targetPos.getX() && lastPos.getZ() == edgeInfo.targetPos.getZ()) {

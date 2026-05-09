@@ -28,7 +28,7 @@ public class ModNavResult {
 
     public void render(LevelRenderer lr, Player player) {
         for (BlockPos blockPos : posInThePath) {
-            lr.addParticle(new DustParticleOptions(new Vector3f(1.0f, 1.0f, 1.0f), 1.0f), false, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
+            player.level().addParticle(new DustParticleOptions(0xffffffff, 1.0f), false, false, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
         }
     }
 }

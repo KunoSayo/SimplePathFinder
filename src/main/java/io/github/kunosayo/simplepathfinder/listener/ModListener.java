@@ -4,11 +4,12 @@ import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-@EventBusSubscriber(modid = SimplePathFinder.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
-public class ModListener {
+@EventBusSubscriber(modid = SimplePathFinder.MOD_ID)
+public class ModListener implements IModBusEvent {
     public static final String NETWORK_VERSION = "1.0.0";
 
 

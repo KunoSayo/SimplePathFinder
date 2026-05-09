@@ -223,7 +223,7 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         final int startZ = Mth.positiveModulo(trustedCenter.getZ(), 16);
         walkY[convertToIndex(startX, startZ)] = (short) trustedCenter.getY();
 
-        var chunkPos = new ChunkPos(trustedCenter);
+        var chunkPos = ChunkPos.containing(trustedCenter);
         class Solver {
             final ArrayDeque<int[]> q = new ArrayDeque<>();
 
