@@ -109,92 +109,90 @@ public class ClientListener {
             if (NeoForge.EVENT_BUS.post(renderNavEvent).isCanceled()) {
                 return;
             }
-            if (event instanceof RenderLevelStageEvent.AfterSky) {
-                var level = player.level();
-                LevelNavData data;
-                if (level instanceof ServerLevel sl) {
-                    data = LevelNavDataSavedData.loadFromLevel(sl).levelNavData;
-                } else {
-                    data = SimplePathFinder.clientNavData;
+            var level = player.level();
+            LevelNavData data;
+            if (level instanceof ServerLevel sl) {
+                data = LevelNavDataSavedData.loadFromLevel(sl).levelNavData;
+            } else {
+                data = SimplePathFinder.clientNavData;
+            }
+            var lr = event.getLevelRenderer();
+            if (data != null) {
+                int amount = player.getMainHandItem().getCount();
+                NavResult clientNavResult = SimplePathFinder.clientNavResult;
+                if (amount == 64) {
+                    if (clientNavResult != null) {
+                        clientNavResult.render(event.getLevelRenderer(), player);
+                    }
+                    return;
                 }
-                var lr = event.getLevelRenderer();
-                if (data != null) {
-                    int amount = player.getMainHandItem().getCount();
-                    NavResult clientNavResult = SimplePathFinder.clientNavResult;
-                    if (amount == 64) {
-                        if (clientNavResult != null) {
-                            clientNavResult.render(event.getLevelRenderer(), player);
-                        }
+                if (amount == 63) {
+                    if (clientNavResult != null) {
+                        doNav(player, clientNavResult.getNavTarget());
+                        clientNavResult.render(event.getLevelRenderer(), player);
                         return;
                     }
-                    if (amount == 63) {
-                        if (clientNavResult != null) {
-                            doNav(player, clientNavResult.getNavTarget());
-                            clientNavResult.render(event.getLevelRenderer(), player);
-                            return;
-                        }
+                }
+                if (amount >= 62) {
+                    if (clientNavResult != null) {
+                        clientNavResult.render(event.getLevelRenderer(), player);
                     }
-                    if (amount >= 62) {
-                        if (clientNavResult != null) {
-                            clientNavResult.render(event.getLevelRenderer(), player);
-                        }
-                    }
-                    int layerRangeLeft;
-                    int layerRangeRight = Integer.MAX_VALUE;
-                    if (amount > 16 && amount <= 48) {
-                        layerRangeLeft = layerRangeRight = amount - 32;
-                    } else {
-                        layerRangeLeft = Integer.MIN_VALUE;
-                    }
-                    amount = Math.min(Math.max(amount, 3), 16);
-                    var currentChunkPos = ChunkPos.containing(player.blockPosition());
+                }
+                int layerRangeLeft;
+                int layerRangeRight = Integer.MAX_VALUE;
+                if (amount > 16 && amount <= 48) {
+                    layerRangeLeft = layerRangeRight = amount - 32;
+                } else {
+                    layerRangeLeft = Integer.MIN_VALUE;
+                }
+                amount = Math.min(Math.max(amount, 3), 16);
+                var currentChunkPos = ChunkPos.containing(player.blockPosition());
 
-                    for (int offsetX = -amount; offsetX <= amount; offsetX++) {
-                        for (int offsetZ = -amount; offsetZ <= amount; offsetZ++) {
-                            final int dis = Math.abs(offsetX) + Math.abs(offsetZ);
-                            if (dis < amount) {
+                for (int offsetX = -amount; offsetX <= amount; offsetX++) {
+                    for (int offsetZ = -amount; offsetZ <= amount; offsetZ++) {
+                        final int dis = Math.abs(offsetX) + Math.abs(offsetZ);
+                        if (dis < amount) {
 
-                                var chunkPos = new ChunkPos(currentChunkPos.x() + offsetX, currentChunkPos.z() + offsetZ);
-                                int finalLayerRangeRight = layerRangeRight;
-                                data.getNavChunk(chunkPos, false)
-                                        .ifPresent(navChunk -> {
-                                            for (var layer : navChunk.layers) {
-                                                if (layer.getLayer() > finalLayerRangeRight || layer.getLayer() < layerRangeLeft) {
-                                                    continue;
-                                                }
-                                                for (int x = 0; x < 16; x++) {
-                                                    for (int z = 0; z < 16; z++) {
-                                                        int y = layer.getWalkY(x, z);
+                            var chunkPos = new ChunkPos(currentChunkPos.x() + offsetX, currentChunkPos.z() + offsetZ);
+                            int finalLayerRangeRight = layerRangeRight;
+                            data.getNavChunk(chunkPos, false)
+                                    .ifPresent(navChunk -> {
+                                        for (var layer : navChunk.layers) {
+                                            if (layer.getLayer() > finalLayerRangeRight || layer.getLayer() < layerRangeLeft) {
+                                                continue;
+                                            }
+                                            for (int x = 0; x < 16; x++) {
+                                                for (int z = 0; z < 16; z++) {
+                                                    int y = layer.getWalkY(x, z);
 
-                                                        var blockPos = new BlockPos(chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z));
-                                                        if (layer.isWalkYValid(y)) {
-                                                            if (layer.getDistance(x, z, false) < 0) {
-                                                                level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
-                                                                        true, true, blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
-                                                            }
-                                                            if (layer.getDistance(x, z, true) < 0) {
-                                                                level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
-                                                                        true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0, 0.0, 0.0, 0.0);
-                                                            }
-                                                            if (layer.getLayer() >= 0) {
-                                                                level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f + layer.getLayer() * 0.125f, 1.0f - layer.getLayer() * 0.125f, 0.0f),
-                                                                        true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
-                                                            } else {
-                                                                level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f - layer.getLayer() * 0.125f, 0.0f, 1.0f + layer.getLayer() * 0.125f),
-                                                                        true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
-                                                            }
+                                                    var blockPos = new BlockPos(chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z));
+                                                    if (layer.isWalkYValid(y)) {
+                                                        if (layer.getDistance(x, z, false) < 0) {
+                                                            level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
+                                                                    true, true, blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
+                                                        }
+                                                        if (layer.getDistance(x, z, true) < 0) {
+                                                            level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.0f, 0.0f, 0.0f),
+                                                                    true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0, 0.0, 0.0, 0.0);
+                                                        }
+                                                        if (layer.getLayer() >= 0) {
+                                                            level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f + layer.getLayer() * 0.125f, 1.0f - layer.getLayer() * 0.125f, 0.0f),
+                                                                    true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
+                                                        } else {
+                                                            level.addParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0.125f - layer.getLayer() * 0.125f, 0.0f, 1.0f + layer.getLayer() * 0.125f),
+                                                                    true, true, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0.0, 0.0, 0.0);
                                                         }
                                                     }
                                                 }
                                             }
-                                        });
-                            }
+                                        }
+                                    });
                         }
                     }
-
                 }
 
             }
+
         }
 
     }

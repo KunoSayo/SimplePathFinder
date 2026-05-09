@@ -43,7 +43,7 @@ public final class SimplePathFinderCommand {
                         .then(Commands.literal("nav")
                                 .then(Commands.literal("remove")
                                         .then(Commands.literal("current").executes(context -> {
-                                            if (context.getSource().source instanceof Player player) {
+                                            if (context.getSource().getEntity() instanceof Player player) {
                                                 var level = player.level();
                                                 if (level instanceof ServerLevel sl) {
                                                     var data = LevelNavDataSavedData.loadFromLevel(sl);
@@ -71,7 +71,7 @@ public final class SimplePathFinderCommand {
                                                                     int dx = context.getArgument("dx", Integer.class);
                                                                     int dz = context.getArgument("dz", Integer.class);
 
-                                                                    if (context.getSource().source instanceof Player player) {
+                                                                    if (context.getSource().getEntity() instanceof Player player) {
                                                                         var level = player.level();
                                                                         if (level instanceof ServerLevel sl) {
                                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
@@ -105,7 +105,7 @@ public final class SimplePathFinderCommand {
                                                 .then(Commands.argument("layer", LAYER_ARG)
                                                         .executes(context -> {
                                                             byte layer = context.getArgument("layer", Integer.class).byteValue();
-                                                            if (context.getSource().source instanceof Player player) {
+                                                            if (context.getSource().getEntity() instanceof Player player) {
                                                                 var level = player.level();
                                                                 if (level instanceof ServerLevel sl) {
                                                                     var data = LevelNavDataSavedData.loadFromLevel(sl);
@@ -121,7 +121,7 @@ public final class SimplePathFinderCommand {
                                                         }))
                                                 .executes(context -> {
 
-                                                    if (context.getSource().source instanceof Player player) {
+                                                    if (context.getSource().getEntity() instanceof Player player) {
                                                         var level = player.level();
                                                         if (level instanceof ServerLevel sl) {
                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
