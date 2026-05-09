@@ -27,14 +27,14 @@ public final class SimplePathFinderCommand {
 
                         .then(Commands.literal("stats")
                                 .executes(context -> {
-                                    var src = context.getSource().source;
+                                    var src = context.getSource().getEntity();
                                     if (src instanceof Player player) {
                                         if (player.level() instanceof ServerLevel sl) {
                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
                                             long total = data.levelNavData.getTotalLayers();
                                             long chunks = data.levelNavData.getTotalNavChunks();
                                             long bytes = data.levelNavData.getEncodedBytes();
-                                            src.sendSystemMessage(Component.literal(String.format("[SPF][NavData] Chunks: %d, Layers: %d\nBytes: %d", chunks, total, bytes)));
+                                            context.getSource().source.sendSystemMessage(Component.literal(String.format("[SPF][NavData] Chunks: %d, Layers: %d\nBytes: %d", chunks, total, bytes)));
                                         }
                                     }
 
@@ -64,8 +64,8 @@ public final class SimplePathFinderCommand {
 
                                 .then(Commands.literal("build")
                                         .then(Commands.argument("layer", LAYER_ARG)
-                                                .then(Commands.argument("dx", IntegerArgumentType.integer(0, 15))
-                                                        .then(Commands.argument("dz", IntegerArgumentType.integer(0, 15))
+                                                .then(Commands.argument("dx", IntegerArgumentType.integer(0, 128))
+                                                        .then(Commands.argument("dz", IntegerArgumentType.integer(0, 128))
                                                                 .executes(context -> {
                                                                     byte layer = context.getArgument("layer", Integer.class).byteValue();
                                                                     int dx = context.getArgument("dx", Integer.class);
