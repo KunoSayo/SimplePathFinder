@@ -58,7 +58,7 @@ public class ClientListener {
                         .then(Commands.argument("target", BlockPosArgument.blockPos())
                                 .executes(context -> {
                                     var target = BlockPosArgument.getBlockPos(context, "target");
-                                    if (context.getSource().source instanceof Player player) {
+                                    if (context.getSource().getEntity() instanceof Player player) {
                                         doNav(player, target);
                                     }
                                     return 0;
