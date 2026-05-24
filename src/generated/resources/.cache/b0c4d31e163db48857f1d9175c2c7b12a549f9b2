@@ -1,0 +1,6 @@
+// 26.1.2	2026-05-24T12:38:12.1806645	Model Definitions - simple_path_finder
+d8a25b1a8fd5ad2b9bb7f39194d0199847b92b19 assets/simple_path_finder/items/debug_nav.json
+72d53a32a133454e63413cdb040a23706659eebf assets/simple_path_finder/items/locator.json
+2174df4bf329fc3cded304514b8d52cf2830c1dd assets/simple_path_finder/items/navigation.json
+f9c7fbdd2ae65ffa13a64c6ea5ef9aeeb7c4877c assets/simple_path_finder/models/item/locator.json
+f3bafc751359c8499c154117fe0b18bef53b1dfe assets/simple_path_finder/models/item/navigation.json

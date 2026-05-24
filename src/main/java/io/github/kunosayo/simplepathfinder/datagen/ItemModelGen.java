@@ -6,6 +6,7 @@ import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.ModelProvider;
 import net.minecraft.client.data.models.model.ItemModelUtils;
+import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.Identifier;
 
@@ -30,6 +31,8 @@ public class ItemModelGen extends ModelProvider {
         // 调试导航棍 - 使用原木棍纹理
         itemModels.itemModelOutput.accept(ModItems.DEBUG_NAV.get(), ItemModelUtils.plainModel(Identifier.withDefaultNamespace("item/stick")));
 
+        itemModels.generateFlatItem(ModItems.NAVIGATION.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(ModItems.LOCATOR.get(), ModelTemplates.FLAT_ITEM);
     }
 
     /**

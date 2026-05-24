@@ -1,6 +1,6 @@
 package io.github.kunosayo.simplepathfinder.item;
 
-import io.github.kunosayo.simplepathfinder.data.PlayerLocatorData;
+import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -20,11 +20,10 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * 玩家定位器物品
- * 按住Shift + 右键点击时，会写入当前玩家的UUID
+ * 定位器物品
  */
-public class PlayerLocatorItem extends Item {
-    public PlayerLocatorItem(Identifier id) {
+public class LocatorItem extends Item {
+    public LocatorItem(Identifier id) {
         var key = ResourceKey.create(Registries.ITEM, id);
         super(new Properties().setId(key).stacksTo(1));
     }
@@ -37,7 +36,7 @@ public class PlayerLocatorItem extends Item {
         if (!level.isClientSide() && player.isShiftKeyDown()) {
             // 按住Shift + 右键，写入玩家UUID
             setPlayerUuid(stack, player.getUUID());
-            player.sendSystemMessage(Component.translatable("item.simple_path_finder.player_locator.bound",
+            player.sendSystemMessage(Component.translatable("item.simple_path_finder.locator.bound",
                     player.getName()));
         }
 
@@ -46,19 +45,19 @@ public class PlayerLocatorItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack itemStack, TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag tooltipFlag) {
-        PlayerLocatorData data = getPlayerLocatorData(itemStack);
+        LocatorData data = getPlayerLocatorData(itemStack);
 
         if (data.hasPlayer()) {
-            builder.accept(Component.translatable("tooltip.player_locator.bound")
+            builder.accept(Component.translatable("tooltip.locator.bound")
                     .withStyle(style -> style.withColor(0x00FF00)));
             builder.accept(Component.literal("UUID: " + data.playerUuid().toString())
                     .withStyle(style -> style.withColor(0x7F7F7F)));
         } else {
-            builder.accept(Component.translatable("tooltip.player_locator.unbound")
+            builder.accept(Component.translatable("tooltip.locator.unbound")
                     .withStyle(style -> style.withColor(0xFFFF00)));
         }
 
-        builder.accept(Component.translatable("tooltip.player_locator.usage")
+        builder.accept(Component.translatable("tooltip.locator.usage")
                 .withStyle(style -> style.withColor(0x7F7F7F)));
     }
 
@@ -66,19 +65,19 @@ public class PlayerLocatorItem extends Item {
     /**
      * 获取玩家定位器数据
      */
-    public static PlayerLocatorData getPlayerLocatorData(ItemStack stack) {
-        var c = stack.get(ModDataComponents.PLAYER_LOCATOR_COMPONENT.get());
+    public static LocatorData getPlayerLocatorData(ItemStack stack) {
+        var c = stack.get(ModDataComponents.LOCATOR_COMPONENT.get());
         if (c != null) {
             return c;
         }
-        return new PlayerLocatorData();
+        return new LocatorData();
     }
 
     /**
      * 设置玩家UUID
      */
     public static void setPlayerUuid(ItemStack stack, UUID uuid) {
-        PlayerLocatorData newData = new PlayerLocatorData(uuid);
-        stack.set(ModDataComponents.PLAYER_LOCATOR_COMPONENT.get(), newData);
+        LocatorData newData = new LocatorData(uuid);
+        stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
     }
 }

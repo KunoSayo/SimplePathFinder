@@ -103,11 +103,9 @@ public class LangGen {
         add(SimplePathFinder.MOD_ID, "简单路径查找器", "Simple Path Finder");
 
         // 物品名称
-        addItem(ModItems.NAVIGATION, "导航罗盘", "Navigation Compass");
-        // DEBUG_NAV物品翻译（使用registerSimpleItem注册时，addItem方法会自动添加"item."前缀）
+        addItem(ModItems.NAVIGATION, "导航", "Navigation");
         addItem(ModItems.DEBUG_NAV, "导航调试棍", "Debug Navigation Stick");
-        // PLAYER_LOCATOR物品翻译
-        addItem(ModItems.PLAYER_LOCATOR, "玩家定位器", "Player Locator");
+        addItem(ModItems.LOCATOR, "定位器", "Locator");
 
         // 导航模式
         add("item.navigation_mode.default", "默认显示", "Default Display");
@@ -124,12 +122,12 @@ public class LangGen {
         add("tooltip.navigation.current_mode", "当前模式：", "Current Mode:");
 
         // 玩家定位器提示
-        add("tooltip.player_locator.bound", "已绑定", "Bound");
-        add("tooltip.player_locator.unbound", "未绑定", "Unbound");
-        add("tooltip.player_locator.usage", "按住Shift + 右键绑定玩家", "Hold Shift + Right-click to bind player");
+        add("tooltip.locator.bound", "已绑定", "Bound");
+        add("tooltip.locator.unbound", "未绑定", "Unbound");
+        add("tooltip.locator.usage", "按住Shift + 右键绑定玩家", "Hold Shift + Right-click to bind player");
 
         // 玩家定位器系统消息
-        add("item.simple_path_finder.player_locator.bound", "已将定位器绑定到玩家：", "Locator bound to player: ");
+        add("item.simple_path_finder.locator.bound", "已将定位器绑定到玩家：", "Locator bound to player: ");
 
         // 系统消息
         add("simple_path_finder.build.nav.success", "成功构建导航区块", "Successfully built navigation chunk");
@@ -137,5 +135,8 @@ public class LangGen {
         add("simple_path_finder.build.nav.failed", "当前环境不易于构造寻路", "Current environment is not suitable for pathfinding");
         add("simple_path_finder.remove.current.success", "成功移除当前所在区块导航", "Successfully removed navigation in current chunk");
         add("simple_path_finder.failed.not_found", "未能找到导航区块", "Navigation chunk not found");
+
+
+        add("item_group.simple_path_finder.name", "简单路径查找器", "Simple Path Finder");
     }
 }

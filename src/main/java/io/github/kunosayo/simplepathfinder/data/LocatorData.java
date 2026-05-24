@@ -13,32 +13,32 @@ import java.util.UUID;
  * 玩家定位器数据
  * 用于存储定位器绑定的玩家UUID
  */
-public record PlayerLocatorData(UUID playerUuid) {
-    public static final Codec<PlayerLocatorData> CODEC = RecordCodecBuilder.create(
+public record LocatorData(UUID playerUuid) {
+    public static final Codec<LocatorData> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
                     Codec.STRING.optionalFieldOf("uuid").forGetter(data -> Optional.of(data.playerUuid.toString()))
-            ).apply(instance, uuidOpt -> new PlayerLocatorData(UUID.fromString(uuidOpt.orElse(""))))
+            ).apply(instance, uuidOpt -> new LocatorData(UUID.fromString(uuidOpt.orElse(""))))
     );
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, PlayerLocatorData> STREAM_CODEC = new StreamCodec<>() {
+    public static final StreamCodec<RegistryFriendlyByteBuf, LocatorData> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public @NotNull PlayerLocatorData decode(RegistryFriendlyByteBuf buf) {
+        public @NotNull LocatorData decode(RegistryFriendlyByteBuf buf) {
             String uuidStr = buf.readUtf();
             UUID uuid = UUID.fromString(uuidStr);
-            return new PlayerLocatorData(uuid);
+            return new LocatorData(uuid);
         }
 
         @Override
-        public void encode(RegistryFriendlyByteBuf buf, PlayerLocatorData data) {
+        public void encode(RegistryFriendlyByteBuf buf, LocatorData data) {
             buf.writeUtf(data.playerUuid.toString());
         }
     };
 
-    public PlayerLocatorData() {
+    public LocatorData() {
         this(new UUID(0, 0));
     }
 
-    public PlayerLocatorData(String uuidString) {
+    public LocatorData(String uuidString) {
         this(UUID.fromString(uuidString));
     }
 
@@ -46,7 +46,7 @@ public record PlayerLocatorData(UUID playerUuid) {
         return playerUuid.getMostSignificantBits() != 0 || playerUuid.getLeastSignificantBits() != 0;
     }
 
-    public PlayerLocatorData withUuid(UUID uuid) {
-        return new PlayerLocatorData(uuid);
+    public LocatorData withUuid(UUID uuid) {
+        return new LocatorData(uuid);
     }
 }

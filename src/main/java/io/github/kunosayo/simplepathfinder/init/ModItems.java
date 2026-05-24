@@ -2,7 +2,7 @@ package io.github.kunosayo.simplepathfinder.init;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
-import io.github.kunosayo.simplepathfinder.item.PlayerLocatorItem;
+import io.github.kunosayo.simplepathfinder.item.LocatorItem;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -14,8 +14,8 @@ public class ModItems {
     public static DeferredItem<Item> NAVIGATION = ITEMS.register("navigation", () -> new NavigationItem(
             Identifier.fromNamespaceAndPath(SimplePathFinder.MOD_ID, "navigation")
     ));
-    public static DeferredItem<Item> PLAYER_LOCATOR = ITEMS.register("player_locator", () -> new PlayerLocatorItem(
-            Identifier.fromNamespaceAndPath(SimplePathFinder.MOD_ID, "player_locator")
+    public static DeferredItem<Item> LOCATOR = ITEMS.register("locator", () -> new LocatorItem(
+            Identifier.fromNamespaceAndPath(SimplePathFinder.MOD_ID, "locator")
 
     ));
 

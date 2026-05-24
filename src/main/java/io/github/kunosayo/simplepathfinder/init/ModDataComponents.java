@@ -2,10 +2,9 @@ package io.github.kunosayo.simplepathfinder.init;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
-import io.github.kunosayo.simplepathfinder.data.PlayerLocatorData;
+import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
-import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -23,10 +22,10 @@ public class ModDataComponents {
                     builder -> builder.persistent(NavigationModeData.CODEC)
                             .networkSynchronized(NavigationModeData.STREAM_CODEC));
 
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<PlayerLocatorData>> PLAYER_LOCATOR_COMPONENT =
-            register("player_locator",
-                    builder -> builder.persistent(PlayerLocatorData.CODEC)
-                            .networkSynchronized(PlayerLocatorData.STREAM_CODEC));
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<LocatorData>> LOCATOR_COMPONENT =
+            register("locator",
+                    builder -> builder.persistent(LocatorData.CODEC)
+                            .networkSynchronized(LocatorData.STREAM_CODEC));
 
     private static <T> DeferredHolder<DataComponentType<?>, DataComponentType<T>> register(
             String name, UnaryOperator<DataComponentType.Builder<T>> builder) {

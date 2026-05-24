@@ -19,7 +19,6 @@ public class DataGen implements IModBusEvent {
         event.getGenerator().addProvider(true, bilingualProvider.getEnglishProvider());
         event.getGenerator().addProvider(true, bilingualProvider.getChineseProvider());
 
-        // 注册物品模型生成器 - 仅在客户端生成时运行
-//        event.getGenerator().addProvider(true, new ItemModelGen(event.getGenerator().getPackOutput()));
+        event.getGenerator().addProvider(true, new ItemModelGen(event.getGenerator().getPackOutput()));
     }
 }

@@ -12,7 +12,7 @@ public class NavBuildConfig {
     NavBuildConfig(ModConfigSpec.Builder builder) {
         maxNavChunks = builder
                 .comment("The most nav chunk we can have")
-                .define("max_nav_chunks", (2048 / 16) * (2048 / 16));
+                .define("max_nav_chunks", (4096 / 16 + 1) * (4096 / 16 + 1));
         maxLayers = builder
                 .comment("The max layers per chunk")
                 .define("max layers", 9);
