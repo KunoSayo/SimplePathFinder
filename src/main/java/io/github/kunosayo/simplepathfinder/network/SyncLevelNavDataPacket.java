@@ -31,69 +31,55 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
             tempBuffer.readBytes(input);
             tempBuffer.release();
 
-            if (input.length <= 32 * 1096) {
-                buffer.writeBoolean(false);
-                buffer.writeInt(input.length);
-                buffer.writeBytes(input);
-            } else {
-                try (Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION)) {
-                    deflater.setInput(input);
-                    deflater.finish();
-                    byte[] compressed = new byte[input.length];
-                    int compressedSize = deflater.deflate(compressed);
-                    buffer.writeBoolean(true);
-                    deflater.end();
 
-                    // 写入压缩后的大小和压缩数据
-                    buffer.writeInt(compressedSize);
-                    buffer.writeBytes(compressed, 0, compressedSize);
+            try (Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION)) {
+                deflater.setInput(input);
+                deflater.finish();
+
+                byte[] output = new byte[input.length];
+
+                while (!deflater.finished()) {
+                    int compressedSize = deflater.deflate(output);
+                    buffer.writeBytes(output, 0, compressedSize);
                 }
+                deflater.end();
 
             }
+
         }
 
         @Override
         public SyncLevelNavDataPacket decode(ByteBuf buffer) {
-            boolean isCompressed = buffer.readBoolean();
-            if (isCompressed) {
-                // 读取压缩数据
-                int compressedSize = buffer.readInt();
-                byte[] compressed = new byte[compressedSize];
-                buffer.readBytes(compressed);
+            byte[] compressed = new byte[buffer.readableBytes()];
+            buffer.readBytes(compressed);
 
-                // 解压数据
-                try (Inflater inflater = new Inflater()) {
-                    inflater.setInput(compressed);
-                    byte[] output = new byte[8192];
-                    ByteArrayOutputStream result = new ByteArrayOutputStream();
+            // 解压数据
+            try (Inflater inflater = new Inflater()) {
+                inflater.setInput(compressed);
+                byte[] output = new byte[32 * 1024];
+                ByteArrayOutputStream result = new ByteArrayOutputStream();
 
-                    try {
-                        while (!inflater.finished()) {
-                            int count = inflater.inflate(output);
-                            if (count == 0) {
-                                break;
-                            }
-                            result.write(output, 0, count);
+                try {
+                    while (!inflater.finished()) {
+                        int count = inflater.inflate(output);
+                        if (count == 0) {
+                            break;
                         }
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to decompress nav data", e);
-                    } finally {
-                        inflater.end();
+                        result.write(output, 0, count);
                     }
-
-                    // 从解压后的数据解码
-                    ByteBuf decompressedBuffer = Unpooled.wrappedBuffer(result.toByteArray());
-                    LevelNavData levelNavData = LevelNavData.STREAM_CODEC.decode(decompressedBuffer);
-                    decompressedBuffer.release();
-                    return new SyncLevelNavDataPacket(levelNavData);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to decompress nav data", e);
+                } finally {
+                    inflater.end();
                 }
 
-            } else {
-                int len = buffer.readInt();
-                var data = buffer.readBytes(len);
-                LevelNavData levelNavData = LevelNavData.STREAM_CODEC.decode(data);
+                // 从解压后的数据解码
+                ByteBuf decompressedBuffer = Unpooled.wrappedBuffer(result.toByteArray());
+                LevelNavData levelNavData = LevelNavData.STREAM_CODEC.decode(decompressedBuffer);
+                decompressedBuffer.release();
                 return new SyncLevelNavDataPacket(levelNavData);
             }
+
         }
     };
 
