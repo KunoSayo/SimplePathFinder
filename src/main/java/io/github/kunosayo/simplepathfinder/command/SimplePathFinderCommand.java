@@ -1,9 +1,9 @@
 package io.github.kunosayo.simplepathfinder.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.minecraft.commands.CommandSourceStack;
@@ -11,7 +11,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -53,7 +52,7 @@ public final class SimplePathFinderCommand {
                                                         data.setDirty();
                                                         player.sendSystemMessage(Component.translatable("simple_path_finder.remove.current.success"));
                                                         if (player instanceof ServerPlayer sp && !level.isClientSide()) {
-                                                            PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
+                                                            SimplePathFinder.playerMadeServerNavDirty(sp);
                                                         }
                                                         return 1;
                                                     } else {
@@ -95,7 +94,7 @@ public final class SimplePathFinderCommand {
                                                                             }
                                                                             if (data.isDirty()) {
                                                                                 if (player instanceof ServerPlayer sp && !level.isClientSide()) {
-                                                                                    PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
+                                                                                    SimplePathFinder.playerMadeServerNavDirty(sp);
                                                                                 }
                                                                             }
                                                                         }
@@ -114,7 +113,7 @@ public final class SimplePathFinderCommand {
                                                                     if (data.levelNavData.buildForPlayer(player, layer)) {
                                                                         data.setDirty();
                                                                         if (player instanceof ServerPlayer sp && !level.isClientSide()) {
-                                                                            PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
+                                                                            SimplePathFinder.playerMadeServerNavDirty(sp);
                                                                         }
                                                                     }
                                                                 }
@@ -130,7 +129,7 @@ public final class SimplePathFinderCommand {
                                                             if (data.levelNavData.buildForPlayer(player, (byte) 0)) {
                                                                 data.setDirty();
                                                                 if (player instanceof ServerPlayer sp && !level.isClientSide()) {
-                                                                    PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
+                                                                    SimplePathFinder.playerMadeServerNavDirty(sp);
                                                                 }
                                                             }
                                                         }
