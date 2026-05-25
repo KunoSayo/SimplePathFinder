@@ -38,10 +38,20 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
 
                 byte[] output = new byte[input.length];
 
+                buffer.markWriterIndex();
+                buffer.writeInt(0);
+
+                int totalSize = 0;
+                int lastIndex = 0;
                 while (!deflater.finished()) {
                     int compressedSize = deflater.deflate(output);
                     buffer.writeBytes(output, 0, compressedSize);
+                    totalSize += compressedSize;
+                    lastIndex = buffer.writerIndex();
                 }
+                buffer.resetWriterIndex();
+                buffer.writeInt(totalSize);
+                buffer.writerIndex(lastIndex);
                 deflater.end();
 
             }
@@ -50,7 +60,8 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
 
         @Override
         public SyncLevelNavDataPacket decode(ByteBuf buffer) {
-            byte[] compressed = new byte[buffer.readableBytes()];
+            int len = buffer.readInt();
+            byte[] compressed = new byte[len];
             buffer.readBytes(compressed);
 
             // 解压数据
