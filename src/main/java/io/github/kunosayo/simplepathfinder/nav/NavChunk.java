@@ -35,6 +35,8 @@ public final class NavChunk implements INavChunk {
     public static final StreamCodec<ByteBuf, NavChunk> STREAM_CODEC = StreamCodec
             .composite(ByteBufCodecs.<ByteBuf, ILayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
                     navChunk -> navChunk.layers, NavChunk::new);
+
+
     public List<ILayeredNavChunk> layers = new ArrayList<>();
     public ChunkPos chunkPos;
 
@@ -92,10 +94,8 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
-    public Stream<ILayeredNavChunk> getLayers(BlockPos target) {
-        var inner = new ChunkInnerPos(target);
-        return this.layers.stream().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1)
-                .map(layer -> (ILayeredNavChunk) layer);
+    public Collection<ILayeredNavChunk> getLayersCollection() {
+        return this.layers;
     }
 
     @Override

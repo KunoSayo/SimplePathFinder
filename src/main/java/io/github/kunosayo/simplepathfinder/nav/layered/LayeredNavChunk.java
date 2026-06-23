@@ -2,6 +2,7 @@ package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.codec.ArrayCodecs;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
+import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavChunk;
 import io.netty.buffer.ByteBuf;
@@ -65,10 +66,10 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
     // Store +x+z+x+z..
     int[] distances;
     byte layer = 0;
-    public NavChunk parentChunk = null;
+    public INavChunk parentChunk = null;
 
     @Override
-    public NavChunk getParentChunk() {
+    public INavChunk getParentChunk() {
         return parentChunk;
     }
 
@@ -78,7 +79,7 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
     }
 
     @Override
-    public void setParentChunk(NavChunk parentChunk) {
+    public void setParentChunk(INavChunk parentChunk) {
         this.parentChunk = parentChunk;
     }
 

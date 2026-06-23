@@ -7,15 +7,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
 import java.util.function.Consumer;
@@ -27,14 +25,21 @@ public class NavigationItem extends Item {
     }
 
     @Override
-    public @NotNull InteractionResult use(@NotNull Level level, @NotNull Player player, @NotNull InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
+    public InteractionResult useOn(@NonNull UseOnContext context) {
+        var player = context.getPlayer();
+        if (player != null) {
+            var hand = context.getHand();
+            var level = player.level();
+            ItemStack stack = player.getItemInHand(hand);
 
-        if (!level.isClientSide()) {
-            // 如果是服务端，处理物品功能
-            handleNavigationItem(level, (ServerPlayer) player, stack);
+            if (!level.isClientSide()) {
+                // 如果是服务端，处理物品功能
+                if (handleNavigationItem(level, (ServerPlayer) player, stack)) {
+                    return InteractionResult.SUCCESS_SERVER;
+                }
+            }
         }
-        return InteractionResult.SUCCESS_SERVER;
+        return super.useOn(context);
     }
 
     @Override
@@ -93,7 +98,7 @@ public class NavigationItem extends Item {
         };
     }
 
-    private void handleNavigationItem(Level level, ServerPlayer player, ItemStack stack) {
+    private boolean handleNavigationItem(Level level, ServerPlayer player, ItemStack stack) {
         NavigationMode mode = getNavigationMode(stack);
 
         //todo: 根据不同模式执行不同的逻辑
@@ -106,7 +111,9 @@ public class NavigationItem extends Item {
             }
             default -> {
                 // nothing
+                return false;
             }
         }
+        return true;
     }
 }

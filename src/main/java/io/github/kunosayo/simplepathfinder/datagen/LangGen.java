@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.datagen;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.init.ModBlocks;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.data.PackOutput;
 import net.minecraft.world.item.Item;
@@ -96,6 +97,13 @@ public class LangGen {
     }
 
     /**
+     * 添加方块双语翻译
+     */
+    public void addBlock(net.minecraft.world.level.block.Block block, String chineseName, String englishName) {
+        add(block.getDescriptionId(), chineseName, englishName);
+    }
+
+    /**
      * 初始化所有翻译
      */
     public void initializeTranslations() {
@@ -106,6 +114,10 @@ public class LangGen {
         addItem(ModItems.NAVIGATION, "导航", "Navigation");
         addItem(ModItems.DEBUG_NAV, "导航调试棍", "Debug Navigation Stick");
         addItem(ModItems.LOCATOR, "定位器", "Locator");
+        addItem(ModItems.NAV_BRUSH, "导航笔刷", "Navigation Brush");
+
+        // 方块名称
+        addBlock(ModBlocks.PATH_FINDER_BLOCK.get(), "路径查找方块", "Path Finder Block");
 
         // 导航模式
         add("item.navigation_mode.default", "默认显示", "Default Display");
@@ -121,13 +133,20 @@ public class LangGen {
         add("tooltip.navigation.switch_mode", "按住Shift + 滚动鼠标滚轮切换模式", "Hold Shift + Scroll to switch mode");
         add("tooltip.navigation.current_mode", "当前模式：", "Current Mode:");
 
-        // 玩家定位器提示
-        add("tooltip.locator.bound", "已绑定", "Bound");
+        // 定位器提示
+        add("tooltip.locator.bound.player", "已绑定到玩家", "Bound to Player");
+        add("tooltip.locator.bound.pos", "已绑定到位置", "Bound to Position");
         add("tooltip.locator.unbound", "未绑定", "Unbound");
-        add("tooltip.locator.usage", "按住Shift + 右键绑定玩家", "Hold Shift + Right-click to bind player");
+        add("tooltip.locator.usage", "按住Shift + 右键绑定当前位置", "Hold Shift + Right-click to bind current position");
 
-        // 玩家定位器系统消息
-        add("item.simple_path_finder.locator.bound", "已将定位器绑定到玩家：", "Locator bound to player: ");
+        // 定位器系统消息
+        add("item.simple_path_finder.locator.bound.player", "已将定位器绑定到玩家：", "Locator bound to player: ");
+
+
+        // 路径查找方块消息
+        add("block.simple_path_finder.path_finder_block.wrote.player", "已将玩家定位数据写入方块", "Wrote player locator data to block");
+        add("block.simple_path_finder.path_finder_block.wrote.pos", "已将位置数据写入方块：", "Wrote position data to block: ");
+        add("block.simple_path_finder.path_finder_block.empty_locator", "定位器为空，无法写入", "Locator is empty, cannot write");
 
         // 系统消息
         add("simple_path_finder.build.nav.success", "成功构建导航区块", "Successfully built navigation chunk");

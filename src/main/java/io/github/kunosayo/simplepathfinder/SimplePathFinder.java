@@ -4,9 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import io.github.kunosayo.simplepathfinder.command.SimplePathFinderCommand;
 import io.github.kunosayo.simplepathfinder.config.NavBuildConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
-import io.github.kunosayo.simplepathfinder.init.ModCreativeTab;
-import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
-import io.github.kunosayo.simplepathfinder.init.ModItems;
+import io.github.kunosayo.simplepathfinder.init.*;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
@@ -40,7 +38,10 @@ public final class SimplePathFinder {
 
     public SimplePathFinder(IEventBus modEventBus, ModContainer modContainer) {
         ModItems.ITEMS.register(modEventBus);
+        ModBlocks.BLOCKS.register(modEventBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
+        ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
         NeoForge.EVENT_BUS.register(this);
         ModCreativeTab.TABS.register(modEventBus);
 

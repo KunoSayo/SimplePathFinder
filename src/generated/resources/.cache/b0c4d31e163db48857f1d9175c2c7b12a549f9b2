@@ -1,6 +1,12 @@
-// 26.1.2	2026-05-24T12:38:12.1806645	Model Definitions - simple_path_finder
+// 26.1.2	2026-06-23T01:36:48.8075728	Model Definitions - simple_path_finder
+4c6dd9021d60707b610dc4351e4001639a1f7e07 assets/simple_path_finder/blockstates/path_finder_block.json
 d8a25b1a8fd5ad2b9bb7f39194d0199847b92b19 assets/simple_path_finder/items/debug_nav.json
 72d53a32a133454e63413cdb040a23706659eebf assets/simple_path_finder/items/locator.json
 2174df4bf329fc3cded304514b8d52cf2830c1dd assets/simple_path_finder/items/navigation.json
+015b55422ef93924f4089833fb7e142d64ef34f6 assets/simple_path_finder/items/nav_brush.json
+257f6422ee1362101138d3eb2db4148ec144af99 assets/simple_path_finder/items/path_finder_block.json
+2eb630ba7acb19622ddf596f973555ebcc314afa assets/simple_path_finder/models/block/path_finder_block.json
 f9c7fbdd2ae65ffa13a64c6ea5ef9aeeb7c4877c assets/simple_path_finder/models/item/locator.json
 f3bafc751359c8499c154117fe0b18bef53b1dfe assets/simple_path_finder/models/item/navigation.json
+9e5f92c991d392c1754b8d866359c66d20722ecb assets/simple_path_finder/models/item/nav_brush.json
+b9b01d28a6c19d159c09252aac72abd0d242cf2d assets/simple_path_finder/models/item/path_finder_block.json

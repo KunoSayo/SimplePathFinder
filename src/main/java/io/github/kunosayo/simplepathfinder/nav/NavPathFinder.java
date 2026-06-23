@@ -63,7 +63,7 @@ public class NavPathFinder {
             boolean isSame = NavUtil.isSameChunk(a, t);
             var thatChunk = navChunk;
             if (!isSame) {
-                Optional<NavChunk> thatChunkOpt = levelNavData.getNavChunk(ChunkPos.containing(t), false);
+                Optional<INavChunk> thatChunkOpt = levelNavData.getNavChunk(ChunkPos.containing(t), false);
                 if (thatChunkOpt.isEmpty()) {
                     continue;
                 }

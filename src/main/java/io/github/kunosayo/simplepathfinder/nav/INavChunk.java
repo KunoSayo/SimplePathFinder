@@ -2,20 +2,43 @@ package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.ChunkPos;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
 
 /**
  * Interface for navigation chunk functionality
  */
 public interface INavChunk {
 
+    StreamCodec<ByteBuf, INavChunk> TYPED_NAV_CHUNK_CODEC = StreamCodec.of((buffer, value) -> {
+        if (value instanceof NavChunk layeredNavChunk) {
+            buffer.writeByte(0);
+            NavChunk.STREAM_CODEC.encode(buffer, layeredNavChunk);
+            return;
+        }
+
+        throw new IllegalArgumentException("Not supported nav chunk");
+    }, buffer -> {
+        // todo: use interface.
+        byte type = buffer.readByte();
+        if (type == 0) {
+            return NavChunk.STREAM_CODEC.decode(buffer);
+        }
+
+        throw new IllegalArgumentException("Not supported nav chunk");
+    });
+
     /**
      * Get the chunk position
+     *
      * @return the chunk position
      */
     ChunkPos getChunkPos();
@@ -27,7 +50,8 @@ public interface INavChunk {
 
     /**
      * Get a specific layer, creating it if it doesn't exist
-     * @param layer the layer index
+     *
+     * @param layer    the layer index
      * @param supplier supplier for creating new layers
      * @return optional containing the layer if it exists or was created
      */
@@ -35,6 +59,7 @@ public interface INavChunk {
 
     /**
      * Get navigation layer for a specific block position
+     *
      * @param pos the block position
      * @return optional containing the layer that can walk to this position
      */
@@ -42,21 +67,34 @@ public interface INavChunk {
 
     /**
      * Get all layers that are within 1 block of the target Y position
+     *
      * @param target the target block position
      * @return stream of matching layers
      */
-    Stream<ILayeredNavChunk> getLayers(BlockPos target);
+    default Stream<ILayeredNavChunk> getLayers(BlockPos target) {
+        var inner = new ChunkInnerPos(target);
+        return getLayers().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1)
+                .map(layer -> layer);
+    }
+
+    default Stream<ILayeredNavChunk> getLayers() {
+        return getLayersCollection().stream();
+    }
+
+    Collection<ILayeredNavChunk> getLayersCollection();
 
     /**
      * Process all layers within 1 block of the target Y position
-     * @param target the target block position
+     *
+     * @param target   the target block position
      * @param consumer consumer for each matching layer
      */
     void getLayers(BlockPos target, Consumer<ILayeredNavChunk> consumer);
 
     /**
      * Process all layers within 1 block of the target Y position with distance information
-     * @param target the target block position
+     *
+     * @param target   the target block position
      * @param distance the current distance
      * @param consumer consumer for each edge info
      */
@@ -64,8 +102,9 @@ public interface INavChunk {
 
     /**
      * Get the nearest layer within 1 block of the specified Y position
+     *
      * @param bx the block x coordinate
-     * @param y the y coordinate
+     * @param y  the y coordinate
      * @param bz the block z coordinate
      * @return optional containing the nearest layer
      */
@@ -73,8 +112,9 @@ public interface INavChunk {
 
     /**
      * Get the nearest walkable Y coordinate within 1 block of the specified Y position
+     *
      * @param bx the block x coordinate
-     * @param y the y coordinate
+     * @param y  the y coordinate
      * @param bz the block z coordinate
      * @return optional int containing the nearest walk Y
      */
@@ -82,6 +122,7 @@ public interface INavChunk {
 
     /**
      * Get distance from position in specified direction
+     *
      * @param pos the position to sample distance
      * @param isZ whether to sample in Z direction
      * @return the distance or -1 if not found
@@ -90,12 +131,14 @@ public interface INavChunk {
 
     /**
      * Remove a layered navigation chunk
+     *
      * @param layeredNavChunk the chunk to remove
      */
     void removeNavChunk(ILayeredNavChunk layeredNavChunk);
 
     /**
      * Get the number of layers in this navigation chunk
+     *
      * @return the number of layers
      */
     int getLayerCount();

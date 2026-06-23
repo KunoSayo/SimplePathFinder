@@ -1,0 +1,19 @@
+package io.github.kunosayo.simplepathfinder.init;
+
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.block.PathFinderBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+/**
+ * 方块注册
+ */
+public class ModBlocks {
+    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(SimplePathFinder.MOD_ID);
+
+    public static final DeferredBlock<Block> PATH_FINDER_BLOCK = BLOCKS.registerBlock("path_finder_block",
+            PathFinderBlock::new,
+            props -> props.strength(1.5f).requiresCorrectToolForDrops());
+}

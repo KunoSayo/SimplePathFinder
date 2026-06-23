@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.datagen;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.init.ModBlocks;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
@@ -13,12 +14,6 @@ import net.minecraft.resources.Identifier;
 /**
  * 物品模型生成器
  * 生成物品的JSON模型文件
- * <p>
- * 注意：当前使用原版指南针纹理作为占位符。
- * 你可以稍后替换为自定义纹理文件：
- * - src/main/resources/assets/simple_path_finder/textures/item/navigation_default.png
- * - src/main/resources/assets/simple_path_finder/textures/item/navigation_add.png
- * - src/main/resources/assets/simple_path_finder/textures/item/navigation_remove.png
  */
 public class ItemModelGen extends ModelProvider {
 
@@ -31,8 +26,17 @@ public class ItemModelGen extends ModelProvider {
         // 调试导航棍 - 使用原木棍纹理
         itemModels.itemModelOutput.accept(ModItems.DEBUG_NAV.get(), ItemModelUtils.plainModel(Identifier.withDefaultNamespace("item/stick")));
 
+        // 导航物品
         itemModels.generateFlatItem(ModItems.NAVIGATION.get(), ModelTemplates.FLAT_ITEM);
+        // 定位器
         itemModels.generateFlatItem(ModItems.LOCATOR.get(), ModelTemplates.FLAT_ITEM);
+        // 导航笔刷
+        itemModels.generateFlatItem(ModItems.NAV_BRUSH.get(), ModelTemplates.FLAT_ITEM);
+
+        // 方块物品模型 - 这会自动生成方块模型和状态
+        itemModels.generateFlatItem(ModBlocks.PATH_FINDER_BLOCK.get().asItem(), ModelTemplates.FLAT_ITEM);
+        // 生成方块的模型和状态
+        blockModels.createTrivialCube(ModBlocks.PATH_FINDER_BLOCK.get());
     }
 
     /**

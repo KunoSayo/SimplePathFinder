@@ -15,6 +15,8 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -28,56 +30,66 @@ public class LocatorItem extends Item {
         super(new Properties().setId(key).stacksTo(1));
     }
 
-
     @Override
     public @NotNull InteractionResult use(@NotNull Level level, @NotNull Player player, @NotNull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
-        if (!level.isClientSide() && player.isShiftKeyDown()) {
-            // 按住Shift + 右键，写入玩家UUID
-            setPlayerUuid(stack, player.getUUID());
-            player.sendSystemMessage(Component.translatable("item.simple_path_finder.locator.bound",
-                    player.getName()));
+        if (player.isShiftKeyDown()) {
+            if (!level.isClientSide()) {
+                // 按住Shift + 右键，写入玩家UUID
+                LocatorData newData = LocatorData.forPlayer(player.getUUID());
+                stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
+                player.sendSystemMessage(Component.translatable("item.simple_path_finder.locator.bound.player",
+                        player.getName()));
+            }
+            return InteractionResult.SUCCESS_SERVER;
         }
 
-        return InteractionResult.SUCCESS_SERVER;
+        return super.use(level, player, hand);
     }
 
     @Override
-    public void appendHoverText(ItemStack itemStack, TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag tooltipFlag) {
-        LocatorData data = getPlayerLocatorData(itemStack);
+    public void appendHoverText(@NonNull ItemStack itemStack, @NonNull TooltipContext context, @NonNull TooltipDisplay display, @NonNull Consumer<Component> builder, @NonNull TooltipFlag tooltipFlag) {
+        LocatorData data = getLocatorData(itemStack);
 
-        if (data.hasPlayer()) {
-            builder.accept(Component.translatable("tooltip.locator.bound")
-                    .withStyle(style -> style.withColor(0x00FF00)));
-            builder.accept(Component.literal("UUID: " + data.playerUuid().toString())
-                    .withStyle(style -> style.withColor(0x7F7F7F)));
-        } else {
+        if (data == null) {
             builder.accept(Component.translatable("tooltip.locator.unbound")
                     .withStyle(style -> style.withColor(0xFFFF00)));
+        } else if (data.isPlayerBound()) {
+            builder.accept(Component.translatable("tooltip.locator.bound.player")
+                    .withStyle(style -> style.withColor(0x00FF00)));
+            builder.accept(Component.literal("UUID: " + data.getPlayerUuid().toString())
+                    .withStyle(style -> style.withColor(0x7F7F7F)));
+        } else {
+            builder.accept(Component.translatable("tooltip.locator.bound.pos")
+                    .withStyle(style -> style.withColor(0x00FFFF)));
+            var pos = data.getGlobalPos();
+            // 使用 dimension().toString() 获取维度字符串表示
+            builder.accept(Component.literal("%s: %s".formatted(
+                    pos.dimension(),
+                    pos.pos()
+            )).withStyle(style -> style.withColor(0x7F7F7F)));
         }
 
         builder.accept(Component.translatable("tooltip.locator.usage")
                 .withStyle(style -> style.withColor(0x7F7F7F)));
     }
 
-
     /**
-     * 获取玩家定位器数据
+     * 获取定位器数据
      */
-    public static LocatorData getPlayerLocatorData(ItemStack stack) {
-        var c = stack.get(ModDataComponents.LOCATOR_COMPONENT.get());
-        if (c != null) {
-            return c;
-        }
-        return new LocatorData();
+    public static @Nullable LocatorData getLocatorData(ItemStack stack) {
+        return stack.get(ModDataComponents.LOCATOR_COMPONENT.get());
+
     }
 
-    /**
-     * 设置玩家UUID
-     */
     public static void setPlayerUuid(ItemStack stack, UUID uuid) {
-        LocatorData newData = new LocatorData(uuid);
+        LocatorData newData = LocatorData.forPlayer(uuid);
+        stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
+    }
+
+    public static void setGlobalPos(ItemStack stack, net.minecraft.core.GlobalPos pos) {
+        LocatorData newData = LocatorData.forPosition(pos);
         stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
     }
 }

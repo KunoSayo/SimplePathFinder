@@ -1,52 +1,93 @@
 package io.github.kunosayo.simplepathfinder.data;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 玩家定位器数据
- * 用于存储定位器绑定的玩家UUID
+ * 定位器数据
+ * 用于存储定位器绑定的玩家UUID或位置
  */
-public record LocatorData(UUID playerUuid) {
+public record LocatorData(Either<UUID, GlobalPos> target) {
     public static final Codec<LocatorData> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                    Codec.STRING.optionalFieldOf("uuid").forGetter(data -> Optional.of(data.playerUuid.toString()))
-            ).apply(instance, uuidOpt -> new LocatorData(UUID.fromString(uuidOpt.orElse(""))))
+                    Codec.either(
+                            UUIDUtil.CODEC,
+                            GlobalPos.CODEC
+                    ).fieldOf("target").forGetter(LocatorData::target)
+            ).apply(instance, LocatorData::new)
     );
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, LocatorData> STREAM_CODEC = new StreamCodec<>() {
-        @Override
-        public @NotNull LocatorData decode(RegistryFriendlyByteBuf buf) {
-            String uuidStr = buf.readUtf();
-            UUID uuid = UUID.fromString(uuidStr);
-            return new LocatorData(uuid);
-        }
+    public static final StreamCodec<RegistryFriendlyByteBuf, LocatorData> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.either(UUIDUtil.STREAM_CODEC, GlobalPos.STREAM_CODEC),
+            LocatorData::target,
+            LocatorData::new
+    );
 
-        @Override
-        public void encode(RegistryFriendlyByteBuf buf, LocatorData data) {
-            buf.writeUtf(data.playerUuid.toString());
-        }
-    };
 
-    public LocatorData() {
-        this(new UUID(0, 0));
+    public LocatorData(UUID uuid) {
+        this(Either.left(uuid));
     }
 
-    public LocatorData(String uuidString) {
-        this(UUID.fromString(uuidString));
+    public LocatorData(GlobalPos pos) {
+        this(Either.right(pos));
     }
 
-    public boolean hasPlayer() {
-        return playerUuid.getMostSignificantBits() != 0 || playerUuid.getLeastSignificantBits() != 0;
+    /**
+     * 检查是否绑定了玩家
+     */
+    public boolean isPlayerBound() {
+        return target.left().isPresent();
     }
 
-    public LocatorData withUuid(UUID uuid) {
-        return new LocatorData(uuid);
+    /**
+     * 检查是否绑定了位置
+     */
+    public boolean isPosBound() {
+        return target.right().isPresent();
+    }
+
+    /**
+     * 创建绑定到玩家的定位器数据
+     */
+    public static LocatorData forPlayer(UUID uuid) {
+        return new LocatorData(Either.left(uuid));
+    }
+
+    /**
+     * 创建绑定到位置的定位器数据
+     */
+    public static LocatorData forPosition(GlobalPos pos) {
+        return new LocatorData(Either.right(pos));
+    }
+
+    /**
+     * 创建绑定到位置的定位器数据
+     */
+    public static LocatorData forPosition(ResourceKey<Level> dimension, net.minecraft.core.BlockPos pos) {
+        return forPosition(new GlobalPos(dimension, pos));
+    }
+
+    /**
+     * 获取玩家UUID（如果存在）
+     */
+    public UUID getPlayerUuid() {
+        return target.left().orElse(null);
+    }
+
+    /**
+     * 获取全局位置（如果存在）
+     */
+    public GlobalPos getGlobalPos() {
+        return target.right().orElse(null);
     }
 }

@@ -37,27 +37,6 @@ public class LevelNavDataSavedData extends SavedData {
                 return new LevelNavDataSavedData(data);
             }));
 
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-
-        var buffer = Unpooled.buffer();
-        SAVE_CODEC.encode(buffer, this.levelNavData);
-        var data = new byte[buffer.writerIndex()];
-        buffer.readBytes(data);
-        tag.putByteArray("simple_path_finder_data", data);
-        return tag;
-    }
-
-    public static LevelNavDataSavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
-        if (tag != null && tag.contains("simple_path_finder_data")) {
-            byte[] data = tag.getByteArray("simple_path_finder_data").orElse(new byte[0]);
-            return new LevelNavDataSavedData(SAVE_CODEC.decode(Unpooled.wrappedBuffer(data)));
-        }
-        return new LevelNavDataSavedData();
-    }
-
-    public LevelNavDataSavedData() {
-    }
-
     public LevelNavDataSavedData(ServerLevel sl) {
     }
 

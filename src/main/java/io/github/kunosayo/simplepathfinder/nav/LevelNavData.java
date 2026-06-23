@@ -19,16 +19,18 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class LevelNavData {
     public static final StreamCodec<ByteBuf, ChunkPos> CHUNK_POS_STREAM_CODEC = StreamCodec
             .composite(ByteBufCodecs.VAR_LONG, ChunkPos::pack, ChunkPos::unpack);
 
-    public static final StreamCodec<ByteBuf, LevelNavData> STREAM_CODEC = StreamCodec.composite(ByteBufCodecs.map(HashMap::new, CHUNK_POS_STREAM_CODEC, NavChunk.STREAM_CODEC),
+    public static final StreamCodec<ByteBuf, LevelNavData> STREAM_CODEC = StreamCodec.composite(ByteBufCodecs.map(HashMap::new, CHUNK_POS_STREAM_CODEC, INavChunk.TYPED_NAV_CHUNK_CODEC),
             levelNavData -> levelNavData.navChunks, LevelNavData::new);
     @ParametersAreNonnullByDefault
-    public static final StreamCodec<ByteBuf, LevelNavData> VERSION_STREAM_CODEC = new StreamCodec<ByteBuf, LevelNavData>() {
+    public static final StreamCodec<ByteBuf, LevelNavData> VERSION_STREAM_CODEC = new StreamCodec<>() {
         @Override
         public @NotNull LevelNavData decode(ByteBuf buffer) {
             int version = VarInt.read(buffer);
@@ -45,13 +47,17 @@ public class LevelNavData {
 
     public static final int CHUNK_AREA = 16 * 16;
 
-    private HashMap<ChunkPos, NavChunk> navChunks = new HashMap<>();
+    private ConcurrentHashMap<ChunkPos, INavChunk> navChunks = new ConcurrentHashMap<>();
 
     public LevelNavData() {
 
     }
 
-    public Optional<NavChunk> getNavChunk(ChunkPos pos, boolean create) {
+    public LevelNavData(Map<ChunkPos, INavChunk> chunkPosHashMap) {
+        this.navChunks = new ConcurrentHashMap<>(chunkPosHashMap);
+    }
+
+    public Optional<INavChunk> getNavChunk(ChunkPos pos, boolean create) {
         return Optional.ofNullable(navChunks.computeIfAbsent(pos, chunkPos -> {
             if (!create || (navChunks.size() >= NavBuildConfig.NAV_BUILD_CONFIG.getLeft().maxNavChunks.get())) {
                 return null;
@@ -62,14 +68,12 @@ public class LevelNavData {
 
     public Optional<ILayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
         return Optional.ofNullable(navChunks.get(pos))
-                .flatMap(navChunk -> navChunk.layers.stream().filter(navChunk1 -> navChunk1.getLayer() == layer).findAny());
+                .flatMap(navChunk -> navChunk.getLayers().filter(navChunk1 -> navChunk1.getLayer() == layer).findAny());
     }
 
-    public LevelNavData(HashMap<ChunkPos, NavChunk> navChunks) {
-        this.navChunks = navChunks;
-        navChunks.forEach((chunkPos, navChunk) -> {
-            navChunk.chunkPos = chunkPos;
-        });
+    public LevelNavData(HashMap<ChunkPos, INavChunk> navChunks) {
+        this.navChunks = new ConcurrentHashMap<>(navChunks);
+        navChunks.forEach((chunkPos, navChunk) -> navChunk.setChunkPos(chunkPos));
     }
 
     private static BlockPos getGroundPos(Level level, BlockPos groundPos) {
@@ -169,7 +173,7 @@ public class LevelNavData {
 
     public long getTotalLayers() {
         long totals = 0;
-        for (NavChunk value : this.navChunks.values()) {
+        for (INavChunk value : this.navChunks.values()) {
             totals += value.getLayerCount();
         }
         return totals;

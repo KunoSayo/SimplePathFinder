@@ -2,7 +2,6 @@ package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
-import io.github.kunosayo.simplepathfinder.nav.NavChunk;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 
@@ -31,7 +30,7 @@ public interface ILayeredNavChunk {
      *
      * @param parentChunk the parent NavChunk
      */
-    void setParentChunk(NavChunk parentChunk);
+    void setParentChunk(INavChunk parentChunk);
 
     /**
      * Set the layer number

@@ -157,7 +157,7 @@ public class ClientListener {
                             int finalLayerRangeRight = layerRangeRight;
                             data.getNavChunk(chunkPos, false)
                                     .ifPresent(navChunk -> {
-                                        for (var layer : navChunk.layers) {
+                                        for (var layer : navChunk.getLayersCollection()) {
                                             if (layer.getLayer() > finalLayerRangeRight || layer.getLayer() < layerRangeLeft) {
                                                 continue;
                                             }

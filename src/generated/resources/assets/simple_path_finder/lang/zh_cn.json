@@ -1,4 +1,8 @@
 {
+  "block.simple_path_finder.path_finder_block": "路径查找方块",
+  "block.simple_path_finder.path_finder_block.empty_locator": "定位器为空，无法写入",
+  "block.simple_path_finder.path_finder_block.wrote.player": "已将玩家定位数据写入方块",
+  "block.simple_path_finder.path_finder_block.wrote.pos": "已将位置数据写入方块：",
   "item.navigation_mode.add_nav": "添加导航",
   "item.navigation_mode.add_nav.desc": "在点击位置添加导航点",
   "item.navigation_mode.default": "默认显示",
@@ -7,7 +11,8 @@
   "item.navigation_mode.remove_nav.desc": "移除导航路径",
   "item.simple_path_finder.debug_nav": "导航调试棍",
   "item.simple_path_finder.locator": "定位器",
-  "item.simple_path_finder.locator.bound": "已将定位器绑定到玩家：",
+  "item.simple_path_finder.locator.bound.player": "已将定位器绑定到玩家：",
+  "item.simple_path_finder.nav_brush": "导航笔刷",
   "item.simple_path_finder.navigation": "导航",
   "item_group.simple_path_finder.name": "简单路径查找器",
   "simple_path_finder": "简单路径查找器",
@@ -16,9 +21,10 @@
   "simple_path_finder.build.nav.success": "成功构建导航区块",
   "simple_path_finder.failed.not_found": "未能找到导航区块",
   "simple_path_finder.remove.current.success": "成功移除当前所在区块导航",
-  "tooltip.locator.bound": "已绑定",
+  "tooltip.locator.bound.player": "已绑定到玩家",
+  "tooltip.locator.bound.pos": "已绑定到位置",
   "tooltip.locator.unbound": "未绑定",
-  "tooltip.locator.usage": "按住Shift + 右键绑定玩家",
+  "tooltip.locator.usage": "按住Shift + 右键绑定当前位置",
   "tooltip.navigation.current_mode": "当前模式：",
   "tooltip.navigation.switch_mode": "按住Shift + 滚动鼠标滚轮切换模式"
 }
