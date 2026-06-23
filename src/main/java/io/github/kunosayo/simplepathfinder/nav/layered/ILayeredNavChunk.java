@@ -69,6 +69,16 @@ public interface ILayeredNavChunk {
     int getDistance(int x, int z, boolean isZ);
 
     /**
+     * Set distance in specified direction
+     *
+     * @param x   the x coordinate in chunk [0, 15]
+     * @param z   the z coordinate in chunk [0, 15]
+     * @param isZ whether to set distance in Z direction (false for X direction)
+     * @param value the distance value to set
+     */
+    void setDistance(int x, int z, boolean isZ, short value);
+
+    /**
      * Get checked distance in specified direction
      *
      * @param x   the x coordinate in chunk [0, 15]

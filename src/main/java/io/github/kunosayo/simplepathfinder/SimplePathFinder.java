@@ -2,15 +2,17 @@ package io.github.kunosayo.simplepathfinder;
 
 import com.mojang.brigadier.CommandDispatcher;
 import io.github.kunosayo.simplepathfinder.command.SimplePathFinderCommand;
-import io.github.kunosayo.simplepathfinder.config.NavBuildConfig;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.*;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -26,10 +28,13 @@ import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 @Mod(SimplePathFinder.MOD_ID)
 public final class SimplePathFinder {
-    @Nullable
-    public static volatile LevelNavData clientNavData = null;
+    public static final Logger LOGGER = LogManager.getLogger(SimplePathFinder.MOD_ID);
+
     @Nullable
     public static volatile NavResult clientNavResult = null;
     private static final HashSet<UUID> playerGotNav = new HashSet<>();
@@ -45,7 +50,7 @@ public final class SimplePathFinder {
         NeoForge.EVENT_BUS.register(this);
         ModCreativeTab.TABS.register(modEventBus);
 
-        modContainer.registerConfig(ModConfig.Type.SERVER, NavBuildConfig.NAV_BUILD_CONFIG.getRight());
+        modContainer.registerConfig(ModConfig.Type.SERVER, NavConfig.NAV_CONFIG.getRight());
     }
 
     public static void playerMadeServerNavDirty(ServerPlayer sp) {
@@ -73,18 +78,22 @@ public final class SimplePathFinder {
     public static void syncPlayerFullNav(ServerPlayer sp) {
         var level = sp.level();
         var data = LevelNavDataSavedData.loadFromLevel(level);
-        syncPlayerFullNav(sp, data);
+        syncPlayerFullNav(sp, data, level.dimension());
     }
 
     public static void syncPlayerFullNav(ServerPlayer sp, LevelNavDataSavedData data) {
-        PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(data.levelNavData));
+        syncPlayerFullNav(sp, data, sp.level().dimension());
+    }
+
+    public static void syncPlayerFullNav(ServerPlayer sp, LevelNavDataSavedData data, ResourceKey<Level> dimension) {
+        PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(dimension, data.levelNavData));
     }
 
     public static void syncAllPlayerNav(ServerPlayer sp) {
         var level = sp.level();
         var data = LevelNavDataSavedData.loadFromLevel(level);
         for (ServerPlayer player : sp.level().players()) {
-            syncPlayerFullNav(player, data);
+            syncPlayerFullNav(player, data, level.dimension());
         }
     }
 

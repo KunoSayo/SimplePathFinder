@@ -8,6 +8,8 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -142,4 +144,39 @@ public interface INavChunk {
      * @return the number of layers
      */
     int getLayerCount();
+
+    /**
+     * Get all navigation links from a specific position
+     *
+     * @param pos the chunk inner position
+     * @return list of navigation links from this position
+     */
+    List<NavLink> getNavLinks(ChunkInnerPos pos);
+
+    /**
+     * Get all navigation links in this chunk
+     *
+     * @return map of position to navigation links
+     */
+    Map<ChunkInnerPos, List<NavLink>> getAllNavLinks();
+
+    /**
+     * Add a navigation link
+     *
+     * @param from     the starting position
+     * @param link     the navigation link
+     */
+    void addNavLink(ChunkInnerPos from, NavLink link);
+
+    /**
+     * Remove all navigation links from a specific position
+     *
+     * @param pos the position to remove links from
+     */
+    void removeNavLinks(ChunkInnerPos pos);
+
+    /**
+     * Clear all navigation links
+     */
+    void clearNavLinks();
 }

@@ -1,6 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
-import io.github.kunosayo.simplepathfinder.config.NavBuildConfig;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
@@ -59,7 +59,7 @@ public class LevelNavData {
 
     public Optional<INavChunk> getNavChunk(ChunkPos pos, boolean create) {
         return Optional.ofNullable(navChunks.computeIfAbsent(pos, chunkPos -> {
-            if (!create || (navChunks.size() >= NavBuildConfig.NAV_BUILD_CONFIG.getLeft().maxNavChunks.get())) {
+            if (!create || (navChunks.size() >= NavConfig.NAV_CONFIG.getLeft().maxNavChunks.get())) {
                 return null;
             }
             return new NavChunk(pos);

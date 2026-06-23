@@ -17,7 +17,12 @@ public enum NavigationMode {
     /**
      * 移除导航模式 - 移除导航路径
      */
-    REMOVE_NAV("item.navigation_mode.remove_nav", "item.navigation_mode.remove_nav.desc");
+    REMOVE_NAV("item.navigation_mode.remove_nav", "item.navigation_mode.remove_nav.desc"),
+
+    /**
+     * 添加导航链接模式 - 右键两个点创建导航链接
+     */
+    ADD_LINK("item.navigation_mode.add_link", "item.navigation_mode.add_link.desc");
 
     private final String translationKey;
     private final String descriptionKey;

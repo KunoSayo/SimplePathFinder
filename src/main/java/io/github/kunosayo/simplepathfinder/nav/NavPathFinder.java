@@ -6,7 +6,10 @@ import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,9 +23,18 @@ public class NavPathFinder {
     private final ObjectHeapPriorityQueue<SearchNode> searchNodes = new ObjectHeapPriorityQueue<>();
     private final BlockPos start;
     private final BlockPos end;
+    private final ResourceKey<Level> dimension;
 
     public NavPathFinder(LevelNavData levelNavData, BlockPos start, BlockPos end) {
         this.levelNavData = levelNavData;
+        this.start = start;
+        this.end = end;
+        this.dimension = null; // Dimension will be set from level context
+    }
+
+    public NavPathFinder(LevelNavData levelNavData, ResourceKey<Level> dimension, BlockPos start, BlockPos end) {
+        this.levelNavData = levelNavData;
+        this.dimension = dimension;
         this.start = start;
         this.end = end;
     }
@@ -57,7 +69,69 @@ public class NavPathFinder {
         bNavChunk.getLayers(b, distance, edgeInfoConsumer);
     }
 
+    /**
+     * Get edges from navigation links at the current position.
+     * This allows the pathfinder to consider teleports, vehicles, and other travel methods.
+     */
+    private void getNavLinkEdges(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca, Consumer<EdgeInfo> edgeInfoConsumer) {
+        var chunkInnerPos = new ChunkInnerPos(a);
+
+        // Get all nav links from this position
+        for (var navLink : navChunk.getNavLinks(chunkInnerPos)) {
+            var dest = navLink.dest();
+            var destPos = dest.pos();
+
+            // Skip if destination is in wrong dimension
+            if (dimension != null && !dest.dimension().equals(dimension)) {
+                continue;
+            }
+
+            // Calculate cost based on link type
+            double costMultiplier = navLink.getCostMultiplier();
+            int linkCost = (int) (100 * costMultiplier); // Base cost for using nav link
+
+            // Get the nav chunk at destination
+            var destChunkPos = ChunkPos.containing(destPos);
+            var destNavChunkOpt = levelNavData.getNavChunk(destChunkPos, false);
+            if (destNavChunkOpt.isEmpty()) {
+                continue;
+            }
+            var destNavChunk = destNavChunkOpt.get();
+
+            // Find the layer at destination
+            destNavChunk.getLayerNav(destPos).ifPresentOrElse(
+                    destLayer -> {
+                        // Add edge info for the nav link
+                        edgeInfoConsumer.accept(new EdgeInfo(
+                                linkCost,
+                                destPos,
+                                destNavChunk,
+                                destLayer,
+                                navLink.type()
+                        ));
+                    },
+                    () -> {
+                        // No layer at destination, try to find nearest layer
+                        destNavChunk.getNearestLayer(destPos.getX(), destPos.getY(), destPos.getZ())
+                                .ifPresent(destLayer -> {
+                                    edgeInfoConsumer.accept(new EdgeInfo(
+                                            linkCost + 5, // Add penalty for layer mismatch
+                                            destPos,
+                                            destNavChunk,
+                                            destLayer,
+                                            navLink.type()
+                                    ));
+                                });
+                    }
+            );
+        }
+    }
+
     private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca, Consumer<EdgeInfo> edgeInfoConsumer) {
+        // First, get edges from navigation links (teleports, vehicles, etc.)
+        getNavLinkEdges(navChunk, layeredNavChunk, a, ca, edgeInfoConsumer);
+
+        // Then, get normal walking edges
         for (int i = 0; i < 4; i++) {
             var t = a.offset(LayeredNavChunk.SEARCH_DX[i], 0, LayeredNavChunk.SEARCH_DZ[i]);
             boolean isSame = NavUtil.isSameChunk(a, t);
@@ -98,6 +172,10 @@ public class NavPathFinder {
                 }
 
                 long extraCost = node.getExtraCost(edgeInfo.targetPos);
+                // Add additional cost for nav links (teleport, vehicle)
+                if (edgeInfo.linkType != null && edgeInfo.linkType != NavLinkType.NORMAL) {
+                    extraCost += (long) (edgeInfo.distance * 0.5); // Add distance-based cost multiplier
+                }
                 var targetNode = new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node);
                 searchNodes.enqueue(targetNode);
             });
@@ -106,7 +184,11 @@ public class NavPathFinder {
     }
 
     public record EdgeInfo(int distance, BlockPos targetPos, INavChunk targetNavChunk,
-                           ILayeredNavChunk targetLayeredChunk) {
+                           ILayeredNavChunk targetLayeredChunk, NavLinkType linkType) {
+        public EdgeInfo(int distance, BlockPos targetPos, INavChunk targetNavChunk,
+                       ILayeredNavChunk targetLayeredChunk) {
+            this(distance, targetPos, targetNavChunk, targetLayeredChunk, null);
+        }
     }
 
     public record SearchedPos(int layer, BlockPos pos) {

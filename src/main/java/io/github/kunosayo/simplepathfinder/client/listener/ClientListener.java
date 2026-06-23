@@ -2,9 +2,11 @@ package io.github.kunosayo.simplepathfinder.client.listener;
 
 import com.mojang.brigadier.tree.CommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.client.event.NavigationRenderTriggerEvent;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
+import io.github.kunosayo.simplepathfinder.item.NavBrushItem;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
@@ -16,6 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.api.distmarker.Dist;
@@ -26,28 +29,64 @@ import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.apache.logging.log4j.LogManager;
+import org.lwjgl.glfw.GLFW;
 
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = SimplePathFinder.MOD_ID)
 public class ClientListener {
+    /**
+     * Initialize navigation data manager when connecting to a server.
+     * Loads cached data if available.
+     */
+    @SubscribeEvent
+    public static void onServerConnect(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+        // Only run on client side
+        if (event.getEntity().level().isClientSide()) {
+            ClientNavDataManager.onServerConnect();
+            LogManager.getLogger().info("SimplePathFinder: Connected to server: {}",
+                    ClientNavDataManager.getCurrentServerAddress());
+        }
+    }
+
+    /**
+     * Clear navigation data when disconnecting from a server.
+     */
+    @SubscribeEvent
+    public static void onServerDisconnect(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        // Only run on client side
+        if (event.getEntity().level().isClientSide()) {
+            ClientNavDataManager.clear();
+            LogManager.getLogger().info("SimplePathFinder: Disconnected from server");
+        }
+    }
     private static LevelNavData getNavData(Player player) {
         if (player.level() instanceof ServerLevel sl) {
             return LevelNavDataSavedData.loadFromLevel(sl).levelNavData;
         }
-        return SimplePathFinder.clientNavData;
+        return ClientNavDataManager.getNavDataForPlayer();
     }
 
+    /**
+     * Perform pathfinding asynchronously to avoid blocking the main thread.
+     * The A* pathfinding algorithm is computationally expensive and runs on a background thread.
+     */
     private static void doNav(Player player, BlockPos target) {
         var data = getNavData(player);
         if (data == null) {
             return;
         }
-        long startTime = System.currentTimeMillis();
-        data.findNav(player.blockPosition(), target).ifPresent(navResult -> {
-            SimplePathFinder.clientNavResult = navResult;
+        BlockPos start = player.blockPosition();
+
+        // Run pathfinding asynchronously on the background executor to avoid blocking the main thread
+        Util.backgroundExecutor().execute(() -> {
+            long startTime = System.currentTimeMillis();
+            data.findNav(start, target).ifPresent(navResult -> {
+                // Update the result on the main thread
+                SimplePathFinder.clientNavResult = navResult;
+            });
+            long endTime = System.currentTimeMillis();
+            LogManager.getLogger().info("nav in {}ms", endTime - startTime);
         });
-        long endTime = System.currentTimeMillis();
-        LogManager.getLogger().info("nav in {}ms", endTime - startTime);
     }
 
     @SubscribeEvent
@@ -114,7 +153,7 @@ public class ClientListener {
             if (level instanceof ServerLevel sl) {
                 data = LevelNavDataSavedData.loadFromLevel(sl).levelNavData;
             } else {
-                data = SimplePathFinder.clientNavData;
+                data = ClientNavDataManager.getNavDataForPlayer();
             }
             var lr = event.getLevelRenderer();
             if (data != null) {
@@ -195,6 +234,22 @@ public class ClientListener {
 
         }
 
+    }
+
+    /**
+     * Register navigation item model properties
+     */
+    @SubscribeEvent
+    public static void onRegisterRangeSelectItemModelProperty(net.neoforged.neoforge.client.event.RegisterRangeSelectItemModelPropertyEvent event) {
+        io.github.kunosayo.simplepathfinder.client.property.NavigationModelProperty.register(event);
+    }
+
+    /**
+     * Register nav brush item model properties
+     */
+    @SubscribeEvent
+    public static void onRegisterConditionalItemModelProperty(net.neoforged.neoforge.client.event.RegisterConditionalItemModelPropertyEvent event) {
+        io.github.kunosayo.simplepathfinder.client.property.NavBrushModelProperty.register(event);
     }
 
 }

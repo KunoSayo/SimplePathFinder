@@ -1,6 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
-import io.github.kunosayo.simplepathfinder.config.NavBuildConfig;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.netty.buffer.ByteBuf;
@@ -10,6 +10,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -32,24 +33,73 @@ public final class NavChunk implements INavChunk {
 
         throw new IllegalArgumentException("Not supported nav chunk");
     });
+
+    /**
+     * Stream codec for nav links map
+     * Uses a list format for serialization: List<Record<ChunkInnerPos, List<NavLink>>>
+     */
+    private static final StreamCodec<ByteBuf, Map<ChunkInnerPos, List<NavLink>>> NAV_LINKS_MAP_CODEC = StreamCodec.of(
+            (buf, map) -> {
+                // Write map size using ByteBufCodecs
+                ByteBufCodecs.VAR_INT.encode(buf, map.size());
+                // Write each entry
+                for (var entry : map.entrySet()) {
+                    ChunkInnerPos.STREAM_CODEC.encode(buf, entry.getKey());
+                    // Write list size
+                    ByteBufCodecs.VAR_INT.encode(buf, entry.getValue().size());
+                    // Write each link
+                    for (var link : entry.getValue()) {
+                        NavLink.STREAM_CODEC.encode(buf, link);
+                    }
+                }
+            },
+            (buf) -> {
+                int size = ByteBufCodecs.VAR_INT.decode(buf);
+                Map<ChunkInnerPos, List<NavLink>> map = new HashMap<>();
+                for (int i = 0; i < size; i++) {
+                    ChunkInnerPos key = ChunkInnerPos.STREAM_CODEC.decode(buf);
+                    int listSize = ByteBufCodecs.VAR_INT.decode(buf);
+                    List<NavLink> links = new ArrayList<>(listSize);
+                    for (int j = 0; j < listSize; j++) {
+                        links.add(NavLink.STREAM_CODEC.decode(buf));
+                    }
+                    map.put(key, links);
+                }
+                return map;
+            }
+    );
+
     public static final StreamCodec<ByteBuf, NavChunk> STREAM_CODEC = StreamCodec
-            .composite(ByteBufCodecs.<ByteBuf, ILayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
-                    navChunk -> navChunk.layers, NavChunk::new);
+            .composite(
+                    ByteBufCodecs.<ByteBuf, ILayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
+                    navChunk -> navChunk.layers,
+                    NAV_LINKS_MAP_CODEC,
+                    navChunk -> navChunk.navLinks,
+                    NavChunk::new
+            );
 
 
     public List<ILayeredNavChunk> layers = new ArrayList<>();
     public ChunkPos chunkPos;
+
+    /**
+     * Navigation links map - stores links from positions to other positions
+     * Key: ChunkInnerPos (source position within chunk)
+     * Value: List of NavLink (destinations from this position)
+     */
+    private final Map<ChunkInnerPos, List<NavLink>> navLinks = new ConcurrentHashMap<>();
 
 
     public NavChunk(ChunkPos pos) {
         this.chunkPos = pos;
     }
 
-    private NavChunk(List<ILayeredNavChunk> layers) {
+    private NavChunk(List<ILayeredNavChunk> layers, Map<ChunkInnerPos, List<NavLink>> navLinks) {
         this.layers = layers;
         for (ILayeredNavChunk layer : this.layers) {
             layer.setParentChunk(this);
         }
+        this.navLinks.putAll(navLinks);
     }
 
     @Override
@@ -69,7 +119,7 @@ public final class NavChunk implements INavChunk {
                 return Optional.of(layeredNavChunk);
             }
         }
-        if (layers.size() >= NavBuildConfig.NAV_BUILD_CONFIG.getLeft().maxLayers.get()) {
+        if (layers.size() >= NavConfig.NAV_CONFIG.getLeft().maxLayers.get()) {
             return Optional.empty();
         }
         var result = supplier.get();
@@ -172,5 +222,30 @@ public final class NavChunk implements INavChunk {
     @Override
     public int getLayerCount() {
         return this.layers.size();
+    }
+
+    @Override
+    public List<NavLink> getNavLinks(ChunkInnerPos pos) {
+        return navLinks.getOrDefault(pos, Collections.emptyList());
+    }
+
+    @Override
+    public Map<ChunkInnerPos, List<NavLink>> getAllNavLinks() {
+        return new HashMap<>(navLinks);
+    }
+
+    @Override
+    public void addNavLink(ChunkInnerPos from, NavLink link) {
+        navLinks.computeIfAbsent(from, k -> new ArrayList<>()).add(link);
+    }
+
+    @Override
+    public void removeNavLinks(ChunkInnerPos pos) {
+        navLinks.remove(pos);
+    }
+
+    @Override
+    public void clearNavLinks() {
+        navLinks.clear();
     }
 }

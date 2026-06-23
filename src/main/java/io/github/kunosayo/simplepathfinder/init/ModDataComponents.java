@@ -3,6 +3,8 @@ package io.github.kunosayo.simplepathfinder.init;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
+import io.github.kunosayo.simplepathfinder.data.NavBrushData;
+import io.github.kunosayo.simplepathfinder.data.LinkCreationData;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -26,6 +28,16 @@ public class ModDataComponents {
             register("locator",
                     builder -> builder.persistent(LocatorData.CODEC)
                             .networkSynchronized(LocatorData.STREAM_CODEC));
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<NavBrushData>> NAV_BRUSH_COMPONENT =
+            register("nav_brush",
+                    builder -> builder.persistent(NavBrushData.CODEC)
+                            .networkSynchronized(NavBrushData.STREAM_CODEC));
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<LinkCreationData>> LINK_CREATION_COMPONENT =
+            register("link_creation",
+                    builder -> builder.persistent(LinkCreationData.CODEC)
+                            .networkSynchronized(LinkCreationData.STREAM_CODEC));
 
     private static <T> DeferredHolder<DataComponentType<?>, DataComponentType<T>> register(
             String name, UnaryOperator<DataComponentType.Builder<T>> builder) {

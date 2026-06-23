@@ -5,12 +5,17 @@ import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.VarInt;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
@@ -22,6 +27,13 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
     public static final StreamCodec<ByteBuf, SyncLevelNavDataPacket> STREAM_CODEC = new StreamCodec<ByteBuf, SyncLevelNavDataPacket>() {
         @Override
         public void encode(ByteBuf buffer, SyncLevelNavDataPacket value) {
+            // Encode dimension as string (namespace:path format)
+            String dimensionStr = value.dimension != null ? value.dimension.toString() : "";
+            // Write string with VarInt length prefix
+            byte[] strBytes = dimensionStr.getBytes(StandardCharsets.UTF_8);
+            VarInt.write(buffer, strBytes.length);
+            buffer.writeBytes(strBytes);
+
             // 先将数据编码到临时缓冲区
             ByteBuf tempBuffer = Unpooled.buffer();
             LevelNavData.STREAM_CODEC.encode(tempBuffer, value.levelNavData);
@@ -60,6 +72,28 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
 
         @Override
         public SyncLevelNavDataPacket decode(ByteBuf buffer) {
+            // Decode dimension from string
+            int strLen = VarInt.read(buffer);
+            String dimensionStr = "";
+            if (strLen > 0) {
+                byte[] strBytes = new byte[strLen];
+                buffer.readBytes(strBytes);
+                dimensionStr = new String(strBytes, StandardCharsets.UTF_8);
+            }
+
+            ResourceKey<Level> dimension = null;
+            if (!dimensionStr.isEmpty()) {
+                try {
+                    // Parse the resource key string (e.g., "minecraft:overworld")
+                    Identifier id = Identifier.tryParse(dimensionStr);
+                    if (id != null) {
+                        dimension = ResourceKey.create(Registries.DIMENSION, id);
+                    }
+                } catch (Exception e) {
+                    SimplePathFinder.LOGGER.error("Failed to parse dimension key: {}", dimensionStr, e);
+                }
+            }
+
             int len = buffer.readInt();
             byte[] compressed = new byte[len];
             buffer.readBytes(compressed);
@@ -88,24 +122,44 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
                 ByteBuf decompressedBuffer = Unpooled.wrappedBuffer(result.toByteArray());
                 LevelNavData levelNavData = LevelNavData.STREAM_CODEC.decode(decompressedBuffer);
                 decompressedBuffer.release();
-                return new SyncLevelNavDataPacket(levelNavData);
+                return new SyncLevelNavDataPacket(dimension, levelNavData);
             }
 
         }
     };
 
 
+    ResourceKey<Level> dimension;
     LevelNavData levelNavData;
 
+    public SyncLevelNavDataPacket(ResourceKey<Level> dimension, LevelNavData levelNavData) {
+        this.dimension = dimension;
+        this.levelNavData = levelNavData;
+    }
+
+    /**
+     * Legacy constructor for backward compatibility.
+     * Uses the current level's dimension.
+     */
     public SyncLevelNavDataPacket(LevelNavData levelNavData) {
         this.levelNavData = levelNavData;
+        this.dimension = null;
     }
 
     public static void clientHandler(final SyncLevelNavDataPacket updatePacket, final IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = Minecraft.getInstance().player;
             if (player != null) {
-                SimplePathFinder.clientNavData = updatePacket.levelNavData;
+                // Use packet dimension if available, otherwise use player's current dimension
+                ResourceKey<Level> targetDimension = updatePacket.dimension;
+                if (targetDimension == null) {
+                    targetDimension = player.level().dimension();
+                }
+
+                // Store using ClientNavDataManager
+                io.github.kunosayo.simplepathfinder.client.ClientNavDataManager.setNavData(
+                        targetDimension, updatePacket.levelNavData);
+
             }
         });
     }

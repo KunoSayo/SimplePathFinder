@@ -10,12 +10,13 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * 导航模式数据
- * 用于存储物品的当前导航模式
+ * 用于存储物品的当前导航模式和导航层设置
  */
-public record NavigationModeData(NavigationMode mode) {
+public record NavigationModeData(NavigationMode mode, byte layer) {
     public static final Codec<NavigationModeData> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                    Codec.STRING.fieldOf("mode").forGetter(data -> data.mode.name())
+                    Codec.STRING.fieldOf("mode").forGetter(data -> data.mode.name()),
+                    Codec.BYTE.fieldOf("layer").forGetter(NavigationModeData::layer)
             ).apply(instance, NavigationModeData::new)
     );
 
@@ -23,25 +24,57 @@ public record NavigationModeData(NavigationMode mode) {
         @Override
         public @NotNull NavigationModeData decode(RegistryFriendlyByteBuf buf) {
             String modeName = buf.readUtf();
+            byte layer = buf.readByte();
             NavigationMode mode = NavigationMode.valueOf(modeName);
-            return new NavigationModeData(mode);
+            return new NavigationModeData(mode, layer);
         }
 
         @Override
         public void encode(RegistryFriendlyByteBuf buf, NavigationModeData data) {
             buf.writeUtf(data.mode.name());
+            buf.writeByte(data.layer);
         }
     };
 
+    /**
+     * 默认构造函数，使用默认模式和层0
+     */
     public NavigationModeData() {
-        this(NavigationMode.DEFAULT);
+        this(NavigationMode.DEFAULT, (byte) 0);
     }
 
-    public NavigationModeData(String modeName) {
-        this(NavigationMode.valueOf(modeName));
+    /**
+     * 只指定模式的构造函数，使用默认层0
+     */
+    public NavigationModeData(NavigationMode mode) {
+        this(mode, (byte) 0);
     }
 
+    /**
+     * 从模式名称和层创建数据
+     */
+    public NavigationModeData(String modeName, byte layer) {
+        this(NavigationMode.valueOf(modeName), layer);
+    }
+
+    /**
+     * 创建新的模式数据，保持相同的层
+     */
     public NavigationModeData withMode(NavigationMode mode) {
-        return new NavigationModeData(mode);
+        return new NavigationModeData(mode, this.layer);
+    }
+
+    /**
+     * 创建新的模式数据，使用指定的层
+     */
+    public NavigationModeData withLayer(byte layer) {
+        return new NavigationModeData(this.mode, layer);
+    }
+
+    /**
+     * 创建新的模式数据，同时指定模式和层
+     */
+    public NavigationModeData withModeAndLayer(NavigationMode mode, byte layer) {
+        return new NavigationModeData(mode, layer);
     }
 }

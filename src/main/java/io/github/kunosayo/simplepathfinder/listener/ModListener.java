@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.listener;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -17,6 +18,7 @@ public class ModListener implements IModBusEvent {
     public static void registerPayload(final RegisterPayloadHandlersEvent event) {
         final PayloadRegistrar registrar = event.registrar(NETWORK_VERSION);
         registrar.playToClient(SyncLevelNavDataPacket.NETWORK_TYPE, SyncLevelNavDataPacket.STREAM_CODEC, SyncLevelNavDataPacket::clientHandler);
+        registrar.playToClient(PlayerLocationPacket.NETWORK_TYPE, PlayerLocationPacket.STREAM_CODEC, PlayerLocationPacket::clientHandler);
     }
 
 }

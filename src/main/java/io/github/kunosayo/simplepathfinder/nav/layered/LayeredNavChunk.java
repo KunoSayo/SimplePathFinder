@@ -122,6 +122,11 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         return distances[getDistanceIdx(inner.x, inner.z, isZ)];
     }
 
+    @Override
+    public void setDistance(int x, int z, boolean isZ, short value) {
+        distances[getDistanceIdx(x, z, isZ)] = value;
+    }
+
     private static int convertToIndex(int x, int z) {
         return (x << 4) | z;
     }
