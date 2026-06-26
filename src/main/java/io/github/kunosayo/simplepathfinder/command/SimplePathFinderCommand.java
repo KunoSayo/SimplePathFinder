@@ -65,8 +65,8 @@ public final class SimplePathFinderCommand {
 
                                 .then(Commands.literal("build")
                                         .then(Commands.argument("layer", LAYER_ARG)
-                                                .then(Commands.argument("dx", IntegerArgumentType.integer(0, 128))
-                                                        .then(Commands.argument("dz", IntegerArgumentType.integer(0, 128))
+                                                .then(Commands.argument("dx", IntegerArgumentType.integer(0, 63))
+                                                        .then(Commands.argument("dz", IntegerArgumentType.integer(0, 63))
                                                                 .executes(context -> {
                                                                     byte layer = context.getArgument("layer", Integer.class).byteValue();
                                                                     int dx = context.getArgument("dx", Integer.class);
