@@ -87,7 +87,7 @@ public final class SimplePathFinder {
     }
 
     public static void syncPlayerFullNav(ServerPlayer sp, LevelNavDataSavedData data, ResourceKey<Level> dimension) {
-        PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(dimension, data.levelNavData));
+        PacketDistributor.sendToPlayer(sp, new SyncLevelNavDataPacket(dimension.identifier(), data.levelNavData));
     }
 
     public static void syncAllPlayerNav(ServerPlayer sp) {

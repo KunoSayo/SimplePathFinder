@@ -3,6 +3,7 @@ package io.github.kunosayo.simplepathfinder.client;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Util;
 import net.minecraft.world.level.Level;
@@ -31,14 +32,14 @@ public class ClientNavDataManager {
      * Storage for navigation data by dimension key
      * Key: dimension ResourceKey string representation
      */
-    private static final ConcurrentHashMap<String, LevelNavData> navDataByDimension = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Identifier, LevelNavData> navDataByDimension = new ConcurrentHashMap<>();
 
     /**
      * Storage for all cached nav data by server address
      * Used for loading cached data when joining a server
      * Map structure: serverAddress -> (dimensionKey -> navData)
      */
-    private static final Map<String, Map<String, LevelNavData>> cachedNavData = new HashMap<>();
+    private static final Map<String, Map<Identifier, LevelNavData>> cachedNavData = new HashMap<>();
 
     /**
      * Get the current server address.
@@ -85,14 +86,14 @@ public class ClientNavDataManager {
      */
     @Nullable
     public static LevelNavData getNavData(ResourceKey<Level> dimension) {
-        return navDataByDimension.get(dimension.toString());
+        return getNavData(dimension.identifier());
     }
 
     /**
      * Get navigation data for the specified dimension key string.
      */
     @Nullable
-    public static LevelNavData getNavData(String dimensionKey) {
+    public static LevelNavData getNavData(Identifier dimensionKey) {
         return navDataByDimension.get(dimensionKey);
     }
 
@@ -102,7 +103,7 @@ public class ClientNavDataManager {
     @Nullable
     public static LevelNavData getNavDataForPlayer() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.player.level() == null) {
+        if (mc.player == null) {
             return null;
         }
         return getNavData(mc.player.level().dimension());
@@ -113,18 +114,17 @@ public class ClientNavDataManager {
      * Also saves it to local cache.
      * File I/O is performed asynchronously on the I/O pool.
      */
-    public static void setNavData(ResourceKey<Level> dimension, LevelNavData data) {
-        String dimensionKey = dimension.toString();
-        navDataByDimension.put(dimensionKey, data);
+    public static void setNavData(Identifier dimension, LevelNavData data) {
+        navDataByDimension.put(dimension, data);
 
         // Update cache
-        Map<String, LevelNavData> serverCache = cachedNavData.computeIfAbsent(
+        Map<Identifier, LevelNavData> serverCache = cachedNavData.computeIfAbsent(
                 currentServerAddress, k -> new HashMap<>());
-        serverCache.put(dimensionKey, data);
+        serverCache.put(dimension, data);
 
         // Save to disk asynchronously - do NOT block the main thread
         String serverAddress = currentServerAddress;
-        Util.ioPool().execute(() -> saveDataToFile(serverAddress, dimensionKey, data));
+        Util.ioPool().execute(() -> saveDataToFile(serverAddress, dimension, data));
     }
 
     /**
@@ -153,7 +153,7 @@ public class ClientNavDataManager {
     /**
      * Save navigation data to a file.
      */
-    private static void saveDataToFile(String serverAddress, String dimensionKey, LevelNavData data) {
+    private static void saveDataToFile(String serverAddress, Identifier dimensionKey, LevelNavData data) {
         if (data == null) {
             return;
         }
@@ -167,7 +167,7 @@ public class ClientNavDataManager {
             }
 
             // Sanitize dimension key for filename
-            String safeFileName = dimensionKey.replaceAll("[^a-zA-Z0-9_-]", "_") + ".nav";
+            String safeFileName = dimensionKey.toString().replaceAll("[^a-zA-Z0-9_-]", "_") + ".nav";
             Path filePath = serverDir.resolve(safeFileName);
 
             // Encode data to byte array
@@ -204,7 +204,7 @@ public class ClientNavDataManager {
             return;
         }
 
-        Map<String, LevelNavData> serverCache = cachedNavData.computeIfAbsent(
+        var serverCache = cachedNavData.computeIfAbsent(
                 serverAddress, k -> new HashMap<>());
 
         for (File file : files) {
@@ -220,7 +220,7 @@ public class ClientNavDataManager {
                 buffer.release();
 
                 // Extract dimension key from filename
-                String dimensionKey = file.getName().substring(0, file.getName().length() - 4);
+                var dimensionKey = Identifier.parse(file.getName().substring(0, file.getName().length() - 4));
 
                 // Add to cache and current storage
                 serverCache.put(dimensionKey, navData);

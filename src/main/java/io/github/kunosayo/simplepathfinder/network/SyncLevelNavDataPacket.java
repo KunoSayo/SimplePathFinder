@@ -26,8 +26,7 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
         @Override
         public void encode(ByteBuf buffer, SyncLevelNavDataPacket value) {
             // Encode dimension as string (namespace:path format)
-            ResourceKey.streamCodec(Registries.DIMENSION)
-                    .encode(buffer, value.dimension);
+            Identifier.STREAM_CODEC.encode(buffer, value.dimension);
 
             // 先将数据编码到临时缓冲区
             ByteBuf tempBuffer = Unpooled.buffer();
@@ -68,8 +67,7 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
         @Override
         public SyncLevelNavDataPacket decode(ByteBuf buffer) {
 
-            ResourceKey<Level> dimension = ResourceKey.streamCodec(Registries.DIMENSION)
-                    .decode(buffer);
+            var dimension = Identifier.STREAM_CODEC.decode(buffer);
 
             int len = buffer.readInt();
             byte[] compressed = new byte[len];
@@ -106,10 +104,10 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
     };
 
 
-    ResourceKey<Level> dimension;
+    Identifier dimension;
     LevelNavData levelNavData;
 
-    public SyncLevelNavDataPacket(ResourceKey<Level> dimension, LevelNavData levelNavData) {
+    public SyncLevelNavDataPacket(Identifier dimension, LevelNavData levelNavData) {
         this.dimension = dimension;
         this.levelNavData = levelNavData;
     }
@@ -128,9 +126,9 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
             var player = Minecraft.getInstance().player;
             if (player != null) {
                 // Use packet dimension if available, otherwise use player's current dimension
-                ResourceKey<Level> targetDimension = updatePacket.dimension;
+                var targetDimension = updatePacket.dimension;
                 if (targetDimension == null) {
-                    targetDimension = player.level().dimension();
+                    targetDimension = player.level().dimension().identifier();
                 }
 
                 // Store using ClientNavDataManager
