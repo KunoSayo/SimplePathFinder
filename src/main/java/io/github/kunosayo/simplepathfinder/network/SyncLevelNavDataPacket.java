@@ -6,7 +6,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.VarInt;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -15,7 +14,6 @@ import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
@@ -28,11 +26,8 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
         @Override
         public void encode(ByteBuf buffer, SyncLevelNavDataPacket value) {
             // Encode dimension as string (namespace:path format)
-            String dimensionStr = value.dimension != null ? value.dimension.toString() : "";
-            // Write string with VarInt length prefix
-            byte[] strBytes = dimensionStr.getBytes(StandardCharsets.UTF_8);
-            VarInt.write(buffer, strBytes.length);
-            buffer.writeBytes(strBytes);
+            ResourceKey.streamCodec(Registries.DIMENSION)
+                    .encode(buffer, value.dimension);
 
             // 先将数据编码到临时缓冲区
             ByteBuf tempBuffer = Unpooled.buffer();
@@ -72,27 +67,9 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
 
         @Override
         public SyncLevelNavDataPacket decode(ByteBuf buffer) {
-            // Decode dimension from string
-            int strLen = VarInt.read(buffer);
-            String dimensionStr = "";
-            if (strLen > 0) {
-                byte[] strBytes = new byte[strLen];
-                buffer.readBytes(strBytes);
-                dimensionStr = new String(strBytes, StandardCharsets.UTF_8);
-            }
 
-            ResourceKey<Level> dimension = null;
-            if (!dimensionStr.isEmpty()) {
-                try {
-                    // Parse the resource key string (e.g., "minecraft:overworld")
-                    Identifier id = Identifier.tryParse(dimensionStr);
-                    if (id != null) {
-                        dimension = ResourceKey.create(Registries.DIMENSION, id);
-                    }
-                } catch (Exception e) {
-                    SimplePathFinder.LOGGER.error("Failed to parse dimension key: {}", dimensionStr, e);
-                }
-            }
+            ResourceKey<Level> dimension = ResourceKey.streamCodec(Registries.DIMENSION)
+                    .decode(buffer);
 
             int len = buffer.readInt();
             byte[] compressed = new byte[len];
