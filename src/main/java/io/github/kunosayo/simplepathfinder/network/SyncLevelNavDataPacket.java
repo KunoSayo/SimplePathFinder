@@ -24,7 +24,7 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
     public static final Type<SyncLevelNavDataPacket> NETWORK_TYPE = new Type<>(Identifier.fromNamespaceAndPath(SimplePathFinder.MOD_ID, "sync_level_nav"));
 
 
-    public static final StreamCodec<ByteBuf, SyncLevelNavDataPacket> STREAM_CODEC = new StreamCodec<ByteBuf, SyncLevelNavDataPacket>() {
+    public static final StreamCodec<ByteBuf, SyncLevelNavDataPacket> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public void encode(ByteBuf buffer, SyncLevelNavDataPacket value) {
             // Encode dimension as string (namespace:path format)

@@ -3,7 +3,7 @@ package io.github.kunosayo.simplepathfinder.data;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.kunosayo.simplepathfinder.item.NavigationMode;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import org.jetbrains.annotations.NotNull;
@@ -20,21 +20,13 @@ public record NavigationModeData(NavigationMode mode, byte layer) {
             ).apply(instance, NavigationModeData::new)
     );
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, NavigationModeData> STREAM_CODEC = new StreamCodec<>() {
-        @Override
-        public @NotNull NavigationModeData decode(RegistryFriendlyByteBuf buf) {
-            String modeName = buf.readUtf();
-            byte layer = buf.readByte();
-            NavigationMode mode = NavigationMode.valueOf(modeName);
-            return new NavigationModeData(mode, layer);
-        }
-
-        @Override
-        public void encode(RegistryFriendlyByteBuf buf, NavigationModeData data) {
-            buf.writeUtf(data.mode.name());
-            buf.writeByte(data.layer);
-        }
-    };
+    public static final StreamCodec<ByteBuf, NavigationModeData> STREAM_CODEC = StreamCodec.composite(
+            NavigationMode.STREAM_CODEC.cast(),
+            NavigationModeData::mode,
+            ByteBufCodecs.BYTE,
+            NavigationModeData::layer,
+            NavigationModeData::new
+    );
 
     /**
      * 默认构造函数，使用默认模式和层0

@@ -8,6 +8,8 @@ import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import io.github.kunosayo.simplepathfinder.item.NavBrushItem;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
+import io.github.kunosayo.simplepathfinder.item.NavigationMode;
+import net.minecraft.world.InteractionHand;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import net.minecraft.client.Minecraft;
@@ -130,10 +132,14 @@ public class ClientListener {
             // 根据滚动方向切换模式
             double scrollDelta = event.getScrollDeltaY();
             boolean forward = scrollDelta > 0; // 向下滚动切换到下一个模式
-            NavigationItem.switchNavigationMode(mainHandItem, forward);
 
-            // 更新玩家物品栏
-            player.inventoryMenu.sendAllDataToRemote();
+            // 获取当前模式
+            NavigationMode currentMode = NavigationItem.getNavigationMode(mainHandItem);
+            NavigationMode newMode = forward ? currentMode.next() : currentMode.previous();
+
+            // 使用同步方法更新模式和层设置
+            byte currentLayer = NavigationItem.getNavigationLayer(mainHandItem);
+            NavigationItem.setNavigationModeDataSync(mainHandItem, InteractionHand.MAIN_HAND, newMode, currentLayer);
         }
     }
 

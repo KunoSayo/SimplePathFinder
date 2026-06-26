@@ -4,6 +4,7 @@ import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.data.NavBrushData;
+import io.github.kunosayo.simplepathfinder.network.UpdateItemPropertiesPacket;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
@@ -282,5 +283,24 @@ public class NavBrushItem extends Item {
             case ADD -> 0x00FF00; // Green
             case ADJUST_WEIGHT -> 0xFFA500; // Orange
         };
+    }
+
+    /**
+     * Set brush data and sync with server.
+     * This method updates the local item data and sends a packet to the server.
+     *
+     * @param stack     The item stack to update
+     * @param hand      The hand holding the item
+     * @param brushData The new brush data
+     */
+    public static void setBrushDataSync(ItemStack stack, InteractionHand hand, NavBrushData brushData) {
+        // Update local item data
+        setBrushData(stack, brushData);
+
+        // Send packet to server
+        if (net.minecraft.client.Minecraft.getInstance().getConnection() != null) {
+            var packet = new UpdateItemPropertiesPacket(hand, brushData);
+            net.minecraft.client.Minecraft.getInstance().getConnection().send(packet);
+        }
     }
 }

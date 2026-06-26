@@ -16,19 +16,63 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+record CachedData(@Nullable ByteBuf buf, int count) {
+
+}
 
 public class LevelNavData {
     public static final StreamCodec<ByteBuf, ChunkPos> CHUNK_POS_STREAM_CODEC = StreamCodec
             .composite(ByteBufCodecs.VAR_LONG, ChunkPos::pack, ChunkPos::unpack);
-
-    public static final StreamCodec<ByteBuf, LevelNavData> STREAM_CODEC = StreamCodec.composite(ByteBufCodecs.map(HashMap::new, CHUNK_POS_STREAM_CODEC, INavChunk.TYPED_NAV_CHUNK_CODEC),
+    // Only write on server thread.
+    public volatile int dirtyCount = 1;
+    private final AtomicReference<CachedData> cachedBuf = new AtomicReference<>(new CachedData(null, 0));
+    public static final StreamCodec<ByteBuf, LevelNavData> REAL_STREAM_CODEC = StreamCodec.composite(ByteBufCodecs.map(HashMap::new, CHUNK_POS_STREAM_CODEC, INavChunk.TYPED_NAV_CHUNK_CODEC),
             levelNavData -> levelNavData.navChunks, LevelNavData::new);
+
+    // Cached STREAM_CODEC for LevelNavData.
+    public static final StreamCodec<ByteBuf, LevelNavData> STREAM_CODEC = StreamCodec.of((byteBuf, levelNavData) -> {
+        var cached = levelNavData.cachedBuf.get();
+        var buf = cached.buf();
+        if (buf != null) {
+            buf.retain();
+            if (buf.refCnt() == 0) {
+                buf = null;
+            }
+        }
+        try {
+            int cnt = cached.count();
+            int gotDirty = levelNavData.dirtyCount;
+            if (cnt != gotDirty || buf == null) {
+                var newBuffer = Unpooled.buffer();
+                REAL_STREAM_CODEC.encode(newBuffer, levelNavData);
+                var newCached = new CachedData(newBuffer, gotDirty);
+                byteBuf.writeBytes(newBuffer.slice());
+                if (levelNavData.cachedBuf.compareAndSet(cached, newCached)) {
+                    if (buf != null) {
+                        buf.release();
+                    }
+                }
+                return;
+            }
+            byteBuf.writeBytes(buf.slice());
+        } finally {
+            if (buf != null) {
+                buf.release();
+            }
+        }
+    }, REAL_STREAM_CODEC);
     @ParametersAreNonnullByDefault
     public static final StreamCodec<ByteBuf, LevelNavData> VERSION_STREAM_CODEC = new StreamCodec<>() {
         @Override
@@ -186,13 +230,17 @@ public class LevelNavData {
     public long getEncodedBytes() {
         var buffer = Unpooled.buffer();
         STREAM_CODEC.encode(buffer, this);
-        return buffer.writerIndex();
+        int result = buffer.writerIndex();
+        buffer.release();
+        return result;
     }
 
     public long getEncodedCompressedBytes() {
         var buffer = Unpooled.buffer();
         SyncLevelNavDataPacket.STREAM_CODEC.encode(buffer, new SyncLevelNavDataPacket(this));
-        return buffer.writerIndex();
+        int cnt = buffer.writerIndex();
+        buffer.release();
+        return cnt;
     }
 
     public boolean removeNavChunk(ChunkPos pos) {

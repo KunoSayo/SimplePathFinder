@@ -54,6 +54,7 @@ public final class SimplePathFinder {
     }
 
     public static void playerMadeServerNavDirty(ServerPlayer sp) {
+        LevelNavDataSavedData.loadFromLevel(sp.level()).setDirty();
         syncAllPlayerNav(sp);
     }
 

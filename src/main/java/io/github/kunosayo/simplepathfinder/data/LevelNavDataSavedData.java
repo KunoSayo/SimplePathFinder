@@ -21,8 +21,9 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 import java.nio.ByteBuffer;
 
 public class LevelNavDataSavedData extends SavedData {
-    private static final StreamCodec<ByteBuf, LevelNavData> SAVE_CODEC = LevelNavData.STREAM_CODEC;
     public LevelNavData levelNavData = new LevelNavData();
+
+    private static final StreamCodec<ByteBuf, LevelNavData> SAVE_CODEC = LevelNavData.STREAM_CODEC;
     private static final Codec<LevelNavDataSavedData> SAVED_DATA_CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
                     Codec.BYTE_BUFFER.fieldOf("simple_path_finder_data").forGetter(data -> {
@@ -42,6 +43,19 @@ public class LevelNavDataSavedData extends SavedData {
 
     public LevelNavDataSavedData(LevelNavData levelNavData) {
         this.levelNavData = levelNavData;
+    }
+
+    @Override
+    public void setDirty() {
+        super.setDirty();
+    }
+
+    @Override
+    public void setDirty(boolean dirty) {
+        super.setDirty(dirty);
+        if (dirty) {
+            ++levelNavData.dirtyCount;
+        }
     }
 
     public static LevelNavDataSavedData loadFromLevel(ServerLevel level) {

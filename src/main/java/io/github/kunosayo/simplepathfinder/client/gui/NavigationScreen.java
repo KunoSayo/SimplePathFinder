@@ -157,9 +157,8 @@ public class NavigationScreen extends Screen {
             return;
         }
 
-        // Update item data directly
-        NavigationItem.setNavigationMode(currentStack, currentMode);
-        NavigationItem.setNavigationLayer(currentStack, (byte) currentLayer);
+        // Update item data and sync with server
+        NavigationItem.setNavigationModeDataSync(currentStack, hand, currentMode, (byte) currentLayer);
 
         this.onClose();
     }

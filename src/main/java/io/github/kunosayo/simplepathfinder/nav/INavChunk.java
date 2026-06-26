@@ -55,7 +55,7 @@ public interface INavChunk {
      *
      * @param layer    the layer index
      * @param supplier supplier for creating new layers
-     * @return optional containing the layer if it exists or was created
+     * @return optional containing the layer if it exists or was created. Empty if exceeded max layer or supplier return null.
      */
     Optional<ILayeredNavChunk> getLayer(int layer, java.util.function.Supplier<LayeredNavChunk> supplier);
 

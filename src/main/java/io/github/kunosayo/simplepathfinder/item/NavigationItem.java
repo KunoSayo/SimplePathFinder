@@ -7,6 +7,7 @@ import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.network.UpdateItemPropertiesPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
@@ -46,7 +47,7 @@ public class NavigationItem extends Item {
             var hand = context.getHand();
             var level = player.level();
             ItemStack stack = player.getItemInHand(hand);
-            var clickedPos = context.getClickedPos();
+            var clickedPos = context.getClickedPos().relative(context.getClickedFace());
 
             if (!level.isClientSide()) {
                 // 如果是服务端，处理物品功能
@@ -268,35 +269,24 @@ public class NavigationItem extends Item {
 
         // 检查是否达到最大层数限制
         var maxLayers = io.github.kunosayo.simplepathfinder.config.NavConfig.NAV_CONFIG.getLeft().maxLayers.get();
-        if (Math.abs(layer) >= maxLayers) {
-            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_limit", maxLayers - 1));
-            return true;
-        }
 
-        // 检查该chunk是否已经存在该层的导航数据
-        data.levelNavData.getNavChunk(chunkPos, false).ifPresentOrElse(navChunk -> {
-            var existingLayer = navChunk.getLayers().filter(l -> l.getLayer() == layer).findAny();
-            if (existingLayer.isPresent()) {
-                player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_exists", layer));
-                return;
-            }
+
+        data.levelNavData.getNavChunk(chunkPos, true).ifPresentOrElse(navChunk -> {
 
             // 获取或创建导航层
             navChunk.getLayer(layer, () -> (io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk)
-                    io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk.getDefault()).ifPresent(layeredNavChunk -> {
+                    io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk.getDefault()).ifPresentOrElse(layeredNavChunk -> {
                 if (layeredNavChunk instanceof io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk chunk) {
                     chunk.setParentChunk(navChunk);
                     chunk.setLayer(layer);
-                    chunk.parse(level, clickedPos.above());
+                    chunk.parse(level, clickedPos);
                     player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_created", layer, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()));
 
                     // 标记导航数据需要同步
                     SimplePathFinder.playerMadeServerNavDirty(player);
                 }
-            });
-        }, () -> {
-            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.chunk_not_found"));
-        });
+            }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_limit", maxLayers - 1)));
+        }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited")));
 
         return true;
     }
@@ -409,5 +399,50 @@ public class NavigationItem extends Item {
      */
     public static void clearLinkCreationData(ItemStack stack) {
         stack.remove(ModDataComponents.LINK_CREATION_COMPONENT.get());
+    }
+
+    /**
+     * Set navigation mode data and sync with server.
+     * This method updates the local item data and sends a packet to the server.
+     *
+     * @param stack The item stack to update
+     * @param hand  The hand holding the item
+     * @param mode  The new navigation mode
+     * @param layer The new navigation layer
+     */
+    public static void setNavigationModeDataSync(ItemStack stack, InteractionHand hand, NavigationMode mode, byte layer) {
+        // Update local item data
+        setNavigationMode(stack, mode);
+        setNavigationLayer(stack, layer);
+
+        // Send packet to server
+        if (net.minecraft.client.Minecraft.getInstance().getConnection() != null) {
+            var packet = new UpdateItemPropertiesPacket(hand, new NavigationModeData(mode, layer));
+            net.minecraft.client.Minecraft.getInstance().getConnection().send(packet);
+        }
+    }
+
+    /**
+     * Set navigation mode and sync with server.
+     *
+     * @param stack The item stack to update
+     * @param hand  The hand holding the item
+     * @param mode  The new navigation mode
+     */
+    public static void setNavigationModeSync(ItemStack stack, InteractionHand hand, NavigationMode mode) {
+        byte currentLayer = getNavigationLayer(stack);
+        setNavigationModeDataSync(stack, hand, mode, currentLayer);
+    }
+
+    /**
+     * Set navigation layer and sync with server.
+     *
+     * @param stack The item stack to update
+     * @param hand  The hand holding the item
+     * @param layer The new navigation layer
+     */
+    public static void setNavigationLayerSync(ItemStack stack, InteractionHand hand, byte layer) {
+        NavigationMode currentMode = getNavigationMode(stack);
+        setNavigationModeDataSync(stack, hand, currentMode, layer);
     }
 }

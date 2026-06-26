@@ -173,8 +173,8 @@ public class NavBrushScreen extends Screen {
             return;
         }
 
-        // Update item data directly
-        NavBrushItem.setBrushData(currentStack, new NavBrushData(
+        // Update item data and sync with server
+        NavBrushItem.setBrushDataSync(currentStack, hand, new NavBrushData(
                 currentMode, currentOperation, currentWeight
         ));
 
