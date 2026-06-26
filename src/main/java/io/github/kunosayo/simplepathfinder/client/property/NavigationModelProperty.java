@@ -5,26 +5,25 @@ import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
 import io.github.kunosayo.simplepathfinder.item.NavigationMode;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.item.properties.numeric.NeedleDirectionHelper;
 import net.minecraft.client.renderer.item.properties.numeric.RangeSelectItemModelProperty;
 import net.minecraft.world.entity.ItemOwner;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.event.RegisterRangeSelectItemModelPropertyEvent;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Item property for navigation item that switches models based on navigation mode.
  * Returns a float value (0.0-3.0) corresponding to the NavigationMode ordinal.
  */
-public class NavigationModelProperty extends NeedleDirectionHelper implements RangeSelectItemModelProperty {
+public class NavigationModelProperty implements RangeSelectItemModelProperty {
 
     public static final MapCodec<NavigationModelProperty> MAP_CODEC = MapCodec.unit(new NavigationModelProperty());
 
     public NavigationModelProperty() {
-        super(true);
     }
 
     @Override
-    protected float calculate(ItemStack itemStack, ClientLevel level, int seed, ItemOwner owner) {
+    public float get(ItemStack itemStack, @Nullable ClientLevel level, @Nullable ItemOwner owner, int seed) {
         if (itemStack.getItem() instanceof NavigationItem) {
             NavigationMode mode = NavigationItem.getNavigationMode(itemStack);
             return (float) mode.ordinal();

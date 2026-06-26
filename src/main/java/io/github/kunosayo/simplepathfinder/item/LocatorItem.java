@@ -1,17 +1,12 @@
 package io.github.kunosayo.simplepathfinder.item;
 
-import io.github.kunosayo.simplepathfinder.SimplePathFinder;
-import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
-import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
-import io.github.kunosayo.simplepathfinder.nav.NavResult;
-import net.minecraft.client.Minecraft;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -20,6 +15,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
@@ -69,6 +65,18 @@ public class LocatorItem extends Item {
         return super.use(level, player, hand);
     }
 
+    @Override
+    public @NonNull InteractionResult useOn(UseOnContext context) {
+        var stack = context.getItemInHand();
+        LocatorData data = getLocatorData(stack);
+        if (data == null && !context.getLevel().isClientSide()) {
+            var result = context.getClickedPos().relative(context.getClickedFace());
+            stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), new LocatorData(GlobalPos.of(context.getLevel().dimension(), result)));
+            return InteractionResult.SUCCESS_SERVER;
+        }
+        return super.useOn(context);
+    }
+
     /**
      * 处理定位器导航
      */
@@ -85,17 +93,6 @@ public class LocatorItem extends Item {
                 net.minecraft.core.BlockPos targetPos = targetPlayer.blockPosition();
                 String playerName = targetPlayer.getName().getString();
                 PacketDistributor.sendToPlayer(player, io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket.online(targetPos, playerName));
-            }
-        } else if (data.isPosBound()) {
-            // 绑定到位置：触发客户端导航
-            net.minecraft.core.BlockPos targetPos = data.getGlobalPos().pos();
-            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.starting", targetPos.getX(), targetPos.getY(), targetPos.getZ()));
-
-            // 在客户端触发导航
-            if (level instanceof ServerLevel serverLevel) {
-                // 发送一个简单的网络包通知客户端开始导航
-                // 这里我们使用 PlayerLocationPacket 的格式，但带有位置信息
-                PacketDistributor.sendToPlayer(player, io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket.online(targetPos, "Location"));
             }
         }
     }

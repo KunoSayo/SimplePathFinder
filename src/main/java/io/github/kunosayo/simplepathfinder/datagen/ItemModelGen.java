@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.datagen;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.client.property.LocatorModelProperty;
 import io.github.kunosayo.simplepathfinder.client.property.NavigationModelProperty;
 import io.github.kunosayo.simplepathfinder.client.property.NavBrushModelProperty;
 import io.github.kunosayo.simplepathfinder.init.ModBlocks;
@@ -37,8 +38,8 @@ public class ItemModelGen extends ModelProvider {
         // 导航物品 - 基于模式切换模型
         registerNavigationItemModels(itemModels);
 
-        // 定位器
-        itemModels.generateFlatItem(ModItems.LOCATOR.get(), ModelTemplates.FLAT_ITEM);
+        // 定位器 - 基于绑定状态切换模型
+        registerLocatorItemModels(itemModels);
 
         // 导航笔刷 - 基于模式切换模型
         registerNavBrushItemModels(itemModels);
@@ -105,6 +106,44 @@ public class ItemModelGen extends ModelProvider {
                         new NavBrushModelProperty(),
                         singleEdgeModel,  // onTrue - when SINGLE_EDGE (ordinal 1)
                         allEdgesModel     // onFalse - when ALL_EDGES (ordinal 0)
+                ));
+    }
+
+    /**
+     * 注册定位器的条件模型
+     * 根据绑定状态切换不同的模型：
+     * 0 = unbound (未绑定) - 使用无后缀贴图
+     * 1 = player bound (绑定玩家) - 使用 _player
+     * 2 = position bound (绑定位置) - 使用 _pos
+     */
+    private void registerLocatorItemModels(ItemModelGenerators itemModels) {
+        List<RangeSelectItemModel.Entry> entries = new ArrayList<>();
+
+        // 状态0使用无后缀贴图
+        var unboundModel = ItemModelUtils.plainModel(
+                itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "", ModelTemplates.FLAT_ITEM)
+        );
+        entries.add(new RangeSelectItemModel.Entry(0.0f, unboundModel));
+
+        // 状态1: 绑定玩家
+        var playerBoundModel = ItemModelUtils.plainModel(
+                itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "_player", ModelTemplates.FLAT_ITEM)
+        );
+        entries.add(new RangeSelectItemModel.Entry(1.0f, playerBoundModel));
+
+        // 状态2: 绑定位置
+        var posBoundModel = ItemModelUtils.plainModel(
+                itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "_pos", ModelTemplates.FLAT_ITEM)
+        );
+        entries.add(new RangeSelectItemModel.Entry(2.0f, posBoundModel));
+
+        itemModels.itemModelOutput.accept(ModItems.LOCATOR.get(),
+                new RangeSelectItemModel.Unbaked(
+                        Optional.empty(),
+                        new LocatorModelProperty(),
+                        1,
+                        entries,
+                        Optional.of(unboundModel)
                 ));
     }
 }

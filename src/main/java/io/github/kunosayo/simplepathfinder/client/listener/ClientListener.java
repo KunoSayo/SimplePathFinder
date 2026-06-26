@@ -242,6 +242,7 @@ public class ClientListener {
     @SubscribeEvent
     public static void onRegisterRangeSelectItemModelProperty(net.neoforged.neoforge.client.event.RegisterRangeSelectItemModelPropertyEvent event) {
         io.github.kunosayo.simplepathfinder.client.property.NavigationModelProperty.register(event);
+        io.github.kunosayo.simplepathfinder.client.property.LocatorModelProperty.register(event);
     }
 
     /**
