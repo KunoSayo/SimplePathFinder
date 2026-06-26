@@ -104,6 +104,8 @@ public class LocatorItem extends Item {
         if (data == null) {
             builder.accept(Component.translatable("tooltip.locator.unbound")
                     .withStyle(style -> style.withColor(0xFFFF00)));
+            builder.accept(Component.translatable("tooltip.locator.usage")
+                    .withStyle(style -> style.withColor(0x7F7F7F)));
         } else if (data.isPlayerBound()) {
             builder.accept(Component.translatable("tooltip.locator.bound.player")
                     .withStyle(style -> style.withColor(0x00FF00)));
@@ -120,8 +122,6 @@ public class LocatorItem extends Item {
             )).withStyle(style -> style.withColor(0x7F7F7F)));
         }
 
-        builder.accept(Component.translatable("tooltip.locator.usage")
-                .withStyle(style -> style.withColor(0x7F7F7F)));
     }
 
     /**
