@@ -71,7 +71,7 @@
   "tooltip.locator.bound.player": "Bound to Player",
   "tooltip.locator.bound.pos": "Bound to Position",
   "tooltip.locator.unbound": "Unbound",
-  "tooltip.locator.usage": "Hold Shift + Right-click to bind current position",
+  "tooltip.locator.usage": "Hold Shift + Right-click to bind current player, Right-click block to bind location.",
   "tooltip.nav_brush.controls": "Shift+Right-click to open settings, right-click block to apply",
   "tooltip.nav_brush.mode": "Brush Mode: ",
   "tooltip.nav_brush.operation": "Brush Operation: ",

@@ -71,7 +71,7 @@
   "tooltip.locator.bound.player": "已绑定到玩家",
   "tooltip.locator.bound.pos": "已绑定到位置",
   "tooltip.locator.unbound": "未绑定",
-  "tooltip.locator.usage": "按住Shift + 右键绑定当前位置",
+  "tooltip.locator.usage": "按住Shift + 右键绑定当前玩家，右键方块绑定位置",
   "tooltip.nav_brush.controls": "Shift+右键打开设置界面，右键方块应用操作",
   "tooltip.nav_brush.mode": "笔刷模式：",
   "tooltip.nav_brush.operation": "笔刷操作：",
