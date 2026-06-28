@@ -27,7 +27,7 @@ public class NavConfig {
 
         maxLayers = builder
                 .comment("The maximum number of layers per chunk")
-                .define("max_layers", 9);
+                .define("max_layers", 37);
 
         msPerTick = builder
                 .comment("The maximum ms of build nav chunk")
