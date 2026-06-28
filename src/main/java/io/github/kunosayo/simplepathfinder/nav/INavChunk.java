@@ -163,8 +163,8 @@ public interface INavChunk {
     /**
      * Add a navigation link
      *
-     * @param from     the starting position
-     * @param link     the navigation link
+     * @param from the starting position
+     * @param link the navigation link
      */
     void addNavLink(ChunkInnerPos from, NavLink link);
 

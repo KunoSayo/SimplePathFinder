@@ -26,13 +26,7 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.RegisterConditionalItemModelPropertyEvent;
-import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
-import net.neoforged.neoforge.client.event.RegisterRangeSelectItemModelPropertyEvent;
-import net.neoforged.neoforge.client.event.RenderFrameEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
+import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import org.apache.logging.log4j.LogManager;
@@ -87,13 +81,10 @@ public class ClientListener {
 
         // Run pathfinding asynchronously on the background executor to avoid blocking the main thread
         Util.backgroundExecutor().execute(() -> {
-            long startTime = System.currentTimeMillis();
             data.findNav(start, target).ifPresent(navResult -> {
                 // Update the result on the main thread
                 SimplePathFinder.clientNavResult = navResult;
             });
-            long endTime = System.currentTimeMillis();
-            LOGGER.info("nav in {}ms", endTime - startTime);
         });
     }
 

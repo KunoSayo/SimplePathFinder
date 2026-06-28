@@ -5,13 +5,13 @@ import io.github.kunosayo.simplepathfinder.command.SimplePathFinderCommand;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.*;
-import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -23,13 +23,12 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.UUID;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Mod(SimplePathFinder.MOD_ID)
 public final class SimplePathFinder {
@@ -95,6 +94,34 @@ public final class SimplePathFinder {
         var data = LevelNavDataSavedData.loadFromLevel(level);
         for (ServerPlayer player : sp.level().players()) {
             syncPlayerFullNav(player, data, level.dimension());
+        }
+    }
+
+    /**
+     * Synchronize a single navigation chunk to all players in the current dimension.
+     * Used for incremental updates when a specific chunk is modified.
+     *
+     * @param level    the server level
+     * @param chunkPos the chunk position to synchronize
+     */
+    public static void syncSingleChunk(ServerLevel level, ChunkPos chunkPos) {
+        var data = LevelNavDataSavedData.loadFromLevel(level);
+        var navChunkOpt = data.levelNavData.getNavChunkForSync(chunkPos);
+
+        for (ServerPlayer player : level.players()) {
+            if (navChunkOpt.isPresent()) {
+                PacketDistributor.sendToPlayer(player,
+                        new io.github.kunosayo.simplepathfinder.network.SyncSingleChunkPacket(
+                                level.dimension().identifier(),
+                                chunkPos,
+                                navChunkOpt.get()));
+            } else {
+                // Send delete packet if chunk doesn't exist
+                PacketDistributor.sendToPlayer(player,
+                        io.github.kunosayo.simplepathfinder.network.SyncSingleChunkPacket.createDelete(
+                                level.dimension().identifier(),
+                                chunkPos));
+            }
         }
     }
 

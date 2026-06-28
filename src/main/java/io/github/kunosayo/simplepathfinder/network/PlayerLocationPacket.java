@@ -3,17 +3,14 @@ package io.github.kunosayo.simplepathfinder.network;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
-import io.github.kunosayo.simplepathfinder.nav.NavResult;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Util;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
@@ -38,7 +35,7 @@ public class PlayerLocationPacket implements CustomPacketPayload {
                     String playerName = ByteBufCodecs.STRING_UTF8.decode(buf);
                     return new PlayerLocationPacket(pos, playerName);
                 }
-                return new PlayerLocationPacket(null, null);
+                return new PlayerLocationPacket(null, "");
             }
     );
 
@@ -88,11 +85,7 @@ public class PlayerLocationPacket implements CustomPacketPayload {
      */
     public static void clientHandler(final PlayerLocationPacket packet, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            var player = Minecraft.getInstance().player;
-            if (player == null) {
-                return;
-            }
-
+            var player = context.player();
             if (!packet.online) {
                 // Player is offline
                 player.sendSystemMessage(Component.translatable("simple_path_finder.locator.player_offline"));
@@ -107,19 +100,15 @@ public class PlayerLocationPacket implements CustomPacketPayload {
             }
 
             BlockPos targetPos = packet.pos;
-            Minecraft mc = Minecraft.getInstance();
 
             // 异步执行寻路
-            net.minecraft.util.Util.backgroundExecutor().execute(() -> {
-                long startTime = System.currentTimeMillis();
+            Util.backgroundExecutor().execute(() -> {
                 navData.findNav(player.blockPosition(), targetPos).ifPresent(navResult -> {
                     SimplePathFinder.clientNavResult = navResult;
-                    mc.execute(() -> {
+                    if (!packet.playerName.isEmpty()) {
                         player.sendSystemMessage(Component.translatable("simple_path_finder.nav.to_player", packet.playerName));
-                    });
+                    }
                 });
-                long endTime = System.currentTimeMillis();
-                SimplePathFinder.LOGGER.info("Client pathfinding to player completed in {}ms", endTime - startTime);
             });
         });
     }

@@ -6,7 +6,6 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
-import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -15,7 +14,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class SimplePathFinderCommand {
     private static final IntegerArgumentType LAYER_ARG = IntegerArgumentType.integer(Byte.MIN_VALUE, Byte.MAX_VALUE);

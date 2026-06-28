@@ -1,18 +1,23 @@
 package io.github.kunosayo.simplepathfinder.datagen;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.block.PathFinderBlock;
 import io.github.kunosayo.simplepathfinder.client.property.LocatorModelProperty;
-import io.github.kunosayo.simplepathfinder.client.property.NavigationModelProperty;
 import io.github.kunosayo.simplepathfinder.client.property.NavBrushModelProperty;
+import io.github.kunosayo.simplepathfinder.client.property.NavigationModelProperty;
 import io.github.kunosayo.simplepathfinder.init.ModBlocks;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.ModelProvider;
+import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
 import net.minecraft.client.data.models.model.ItemModelUtils;
 import net.minecraft.client.data.models.model.ModelTemplates;
+import net.minecraft.client.data.models.model.TextureMapping;
+import net.minecraft.client.data.models.model.TextureSlot;
 import net.minecraft.client.renderer.item.ConditionalItemModel;
 import net.minecraft.client.renderer.item.RangeSelectItemModel;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.Identifier;
 
@@ -21,8 +26,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 物品模型生成器
- * 生成物品的JSON模型文件
+ * 物品和方块模型生成器
+ * 生成物品和方块的JSON模型文件
  */
 public class ItemModelGen extends ModelProvider {
 
@@ -44,10 +49,8 @@ public class ItemModelGen extends ModelProvider {
         // 导航笔刷 - 基于模式切换模型
         registerNavBrushItemModels(itemModels);
 
-        // 方块物品模型 - 这会自动生成方块模型和状态
-        itemModels.generateFlatItem(ModBlocks.PATH_FINDER_BLOCK.get().asItem(), ModelTemplates.FLAT_ITEM);
-        // 生成方块的模型和状态
-        blockModels.createTrivialCube(ModBlocks.PATH_FINDER_BLOCK.get());
+        // PathFinderBlock - 基于激活状态切换模型
+        registerPathFinderBlock(blockModels, itemModels);
     }
 
     /**
@@ -145,5 +148,69 @@ public class ItemModelGen extends ModelProvider {
                         entries,
                         Optional.of(unboundModel)
                 ));
+    }
+
+    /**
+     * 注册 PathFinderBlock 的模型和方块状态
+     * 根据激活状态使用不同的侧面纹理：
+     * - 激活状态（有数据）：使用 path_finder_block 侧面
+     * - 未激活状态（无数据）：使用 path_finder_block_unactive 侧面
+     */
+    private void registerPathFinderBlock(BlockModelGenerators blockModels, ItemModelGenerators itemModels) {
+        var block = ModBlocks.PATH_FINDER_BLOCK.get();
+
+        // 定义纹理（使用 Material）
+        var topTexture = new Material(modLoc("block/path_finder_block_top"));
+        var bottomTexture = new Material(modLoc("block/path_finder_block_bottom"));
+        var activeSideTexture = new Material(modLoc("block/path_finder_block"));
+        var inactiveSideTexture = new Material(modLoc("block/path_finder_block_inactive"));
+
+        // 创建激活模型（有数据时）
+        var activeTextureMapping = new TextureMapping()
+                .put(TextureSlot.UP, topTexture)
+                .put(TextureSlot.DOWN, bottomTexture)
+                .put(TextureSlot.SIDE, activeSideTexture)
+                .copySlot(TextureSlot.SIDE, TextureSlot.PARTICLE);
+
+        var activeModel = ModelTemplates.CUBE.create(
+                modLoc("block/path_finder_block_active"),
+                activeTextureMapping,
+                blockModels.modelOutput
+        );
+
+        // 创建未激活模型（无数据时）
+        var inactiveTextureMapping = new TextureMapping()
+                .put(TextureSlot.UP, topTexture)
+                .put(TextureSlot.DOWN, bottomTexture)
+                .put(TextureSlot.SIDE, inactiveSideTexture)
+                .copySlot(TextureSlot.SIDE, TextureSlot.PARTICLE);
+
+        var inactiveModel = ModelTemplates.CUBE.create(
+                modLoc("block/path_finder_block_inactive"),
+                inactiveTextureMapping,
+                blockModels.modelOutput
+        );
+
+        // 使用 plainVariant 包装模型
+        var activeVariant = BlockModelGenerators.plainVariant(activeModel);
+        var inactiveVariant = BlockModelGenerators.plainVariant(inactiveModel);
+
+        // 注册方块状态 - 根据 active 属性切换模型
+        // 使用 MultiVariantGenerator.dispatch() 创建调度
+        blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(block)
+                .with(BlockModelGenerators.createBooleanModelDispatch(
+                        PathFinderBlock.ACTIVE,
+                        activeVariant,
+                        inactiveVariant
+                )));
+
+        // 生成物品模型 - 使用方块模型作为父模型（3D方块外观）
+        // 方块物品应该显示为3D方块，而不是平面贴图
+        var itemModelIdentifier = modLoc("block/path_finder_block_active");
+        itemModels.itemModelOutput.accept(block.asItem(), ItemModelUtils.plainModel(itemModelIdentifier));
+    }
+
+    private Identifier modLoc(String path) {
+        return Identifier.fromNamespaceAndPath(SimplePathFinder.MOD_ID, path);
     }
 }

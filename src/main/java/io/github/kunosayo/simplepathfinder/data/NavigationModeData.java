@@ -6,7 +6,6 @@ import io.github.kunosayo.simplepathfinder.item.NavigationMode;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * 导航模式数据

@@ -1,9 +1,12 @@
 package io.github.kunosayo.simplepathfinder.datagen;
 
+import net.minecraft.core.HolderLookup;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
+
+import java.util.concurrent.CompletableFuture;
 
 @EventBusSubscriber(modid = "simple_path_finder")
 public class DataGen implements IModBusEvent {
@@ -20,5 +23,13 @@ public class DataGen implements IModBusEvent {
         event.getGenerator().addProvider(true, bilingualProvider.getChineseProvider());
 
         event.getGenerator().addProvider(true, new ItemModelGen(event.getGenerator().getPackOutput()));
+    }
+
+    @SubscribeEvent
+    public static void gatherServerData(GatherDataEvent.Server event) {
+        CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
+
+        // 注册战利品表生成器
+        event.getGenerator().addProvider(true, new GenLootTable(event.getGenerator().getPackOutput(), lookupProvider));
     }
 }

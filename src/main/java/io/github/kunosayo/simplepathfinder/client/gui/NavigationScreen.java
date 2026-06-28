@@ -1,6 +1,5 @@
 package io.github.kunosayo.simplepathfinder.client.gui;
 
-import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
 import io.github.kunosayo.simplepathfinder.item.NavigationMode;

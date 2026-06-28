@@ -2,15 +2,15 @@ package io.github.kunosayo.simplepathfinder.item;
 
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
+import io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -18,7 +18,6 @@ import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.PacketDistributor;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
@@ -35,13 +34,17 @@ public class LocatorItem extends Item {
     }
 
     @Override
-    public @NotNull InteractionResult use(@NotNull Level level, @NotNull Player player, @NotNull InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
+    public @NonNull InteractionResult onItemUseFirst(@NonNull ItemStack stack, UseOnContext context) {
+        var player = context.getPlayer();
+        if (player == null) {
+            return super.onItemUseFirst(stack, context);
+        }
+        var level = context.getLevel();
         LocatorData data = getLocatorData(stack);
 
         if (data == null) {
             // 没有设置目标，按Shift写入玩家UUID
-            if (player.isShiftKeyDown()) {
+            if (player.isCrouching()) {
                 if (!level.isClientSide()) {
                     LocatorData newData = LocatorData.forPlayer(player.getUUID());
                     stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
@@ -50,7 +53,7 @@ public class LocatorItem extends Item {
                 }
                 return InteractionResult.SUCCESS_SERVER;
             }
-            return InteractionResult.PASS;
+            return super.onItemUseFirst(stack, context);
         }
 
         // 有目标数据：触发导航
@@ -62,7 +65,7 @@ public class LocatorItem extends Item {
             return InteractionResult.SUCCESS_SERVER;
         }
 
-        return super.use(level, player, hand);
+        return super.onItemUseFirst(stack, context);
     }
 
     @Override
@@ -87,12 +90,12 @@ public class LocatorItem extends Item {
             var targetPlayer = level.getServer().getPlayerList().getPlayer(targetUuid);
             if (targetPlayer == null) {
                 // 目标玩家不在线
-                PacketDistributor.sendToPlayer(player, io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket.offline());
+                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.offline());
             } else {
                 // 目标玩家在线，发送位置
-                net.minecraft.core.BlockPos targetPos = targetPlayer.blockPosition();
+                BlockPos targetPos = targetPlayer.blockPosition();
                 String playerName = targetPlayer.getName().getString();
-                PacketDistributor.sendToPlayer(player, io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket.online(targetPos, playerName));
+                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.online(targetPos, playerName));
             }
         }
     }
@@ -137,7 +140,7 @@ public class LocatorItem extends Item {
         stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
     }
 
-    public static void setGlobalPos(ItemStack stack, net.minecraft.core.GlobalPos pos) {
+    public static void setGlobalPos(ItemStack stack, GlobalPos pos) {
         LocatorData newData = LocatorData.forPosition(pos);
         stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
     }

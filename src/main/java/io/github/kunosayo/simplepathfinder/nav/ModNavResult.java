@@ -1,4 +1,5 @@
 package io.github.kunosayo.simplepathfinder.nav;
+
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;

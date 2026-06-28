@@ -125,6 +125,31 @@ public class ClientNavDataManager {
     }
 
     /**
+     * Update a single navigation chunk in the specified dimension.
+     * Used for incremental updates when a chunk is modified on the server.
+     *
+     * @param dimension the dimension identifier
+     * @param chunkPos  the chunk position
+     * @param navChunk  the navigation chunk data, or null to delete the chunk
+     */
+    public static void updateSingleChunk(Identifier dimension, net.minecraft.world.level.ChunkPos chunkPos,
+                                         @Nullable io.github.kunosayo.simplepathfinder.nav.INavChunk navChunk) {
+        LevelNavData navData = navDataByDimension.computeIfAbsent(dimension, k -> new LevelNavData());
+
+        // Update or add the chunk
+        navData.updateNavChunk(chunkPos, navChunk);
+
+        // Update cache
+        Map<Identifier, LevelNavData> serverCache = cachedNavData.computeIfAbsent(
+                currentServerAddress, k -> new HashMap<>());
+        serverCache.put(dimension, navData);
+
+        // Save to disk asynchronously - do NOT block the main thread
+        String serverAddress = currentServerAddress;
+        Util.ioPool().execute(() -> saveDataToFile(serverAddress, dimension, navData));
+    }
+
+    /**
      * Clear all navigation data (e.g., when disconnecting).
      */
     public static void clear() {

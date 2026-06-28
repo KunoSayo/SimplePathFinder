@@ -1,7 +1,6 @@
 package io.github.kunosayo.simplepathfinder.block;
 
 import com.mojang.serialization.MapCodec;
-import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.block.entity.PathFinderBlockEntity;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.item.LocatorItem;
@@ -18,6 +17,8 @@ import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
@@ -27,8 +28,19 @@ public class PathFinderBlock extends BaseEntityBlock {
 
     public static final MapCodec<PathFinderBlock> CODEC = Block.simpleCodec(PathFinderBlock::new);
 
+    /**
+     * 激活状态属性 - 方块是否有有效的定位数据
+     */
+    public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
+
     public PathFinderBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(ACTIVE, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(ACTIVE);
     }
 
     @Override
@@ -50,45 +62,50 @@ public class PathFinderBlock extends BaseEntityBlock {
         // 检查是否手持定位器
         if (stack.getItem() instanceof LocatorItem) {
             if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PathFinderBlockEntity be) {
+                // 只在方块没有数据时允许写入
+                var blockData = be.getBlockLocatorData();
+                if (blockData.hasLocator()) {
+                    player.sendSystemMessage(Component.translatable("block.simple_path_finder.path_finder_block.already_has_data"));
+                    return InteractionResult.FAIL;
+                }
+
                 // 读取定位器数据
                 LocatorData locatorData = LocatorItem.getLocatorData(stack);
 
-                // 将定位器数据写入方块实体
-                // 注意：LocatorData 现在总是包含一个有效的 target（Either.left 或 Either.right）
-                be.setLocatorData(locatorData);
+                if (locatorData != null) {
+                    // 将定位器数据写入方块实体
+                    // 注意：LocatorData 现在总是包含一个有效的 target（Either.left 或 Either.right）
+                    be.setLocatorData(locatorData);
 
-                // 发送确认消息
-                if (locatorData.isPlayerBound()) {
-                    player.sendSystemMessage(Component.translatable(
-                            "block.simple_path_finder.path_finder_block.wrote.player"));
-                } else if (locatorData.isPosBound()) {
-                    var posData = locatorData.getGlobalPos();
-                    player.sendSystemMessage(Component.translatable(
-                            "block.simple_path_finder.path_finder_block.wrote.pos",
-                            posData.pos().getX(), posData.pos().getY(), posData.pos().getZ()
-                    ));
+                    // 更新方块状态为激活状态
+                    level.setBlock(pos, state.setValue(ACTIVE, true), 3);
+
+                    // 发送确认消息
+                    if (locatorData.isPosBound()) {
+                        var posData = locatorData.getGlobalPos();
+                        player.sendSystemMessage(Component.translatable(
+                                "block.simple_path_finder.path_finder_block.wrote.pos",
+                                posData.pos().getX(), posData.pos().getY(), posData.pos().getZ()
+                        ));
+                    }
                 }
             }
             return InteractionResult.SUCCESS_SERVER;
         }
 
         // 空手或非定位器物品：触发导航
-        if (stack.isEmpty() && !level.isClientSide() && level instanceof ServerLevel serverLevel) {
+        if (stack.isEmpty()) {
             if (level.getBlockEntity(pos) instanceof PathFinderBlockEntity be) {
                 var blockData = be.getBlockLocatorData();
                 if (blockData.hasLocator()) {
                     LocatorData locatorData = blockData.getLocatorData();
-
-                    if (locatorData.isPlayerBound()) {
-                        // 绑定到玩家：发送网络包告诉客户端玩家位置
-                        handlePlayerTarget(serverLevel, (ServerPlayer) player, locatorData.getPlayerUuid());
-                    } else if (locatorData.isPosBound()) {
-                        // 绑定到位置：发送网络包告诉客户端目标位置
-                        handlePosTarget((ServerPlayer) player, locatorData.getGlobalPos().pos());
-                    } else {
-                        player.sendSystemMessage(Component.translatable("simple_path_finder.locator.no_target"));
+                    if (level.isClientSide()) {
+                        if (locatorData.isPosBound()) {
+                            // 绑定到位置：发送网络包告诉客户端目标位置
+                            handlePosTarget(player, locatorData.getGlobalPos().pos());
+                        }
                     }
-                    return InteractionResult.SUCCESS_SERVER;
+                    return InteractionResult.SUCCESS;
                 }
             }
         }
@@ -115,10 +132,9 @@ public class PathFinderBlock extends BaseEntityBlock {
     /**
      * 处理位置目标导航
      */
-    private void handlePosTarget(ServerPlayer requester, BlockPos targetPos) {
-        // 对于位置目标，我们不需要额外的网络包
-        // 客户端已经有了导航数据（通过 SyncLevelNavDataPacket）
-        // 我们只需要设置客户端的目标位置
-        requester.sendSystemMessage(Component.translatable("simple_path_finder.nav.starting", targetPos.getX(), targetPos.getY(), targetPos.getZ()));
+    private void handlePosTarget(Player requester, BlockPos targetPos) {
+        if (requester.isLocalPlayer()) {
+
+        }
     }
 }

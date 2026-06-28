@@ -19,13 +19,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.lang.invoke.VarHandle;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 record CachedData(@Nullable ByteBuf buf, int count) {
@@ -113,6 +110,32 @@ public class LevelNavData {
     public Optional<ILayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
         return Optional.ofNullable(navChunks.get(pos))
                 .flatMap(navChunk -> navChunk.getLayers().filter(navChunk1 -> navChunk1.getLayer() == layer).findAny());
+    }
+
+    /**
+     * Get a navigation chunk without creating it.
+     * Used for synchronizing chunks to clients.
+     *
+     * @param pos the chunk position
+     * @return optional containing the nav chunk if it exists
+     */
+    public Optional<INavChunk> getNavChunkForSync(ChunkPos pos) {
+        return Optional.ofNullable(navChunks.get(pos));
+    }
+
+    /**
+     * Update or add a navigation chunk.
+     * Used for incremental updates from server.
+     *
+     * @param pos      the chunk position
+     * @param navChunk the navigation chunk to set, or null to remove
+     */
+    public void updateNavChunk(ChunkPos pos, @Nullable INavChunk navChunk) {
+        if (navChunk == null) {
+            navChunks.remove(pos);
+        } else {
+            navChunks.put(pos, navChunk);
+        }
     }
 
     public LevelNavData(HashMap<ChunkPos, INavChunk> navChunks) {

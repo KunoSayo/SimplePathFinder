@@ -1,5 +1,6 @@
 {
   "block.simple_path_finder.path_finder_block": "Path Finder Block",
+  "block.simple_path_finder.path_finder_block.already_has_data": "Block already has data, cannot write",
   "block.simple_path_finder.path_finder_block.empty_locator": "Locator is empty, cannot write",
   "block.simple_path_finder.path_finder_block.wrote.player": "Wrote player locator data to block",
   "block.simple_path_finder.path_finder_block.wrote.pos": "Wrote position data to block: ",

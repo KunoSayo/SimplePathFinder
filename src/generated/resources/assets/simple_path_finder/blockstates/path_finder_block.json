@@ -1,7 +1,10 @@
 {
   "variants": {
-    "": {
-      "model": "simple_path_finder:block/path_finder_block"
+    "active=false": {
+      "model": "simple_path_finder:block/path_finder_block_inactive"
+    },
+    "active=true": {
+      "model": "simple_path_finder:block/path_finder_block_active"
     }
   }
 }

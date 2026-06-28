@@ -2,6 +2,7 @@ package io.github.kunosayo.simplepathfinder.item;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
+import io.github.kunosayo.simplepathfinder.client.gui.NavigationScreen;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
@@ -18,18 +19,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ChunkPos;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.level.Level;
 import org.jspecify.annotations.NonNull;
 
 import java.util.function.Consumer;
@@ -41,7 +37,7 @@ public class NavigationItem extends Item {
     }
 
     @Override
-    public InteractionResult useOn(@NonNull UseOnContext context) {
+    public @NonNull InteractionResult useOn(@NonNull UseOnContext context) {
         var player = context.getPlayer();
         if (player != null) {
             var hand = context.getHand();
@@ -60,22 +56,26 @@ public class NavigationItem extends Item {
     }
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-
+    public @NonNull InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        var player = context.getPlayer();
+        if (player == null) {
+            return super.onItemUseFirst(stack, context);
+        }
         // Only open GUI if player is holding Shift
-        if (!player.isShiftKeyDown()) {
-            return InteractionResult.PASS;
+        if (!player.isCrouching()) {
+            return useOn(context);
         }
 
-        if (level.isClientSide()) {
+        if (context.getLevel().isClientSide()) {
             // Open GUI on client
-            io.github.kunosayo.simplepathfinder.client.gui.NavigationScreen.open(stack, hand);
+            NavigationScreen.open(stack, context.getHand());
         }
 
         return InteractionResult.SUCCESS;
     }
 
+
+    @SuppressWarnings("deprecation")
     @Override
     public void appendHoverText(@NonNull ItemStack itemStack, @NonNull TooltipContext context, @NonNull TooltipDisplay display, Consumer<Component> builder, @NonNull TooltipFlag tooltipFlag) {
         // 获取当前模式数据
@@ -281,8 +281,9 @@ public class NavigationItem extends Item {
                     chunk.parse(level, clickedPos);
                     player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_created", layer, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()));
 
-                    // 标记导航数据需要同步
-                    SimplePathFinder.playerMadeServerNavDirty(player);
+                    // 标记数据为脏并同步单个区块
+                    data.setDirty();
+                    SimplePathFinder.syncSingleChunk(level, chunkPos);
                 }
             }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_limit", maxLayers - 1)));
         }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited")));
@@ -317,8 +318,9 @@ public class NavigationItem extends Item {
                         navChunk.removeNavChunk(layeredNavChunk);
                         player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_removed", layer));
 
-                        // 标记导航数据需要同步
-                        SimplePathFinder.playerMadeServerNavDirty(player);
+                        // 标记数据为脏并同步单个区块
+                        data.setDirty();
+                        SimplePathFinder.syncSingleChunk(level, chunkPos);
                     }, () -> {
                         player.sendSystemMessage(Component.translatable("simple_path_finder.nav.no_layer_at_pos"));
                     });
@@ -372,8 +374,9 @@ public class NavigationItem extends Item {
             // 清除起始位置数据
             clearLinkCreationData(stack);
 
-            // 标记导航数据需要同步
-            SimplePathFinder.playerMadeServerNavDirty(player);
+            // 标记数据为脏并同步单个区块
+            data.setDirty();
+            SimplePathFinder.syncSingleChunk(level, startChunkPos);
 
             return true;
         }

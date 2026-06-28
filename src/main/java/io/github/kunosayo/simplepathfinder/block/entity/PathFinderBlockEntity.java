@@ -1,7 +1,7 @@
 package io.github.kunosayo.simplepathfinder.block.entity;
 
-import io.github.kunosayo.simplepathfinder.data.LocatorDataAttachment;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
+import io.github.kunosayo.simplepathfinder.data.LocatorDataAttachment;
 import io.github.kunosayo.simplepathfinder.init.ModAttachments;
 import io.github.kunosayo.simplepathfinder.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;

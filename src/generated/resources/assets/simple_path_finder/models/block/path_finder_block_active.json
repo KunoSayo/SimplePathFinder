@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "simple_path_finder:block/path_finder_block_bottom",
+    "east": "simple_path_finder:block/path_finder_block",
+    "north": "simple_path_finder:block/path_finder_block",
+    "particle": "simple_path_finder:block/path_finder_block",
+    "south": "simple_path_finder:block/path_finder_block",
+    "up": "simple_path_finder:block/path_finder_block_top",
+    "west": "simple_path_finder:block/path_finder_block"
+  }
+}

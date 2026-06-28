@@ -3,7 +3,6 @@ package io.github.kunosayo.simplepathfinder.client.property;
 import com.mojang.serialization.MapCodec;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
-import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.item.LocatorItem;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.item.properties.numeric.RangeSelectItemModelProperty;

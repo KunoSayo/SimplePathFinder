@@ -1,10 +1,10 @@
 package io.github.kunosayo.simplepathfinder.init;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
-import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
+import io.github.kunosayo.simplepathfinder.data.LinkCreationData;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.data.NavBrushData;
-import io.github.kunosayo.simplepathfinder.data.LinkCreationData;
+import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredHolder;

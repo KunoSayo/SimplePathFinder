@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "simple_path_finder:item/path_finder_block"
+    "model": "simple_path_finder:block/path_finder_block_active"
   }
 }
