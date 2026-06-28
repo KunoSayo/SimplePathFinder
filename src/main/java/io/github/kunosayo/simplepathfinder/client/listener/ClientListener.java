@@ -135,7 +135,7 @@ public class ClientListener {
 
         // 检查玩家手中是否有导航物品
         var mainHandItem = player.getMainHandItem();
-        if (mainHandItem.is(ModItems.NAVIGATION) || mainHandItem.is(ModItems.DEBUG_NAV)) {
+        if (mainHandItem.is(ModItems.NAVIGATION)) {
             // 取消默认的滚动行为
             event.setCanceled(true);
 
