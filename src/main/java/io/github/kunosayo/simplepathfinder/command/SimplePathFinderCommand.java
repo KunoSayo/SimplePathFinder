@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.minecraft.commands.CommandSourceStack;
@@ -130,7 +131,7 @@ public final class SimplePathFinderCommand {
                                                                                     long start = System.currentTimeMillis();
                                                                                     while (!runOnce()) {
                                                                                         long now = System.currentTimeMillis();
-                                                                                        if (now - start >= 50) {
+                                                                                        if (now - start >= NavConfig.NAV_CONFIG.getLeft().msPerTick.get()) {
                                                                                             sl.getServer().submitAsync(this);
                                                                                             break;
                                                                                         }

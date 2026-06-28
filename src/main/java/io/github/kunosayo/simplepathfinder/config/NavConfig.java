@@ -14,6 +14,7 @@ public class NavConfig {
     // Build settings
     public final ModConfigSpec.ConfigValue<Integer> maxNavChunks;
     public final ModConfigSpec.ConfigValue<Integer> maxLayers;
+    public final ModConfigSpec.ConfigValue<Integer> msPerTick;
 
     // Item usage settings
     public final ModConfigSpec.ConfigValue<Boolean> requireCreativeMode;
@@ -25,8 +26,12 @@ public class NavConfig {
             .define("max_nav_chunks", (4096 / 16 + 1) * (4096 / 16 + 1));
 
         maxLayers = builder
-            .comment("The maximum number of layers per chunk")
-            .define("max_layers", 9);
+                .comment("The maximum number of layers per chunk")
+                .define("max_layers", 9);
+
+        msPerTick = builder
+                .comment("The maximum ms of build nav chunk")
+                .define("msPerTick", 1);
 
         // Item usage settings
         requireCreativeMode = builder
