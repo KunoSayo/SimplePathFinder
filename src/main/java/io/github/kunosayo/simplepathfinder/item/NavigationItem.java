@@ -71,10 +71,9 @@ public class NavigationItem extends Item {
         if (level.isClientSide()) {
             // Open GUI on client
             io.github.kunosayo.simplepathfinder.client.gui.NavigationScreen.open(stack, hand);
-            return InteractionResult.SUCCESS;
         }
 
-        return InteractionResult.PASS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
