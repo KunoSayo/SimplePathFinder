@@ -137,7 +137,7 @@ public class ClientListener {
 
             // 根据滚动方向切换模式
             double scrollDelta = event.getScrollDeltaY();
-            boolean forward = scrollDelta > 0; // 向下滚动切换到下一个模式
+            boolean forward = scrollDelta < 0; // 向下滚动切换到下一个模式
 
             // 获取当前模式
             NavigationMode currentMode = NavigationItem.getNavigationMode(mainHandItem);
