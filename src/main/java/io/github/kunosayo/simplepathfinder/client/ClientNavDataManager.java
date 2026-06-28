@@ -47,9 +47,6 @@ public class ClientNavDataManager {
      */
     public static String getCurrentServerAddress() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return "unknown";
-        }
 
         // Singleplayer
         if (mc.hasSingleplayerServer()) {

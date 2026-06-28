@@ -52,10 +52,6 @@ public class ClientListener {
         // Only run on client side
         if (event.getEntity().level().isClientSide()) {
             ClientNavDataManager.onServerConnect();
-            LOGGER.info(
-                "SimplePathFinder: Connected to server: {}",
-                ClientNavDataManager.getCurrentServerAddress()
-            );
         }
     }
 
@@ -67,7 +63,7 @@ public class ClientListener {
         // Only run on client side
         if (event.getEntity().level().isClientSide()) {
             ClientNavDataManager.clear();
-            LOGGER.info("SimplePathFinder: Disconnected from server");
+            SimplePathFinder.clientNavResult = null;
         }
     }
 
@@ -105,15 +101,15 @@ public class ClientListener {
     public static void registerClientCommands(RegisterClientCommandsEvent event) {
         var dispatcher = event.getDispatcher();
         CommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf").then(
-            Commands.literal("nav")
-                .then(Commands.argument("target", BlockPosArgument.blockPos())
-                    .executes(context -> {
-                        var target = BlockPosArgument.getBlockPos(context, "target");
-                        if (context.getSource().getEntity() instanceof Player player) {
-                            doNav(player, target);
-                        }
-                        return 0;
-                    }))
+                Commands.literal("nav")
+                        .then(Commands.argument("target", BlockPosArgument.blockPos())
+                                .executes(context -> {
+                                    var target = BlockPosArgument.getBlockPos(context, "target");
+                                    if (context.getSource().getEntity() instanceof Player player) {
+                                        doNav(player, target);
+                                    }
+                                    return 0;
+                                }))
         ));
 
         dispatcher.register(Commands.literal("nav").redirect(root.getChild("nav")));
@@ -154,7 +150,7 @@ public class ClientListener {
     }
 
     @SubscribeEvent
-    public static void on(RenderFrameEvent.Pre event){
+    public static void on(RenderFrameEvent.Pre event) {
         NavRenderingSupport.INSTANCE.prepare();
     }
 
