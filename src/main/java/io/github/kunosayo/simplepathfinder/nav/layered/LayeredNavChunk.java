@@ -139,14 +139,14 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         var fluid = standBlock.getFluidState();
         if (!fluid.isEmpty()) {
             if (fluid.getType().isSame(Fluids.WATER) || fluid.getType().isSame(Fluids.FLOWING_WATER)) {
-                return new DistanceResult(900, walkY);
+                return new DistanceResult(127, walkY);
             }
             if (fluid.getType().isSame(Fluids.LAVA) || fluid.getType().isSame(Fluids.FLOWING_LAVA)) {
-                return new DistanceResult(10000, walkY);
+                return new DistanceResult(12737, walkY);
             }
-            return new DistanceResult(100, walkY);
+            return new DistanceResult(30, walkY);
         }
-        return new DistanceResult(100, walkY);
+        return new DistanceResult(10, walkY);
     }
 
     private static DistanceResult getDistance(Level level, int sx, int sy, int sz, int tx, int tz) {

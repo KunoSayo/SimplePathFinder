@@ -228,7 +228,7 @@ public class NavPathFinder {
             if ((next.subtract(pos)).equals(pos.subtract(lastNode.pos))) {
                 return 0;
             }
-            return 200;
+            return 37;
         }
 
     }
