@@ -108,9 +108,8 @@ public final class SimplePathFinderCommand {
                                                                                         z = 0;
                                                                                         ++x;
                                                                                         var player = server.getPlayerList().getPlayer(playerUUID);
-                                                                                        if (player instanceof ServerPlayer sp && !level.isClientSide()) {
+                                                                                        if (player != null) {
                                                                                             player.sendSystemMessage(Component.literal("[SPF] Built " + (x - 1) + " / " + dx));
-                                                                                            SimplePathFinder.playerMadeServerNavDirty(sp);
                                                                                         }
                                                                                     }
                                                                                     if (x > dx) {
