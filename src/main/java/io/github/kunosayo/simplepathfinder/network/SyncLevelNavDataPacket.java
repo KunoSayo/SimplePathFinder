@@ -117,8 +117,8 @@ public class SyncLevelNavDataPacket implements CustomPacketPayload {
      * Uses the current level's dimension.
      */
     public SyncLevelNavDataPacket(LevelNavData levelNavData) {
+        this.dimension = Identifier.withDefaultNamespace("unknown");
         this.levelNavData = levelNavData;
-        this.dimension = null;
     }
 
     public static void clientHandler(final SyncLevelNavDataPacket updatePacket, final IPayloadContext context) {
