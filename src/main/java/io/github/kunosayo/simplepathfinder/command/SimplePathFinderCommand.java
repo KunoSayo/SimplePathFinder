@@ -65,8 +65,8 @@ public final class SimplePathFinderCommand {
 
                                 .then(Commands.literal("build")
                                         .then(Commands.argument("layer", LAYER_ARG)
-                                                .then(Commands.argument("dx", IntegerArgumentType.integer(0, 63))
-                                                        .then(Commands.argument("dz", IntegerArgumentType.integer(0, 63))
+                                                .then(Commands.argument("dx", IntegerArgumentType.integer(0, 127))
+                                                        .then(Commands.argument("dz", IntegerArgumentType.integer(0, 127))
                                                                 .executes(context -> {
                                                                     byte layer = context.getArgument("layer", Integer.class).byteValue();
                                                                     int dx = context.getArgument("dx", Integer.class);
@@ -75,28 +75,71 @@ public final class SimplePathFinderCommand {
                                                                     if (context.getSource().getEntity() instanceof Player player) {
                                                                         var level = player.level();
                                                                         if (level instanceof ServerLevel sl) {
+                                                                            var server = sl.getServer();
+                                                                            var playerUUID = player.getUUID();
                                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
                                                                             var cp = ChunkPos.containing(player.blockPosition());
                                                                             if (data.levelNavData.buildForPlayer(player, layer)) {
                                                                                 data.setDirty();
-
                                                                             }
-                                                                            for (int x = 0; x <= dx; x++) {
-                                                                                for (int z = 0; z <= dz; z++) {
-                                                                                    if (x == 0 && z == 0) {
-                                                                                        continue;
-                                                                                    }
-                                                                                    var acp = new ChunkPos(x + cp.x(), z + cp.z());
-                                                                                    if (data.levelNavData.buildFromLayerStart(level, data.levelNavData, layer, acp)) {
+                                                                            class Runner implements Runnable {
+                                                                                int x = 0;
+                                                                                int z = 0;
+                                                                                boolean dirty = false;
+                                                                                int total = 0;
+                                                                                int chunkDirty = 0;
+
+                                                                                void done() {
+                                                                                    if (dirty) {
                                                                                         data.setDirty();
                                                                                     }
+                                                                                    if (data.isDirty()) {
+                                                                                        var player = server.getPlayerList().getPlayer(playerUUID);
+                                                                                        if (player instanceof ServerPlayer sp && !level.isClientSide()) {
+                                                                                            player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.batch_success", chunkDirty, total));
+                                                                                            SimplePathFinder.playerMadeServerNavDirty(sp);
+                                                                                        }
+                                                                                    }
+                                                                                }
+
+                                                                                private boolean runOnce() {
+                                                                                    ++z;
+                                                                                    if (z > dz) {
+                                                                                        z = 0;
+                                                                                        ++x;
+                                                                                        var player = server.getPlayerList().getPlayer(playerUUID);
+                                                                                        if (player instanceof ServerPlayer sp && !level.isClientSide()) {
+                                                                                            player.sendSystemMessage(Component.literal("[SPF] Built " + (x - 1) + " / " + dx));
+                                                                                            SimplePathFinder.playerMadeServerNavDirty(sp);
+                                                                                        }
+                                                                                    }
+                                                                                    if (x > dx) {
+                                                                                        done();
+                                                                                        return true;
+                                                                                    }
+                                                                                    var acp = new ChunkPos(x + cp.x(), z + cp.z());
+                                                                                    ++total;
+                                                                                    if (data.levelNavData.buildFromLayerStart(level, data.levelNavData, layer, acp)) {
+                                                                                        dirty = true;
+                                                                                        ++chunkDirty;
+                                                                                    }
+                                                                                    return false;
+                                                                                }
+
+                                                                                @Override
+                                                                                public void run() {
+                                                                                    long start = System.currentTimeMillis();
+                                                                                    while (!runOnce()) {
+                                                                                        long now = System.currentTimeMillis();
+                                                                                        if (now - start >= 50) {
+                                                                                            sl.getServer().submitAsync(this);
+                                                                                            break;
+                                                                                        }
+                                                                                    }
+
                                                                                 }
                                                                             }
-                                                                            if (data.isDirty()) {
-                                                                                if (player instanceof ServerPlayer sp && !level.isClientSide()) {
-                                                                                    SimplePathFinder.playerMadeServerNavDirty(sp);
-                                                                                }
-                                                                            }
+                                                                            new Runner().run();
                                                                         }
                                                                     }
 

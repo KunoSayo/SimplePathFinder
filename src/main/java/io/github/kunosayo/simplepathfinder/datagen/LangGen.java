@@ -153,6 +153,7 @@ public class LangGen {
 
         // 系统消息
         add("simple_path_finder.build.nav.success", "成功构建导航区块", "Successfully built navigation chunk");
+        add("simple_path_finder.build.nav.batch_success", "成功构建导航区块 %s/%s", "Successfully built navigation chunk %s/%s");
         add("simple_path_finder.build.nav.limited", "当前导航区块数量超过上限", "Current navigation chunk count exceeds limit");
         add("simple_path_finder.build.nav.failed", "当前环境不易于构造寻路", "Current environment is not suitable for pathfinding");
         add("simple_path_finder.remove.current.success", "成功移除当前所在区块导航", "Successfully removed navigation in current chunk");

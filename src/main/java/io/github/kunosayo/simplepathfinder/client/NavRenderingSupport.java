@@ -57,7 +57,9 @@ public class NavRenderingSupport {
     public void prepareDebug() {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
-        if (!player.getMainHandItem().is(ModItems.DEBUG_NAV)) return;
+        if (!(player.getMainHandItem().is(ModItems.DEBUG_NAV) || player.getMainHandItem().is(ModItems.NAVIGATION))) {
+            return;
+        }
 
         var level = player.level();
         LevelNavData data;
@@ -107,29 +109,29 @@ public class NavRenderingSupport {
                                 }
 
                                 var blockPos = new BlockPos(
-                                    chunkPos.getBlockX(x),
-                                    y,
-                                    chunkPos.getBlockZ(z)
+                                        chunkPos.getBlockX(x),
+                                        y,
+                                        chunkPos.getBlockZ(z)
                                 );
 
                                 if (layer.getDistance(x, z, false) < 0) {
                                     filledBox(
-                                        new Vec3(blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5),
-                                        DEBUG_BOX_SIZE,
-                                        0x55ff0101
+                                            new Vec3(blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5),
+                                            DEBUG_BOX_SIZE,
+                                            0x55ff0101
                                     );
                                 }
                                 if (layer.getDistance(x, z, true) < 0) {
                                     filledBox(
-                                        new Vec3(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0),
-                                        DEBUG_BOX_SIZE,
-                                        0x55ff0101
+                                            new Vec3(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0),
+                                            DEBUG_BOX_SIZE,
+                                            0x55ff0101
                                     );
                                 }
                                 filledBox(
-                                    blockPos.getCenter(),
-                                    DEBUG_BOX_SIZE,
-                                    layerColor
+                                        blockPos.getCenter(),
+                                        DEBUG_BOX_SIZE,
+                                        layerColor
                                 );
                             }
                         }
@@ -217,9 +219,9 @@ public class NavRenderingSupport {
         Vec3 first = firstEnd.subtract(firstStart);
         Vec3 second = secondEnd.subtract(secondStart);
         return first.dot(second) > 0.0
-            && Math.abs(first.y * second.z - first.z * second.y) < EPSILON
-            && Math.abs(first.z * second.x - first.x * second.z) < EPSILON
-            && Math.abs(first.x * second.y - first.y * second.x) < EPSILON;
+                && Math.abs(first.y * second.z - first.z * second.y) < EPSILON
+                && Math.abs(first.z * second.x - first.x * second.z) < EPSILON
+                && Math.abs(first.x * second.y - first.y * second.x) < EPSILON;
     }
 
     public void prepareNavigationPath(ModNavResult navResult) {
@@ -229,10 +231,10 @@ public class NavRenderingSupport {
             double startRatio = (double) (index - 1) / lineCount;
             double endRatio = (double) index / lineCount;
             line(
-                path.get(index - 1).getCenter(),
-                path.get(index).getCenter(),
-                colorFromRatio(startRatio, true),
-                colorFromRatio(endRatio, true)
+                    path.get(index - 1).getCenter(),
+                    path.get(index).getCenter(),
+                    colorFromRatio(startRatio, true),
+                    colorFromRatio(endRatio, true)
             );
         }
     }
@@ -246,23 +248,23 @@ public class NavRenderingSupport {
 
     private int colorFromRgb(float red, float green, float blue) {
         return 0x55000000
-            | (Math.clamp((int) (red * 255.0f), 0, 255) << 16)
-            | (Math.clamp((int) (green * 255.0f), 0, 255) << 8)
-            | Math.clamp((int) (blue * 255.0f), 0, 255);
+                | (Math.clamp((int) (red * 255.0f), 0, 255) << 16)
+                | (Math.clamp((int) (green * 255.0f), 0, 255) << 8)
+                | Math.clamp((int) (blue * 255.0f), 0, 255);
     }
 
     private int layerColor(int layer) {
         if (layer >= 0) {
             return colorFromRgb(
-                0.125f + layer * 0.125f,
-                1.0f - layer * 0.125f,
-                0.0f
+                    0.125f + layer * 0.125f,
+                    1.0f - layer * 0.125f,
+                    0.0f
             );
         }
         return colorFromRgb(
-            0.125f - layer * 0.125f,
-            0.0f,
-            1.0f + layer * 0.125f
+                0.125f - layer * 0.125f,
+                0.0f,
+                1.0f + layer * 0.125f
         );
     }
 
@@ -271,12 +273,12 @@ public class NavRenderingSupport {
     }
 
     private record Line(
-        Vec3 start,
-        Vec3 end,
-        float length,
-        int thickness,
-        int startColor,
-        int endColor
+            Vec3 start,
+            Vec3 end,
+            float length,
+            int thickness,
+            int startColor,
+            int endColor
     ) implements IRenderElement {
 
         public Line(Vec3 start, Vec3 end, int thickness, int startColor, int endColor) {
@@ -286,39 +288,39 @@ public class NavRenderingSupport {
         @Override
         public void render(PoseStack poseStack, SubmitNodeCollector collector) {
             collector.submitCustomGeometry(
-                poseStack,
-                RenderTypes.lines(),
-                (pose, vertex) -> {
-                    float dx = (float) (this.start().x - this.end().x);
-                    float dy = (float) (this.start().y - this.end().y);
-                    float dz = (float) (this.start().z - this.end().z);
-                    vertex.addVertex(
-                            pose.pose(),
-                            (float) (this.start().x),
-                            (float) (this.start().y),
-                            (float) (this.start().z)
-                        )
-                        .setColor(startColor)
-                        .setLineWidth(this.thickness)
-                        .setNormal(pose, dx /= this.length(), dy /= this.length(), dz /= this.length());
-                    vertex.addVertex(
-                            pose.pose(),
-                            (float) (this.end().x),
-                            (float) (this.end().y),
-                            (float) (this.end().z)
-                        )
-                        .setLineWidth(this.thickness)
-                        .setColor(endColor)
-                        .setNormal(pose, dx, dy, dz);
-                }
+                    poseStack,
+                    RenderTypes.lines(),
+                    (pose, vertex) -> {
+                        float dx = (float) (this.start().x - this.end().x);
+                        float dy = (float) (this.start().y - this.end().y);
+                        float dz = (float) (this.start().z - this.end().z);
+                        vertex.addVertex(
+                                        pose.pose(),
+                                        (float) (this.start().x),
+                                        (float) (this.start().y),
+                                        (float) (this.start().z)
+                                )
+                                .setColor(startColor)
+                                .setLineWidth(this.thickness)
+                                .setNormal(pose, dx /= this.length(), dy /= this.length(), dz /= this.length());
+                        vertex.addVertex(
+                                        pose.pose(),
+                                        (float) (this.end().x),
+                                        (float) (this.end().y),
+                                        (float) (this.end().z)
+                                )
+                                .setLineWidth(this.thickness)
+                                .setColor(endColor)
+                                .setNormal(pose, dx, dy, dz);
+                    }
             );
         }
     }
 
     private record FilledBox(
-        Vec3 center,
-        float size,
-        int color
+            Vec3 center,
+            float size,
+            int color
     ) implements IRenderElement {
         @Override
         public void render(PoseStack poseStack, SubmitNodeCollector collector) {
@@ -331,34 +333,34 @@ public class NavRenderingSupport {
             float maxZ = (float) center.z + radius;
 
             collector.submitCustomGeometry(
-                poseStack,
-                RenderTypes.debugFilledBox(),
-                (pose, vertex) -> {
-                    quad(vertex, pose, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, maxX, minY, minZ);
-                    quad(vertex, pose, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ);
-                    quad(vertex, pose, minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ);
-                    quad(vertex, pose, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ);
-                    quad(vertex, pose, minX, minY, minZ, maxX, minY, minZ, maxX, minY, maxZ, minX, minY, maxZ);
-                    quad(vertex, pose, minX, maxY, minZ, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ);
-                }
+                    poseStack,
+                    RenderTypes.debugFilledBox(),
+                    (pose, vertex) -> {
+                        quad(vertex, pose, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, maxX, minY, minZ);
+                        quad(vertex, pose, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ);
+                        quad(vertex, pose, minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ);
+                        quad(vertex, pose, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ);
+                        quad(vertex, pose, minX, minY, minZ, maxX, minY, minZ, maxX, minY, maxZ, minX, minY, maxZ);
+                        quad(vertex, pose, minX, maxY, minZ, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ);
+                    }
             );
         }
 
         private void quad(
-            VertexConsumer vertex,
-            PoseStack.Pose pose,
-            float x1,
-            float y1,
-            float z1,
-            float x2,
-            float y2,
-            float z2,
-            float x3,
-            float y3,
-            float z3,
-            float x4,
-            float y4,
-            float z4
+                VertexConsumer vertex,
+                PoseStack.Pose pose,
+                float x1,
+                float y1,
+                float z1,
+                float x2,
+                float y2,
+                float z2,
+                float x3,
+                float y3,
+                float z3,
+                float x4,
+                float y4,
+                float z4
         ) {
             vertex.addVertex(pose.pose(), x1, y1, z1).setColor(color);
             vertex.addVertex(pose.pose(), x2, y2, z2).setColor(color);
