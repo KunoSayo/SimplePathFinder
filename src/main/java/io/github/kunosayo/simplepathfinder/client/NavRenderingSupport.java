@@ -201,7 +201,7 @@ public class NavRenderingSupport {
         }
         int lastIndex = lineElements.size() - 1;
         Line last = lineElements.get(lastIndex);
-        if (last.thickness != line.thickness || !samePosition(last.end, line.start)) {
+        if (last.thickness != line.thickness || !samePosition(last.end, line.start) || last.start.distanceToSqr(last.end) >= 64.0 * 64.0) {
             return false;
         }
         if (!sameDirection(last.start, last.end, line.start, line.end)) {
