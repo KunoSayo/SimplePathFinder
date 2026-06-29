@@ -7,6 +7,7 @@ import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
+import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.network.UpdateItemPropertiesPacket;
 import net.minecraft.core.BlockPos;
@@ -301,7 +302,7 @@ public class NavigationItem extends Item {
         // 获取该chunk的所有层
         data.levelNavData.getNavChunk(chunkPos, false).ifPresentOrElse(navChunk -> {
             // 获取点击位置对应的层 - 查找最接近点击位置的层
-            var chunkInnerPos = new io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos(
+            var chunkInnerPos = ChunkInnerPos.get(
                     clickedPos.getX() & 15, clickedPos.getZ() & 15);
 
             navChunk.getLayers()

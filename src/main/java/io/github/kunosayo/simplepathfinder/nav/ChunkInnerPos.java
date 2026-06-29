@@ -10,6 +10,15 @@ import net.minecraft.world.level.ChunkPos;
 public class ChunkInnerPos {
     public final int x;
     public final int z;
+    private static final ChunkInnerPos[] POSES = new ChunkInnerPos[16 * 16];
+
+    static {
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                POSES[(x << 4) | z] = new ChunkInnerPos(x, z);
+            }
+        }
+    }
 
     /**
      * Stream codec for ChunkInnerPos serialization
@@ -22,9 +31,9 @@ public class ChunkInnerPos {
             ChunkInnerPos::new
     );
 
-    public ChunkInnerPos(int x, int z) {
-        this.x = Mth.positiveModulo(x, 16);
-        this.z = Mth.positiveModulo(z, 16);
+    private ChunkInnerPos(int x, int z) {
+        this.x = x;
+        this.z = z;
     }
 
     public ChunkInnerPos(BlockPos pos) {
@@ -32,9 +41,22 @@ public class ChunkInnerPos {
         this.z = Mth.positiveModulo(pos.getZ(), 16);
     }
 
-    private ChunkInnerPos(byte x, byte z) {
-        this.x = x & 0xFF;
-        this.z = z & 0xFF;
+    public static ChunkInnerPos get(BlockPos pos) {
+        return POSES[((pos.getX() & 15) << 4) | (pos.getZ() & 15)];
+    }
+
+    public static ChunkInnerPos get(byte x, byte z) {
+        return POSES[(x << 4) | z];
+    }
+
+    public static ChunkInnerPos get(int x, int z) {
+        return POSES[(x << 4) | z];
+    }
+
+    public static ChunkInnerPos getWithModulo(int x, int z) {
+        x &= 15;
+        z &= 15;
+        return POSES[(x << 4) | z];
     }
 
     public BlockPos toBlockPos(int y, ChunkPos chunkPos) {
@@ -45,12 +67,7 @@ public class ChunkInnerPos {
         return Mth.positiveModulo(value, 16);
     }
 
-    @Override
-    public final boolean equals(Object o) {
-        if (!(o instanceof ChunkInnerPos that)) return false;
-
-        return x == that.x && z == that.z;
-    }
+    // We do not override equals. We consider it is the same object when equals.
 
     @Override
     public int hashCode() {
