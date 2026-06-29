@@ -4,7 +4,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
-import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -78,9 +77,6 @@ public final class SimplePathFinderCommand {
                                                                             var playerUUID = player.getUUID();
                                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
                                                                             var cp = ChunkPos.containing(player.blockPosition());
-                                                                            data.levelNavData.buildForPlayer(player, layer).whenCompleteAsync((_, th) -> {
-                                                                                data.setDirty();
-                                                                            }, sl.getServer());
                                                                             class Runner implements Runnable {
                                                                                 int x = 0;
                                                                                 int z = 0;
@@ -117,24 +113,25 @@ public final class SimplePathFinderCommand {
                                                                                     }
                                                                                     var acp = new ChunkPos(x + cp.x(), z + cp.z());
                                                                                     ++total;
-                                                                                    if (data.levelNavData.buildFromLayerStart(level, data.levelNavData, layer, acp)) {
+                                                                                    data.levelNavData.buildFromLayerStart(level, data.levelNavData, layer, acp).whenComplete((_, th) -> {
+                                                                                        if (th != null) {
+                                                                                            th.printStackTrace();
+                                                                                            return;
+                                                                                        }
                                                                                         dirty = true;
                                                                                         ++chunkDirty;
-                                                                                    }
+                                                                                        runOnce();
+                                                                                    });
+
                                                                                     return false;
                                                                                 }
 
                                                                                 @Override
                                                                                 public void run() {
-                                                                                    long start = System.currentTimeMillis();
-                                                                                    while (!runOnce()) {
-                                                                                        long now = System.currentTimeMillis();
-                                                                                        if (now - start >= NavConfig.NAV_CONFIG.getLeft().msPerTick.get()) {
-                                                                                            sl.getServer().submitAsync(this);
-                                                                                            break;
-                                                                                        }
-                                                                                    }
-
+                                                                                    data.levelNavData.buildForPlayer(player, layer).whenComplete((_, th) -> {
+                                                                                        data.setDirty();
+                                                                                        runOnce();
+                                                                                    });
                                                                                 }
                                                                             }
                                                                             new Runner().run();

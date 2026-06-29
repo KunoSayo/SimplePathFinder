@@ -206,7 +206,6 @@ public class LevelNavData {
     }
 
     public CompletableFuture<?> buildFromLayerStart(Level level, LevelNavData levelNavData, byte layer, ChunkPos acp) {
-        final var server = level.getServer();
         final var optionalNavChunk = getNavChunk(acp, true);
         if (optionalNavChunk.isEmpty()) {
             return FAILED_FUTURE;
@@ -250,6 +249,7 @@ public class LevelNavData {
             if (!chunk.isAnyValid()) {
                 navChunk.removeNavChunk(chunk);
             }
+            return FAILED_FUTURE;
         }
         final var groundPos = getGroundPos(level, pos);
         return layered.parse(level, groundPos.offset(0, 1, 0)).whenComplete((_, _) -> {

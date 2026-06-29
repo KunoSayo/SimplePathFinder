@@ -138,7 +138,7 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         var fluid = standBlock.getFluidState();
         if (!fluid.isEmpty()) {
             if (fluid.getType().isSame(Fluids.WATER) || fluid.getType().isSame(Fluids.FLOWING_WATER)) {
-                return 4;
+                return 127;
             } else if (fluid.getType().isSame(Fluids.LAVA) || fluid.getType().isSame(Fluids.FLOWING_LAVA)) {
                 return 12737;
             }
@@ -156,12 +156,12 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         //    6
 
         mutable.move(0, 1, 0);
-        var upBaseBlock = level.getBlockState(mutable);
-        if (!considerSafeCross(level, mutable, upBaseBlock)) {
+        if (!considerSafeCross(level, mutable)) {
             // check 2, blocked, no way!
             return D_CANNOT_REACH;
         }
         mutable.move(0, -1, 0);
+        var upBaseBlock = level.getBlockState(mutable);
         if (considerSafeGround(level, mutable, upBaseBlock)) {
             // (4 is block)
             // we should go up
