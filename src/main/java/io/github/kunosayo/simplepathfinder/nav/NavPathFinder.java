@@ -220,7 +220,18 @@ public class NavPathFinder {
             if (lastNode == null) {
                 return 0;
             }
-            if ((next.subtract(pos)).equals(pos.subtract(lastNode.pos))) {
+            int nx = next.getX();
+            int ny = next.getY();
+            int nz = next.getZ();
+            int px = pos.getX();
+            int py = pos.getY();
+            int pz = pos.getZ();
+            int lx = lastNode.pos.getX();
+            int ly = lastNode.pos.getY();
+            int lz = lastNode.pos.getZ();
+            if (nx - px == px - lx
+                    && ny - py == py - ly
+                    && nz - pz == pz - lz) {
                 return 0;
             }
             return 37;
