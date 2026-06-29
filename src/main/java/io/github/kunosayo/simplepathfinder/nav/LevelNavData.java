@@ -60,6 +60,9 @@ public class LevelNavData {
                     if (buf != null) {
                         buf.release();
                     }
+                } else {
+                    // We set failed, so we should release it.
+                    newBuffer.release();
                 }
                 return;
             }
