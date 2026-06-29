@@ -171,10 +171,6 @@ public class NavPathFinder {
                 }
 
                 long extraCost = node.getExtraCost(edgeInfo.targetPos);
-                // Add additional cost for nav links (teleport, vehicle)
-                if (edgeInfo.linkType != null && edgeInfo.linkType != NavLinkType.NORMAL) {
-                    extraCost += (long) (edgeInfo.distance * 0.5); // Add distance-based cost multiplier
-                }
                 var targetNode = new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node);
                 searchNodes.enqueue(targetNode);
             });
