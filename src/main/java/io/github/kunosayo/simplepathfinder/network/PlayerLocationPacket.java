@@ -37,7 +37,7 @@ public class PlayerLocationPacket implements CustomPacketPayload {
                     String playerName = ByteBufCodecs.STRING_UTF8.decode(buf);
                     return new PlayerLocationPacket(pos, playerName);
                 }
-                return new PlayerLocationPacket(null, "");
+                return PlayerLocationPacket.offline();
             }
     );
 

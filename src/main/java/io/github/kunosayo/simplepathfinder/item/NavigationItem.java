@@ -41,6 +41,16 @@ public class NavigationItem extends Item {
     public @NonNull InteractionResult useOn(@NonNull UseOnContext context) {
         var player = context.getPlayer();
         if (player != null) {
+
+            if (player.isCrouching()) {
+                if (context.getLevel().isClientSide()) {
+                    // Open GUI on client
+                    NavigationScreen.open(context.getItemInHand(), context.getHand());
+                }
+                return InteractionResult.SUCCESS;
+            }
+
+
             var hand = context.getHand();
             var level = player.level();
             ItemStack stack = player.getItemInHand(hand);
@@ -57,7 +67,7 @@ public class NavigationItem extends Item {
     }
 
     @Override
-    public @NonNull InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+    public @NonNull InteractionResult onItemUseFirst(@NonNull ItemStack stack, UseOnContext context) {
         var player = context.getPlayer();
         if (player == null) {
             return super.onItemUseFirst(stack, context);
