@@ -1,0 +1,215 @@
+package io.github.kunosayo.simplepathfinder.nav;
+
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
+import io.github.kunosayo.simplepathfinder.data.LocatorData;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+
+/**
+ * 客户端导航服务类
+ * 统一处理客户端的所有导航相关操作
+ */
+public class NavigationService {
+
+    /**
+     * 执行导航到指定位置
+     *
+     * @param targetPos  目标位置
+     * @param config     通知配置
+     */
+    public static void navigateToPosition(BlockPos targetPos, NavNotificationConfig config) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+
+        BlockPos playerPos = mc.player.blockPosition();
+
+        // 使用导航管理器执行寻路
+        NavigationManager.requestNavigation(playerPos, targetPos, "", config);
+    }
+
+    /**
+     * 执行导航到指定位置（带描述）
+     *
+     * @param targetPos  目标位置
+     * @param targetDesc 目标描述（如玩家名称）
+     * @param config     通知配置
+     */
+    public static void navigateToPosition(BlockPos targetPos, String targetDesc, NavNotificationConfig config) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+
+        BlockPos playerPos = mc.player.blockPosition();
+
+        // 使用导航管理器执行寻路
+        NavigationManager.requestNavigation(playerPos, targetPos, targetDesc, config);
+    }
+
+    /**
+     * 执行导航到指定玩家
+     *
+     * @param playerName 玩家名称
+     * @param config     通知配置
+     */
+    public static void navigateToPlayer(String playerName, NavNotificationConfig config) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+
+        // 查找目标玩家
+        Player targetPlayer = mc.level.players().stream()
+                .filter(p -> p.getName().getString().equals(playerName))
+                .findFirst()
+                .orElse(null);
+
+        if (targetPlayer == null) {
+            if (config.notifyOnFailure()) {
+                mc.player.sendSystemMessage(Component.translatable("simple_path_finder.locator.player_offline"));
+            }
+            return;
+        }
+
+        BlockPos targetPos = targetPlayer.blockPosition();
+        navigateToPosition(targetPos, playerName, config);
+    }
+
+    /**
+     * 执行导航（使用定位器数据）
+     *
+     * @param locatorData 定位器数据
+     * @param config       通知配置
+     */
+    public static void navigate(LocatorData locatorData, NavNotificationConfig config) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+
+        if (locatorData.isPlayerBound()) {
+            // 绑定到玩家：在客户端查找玩家
+            navigateToPlayerByUuid(locatorData.getPlayerUuid(), config);
+        } else if (locatorData.isPosBound()) {
+            // 绑定到位置：检查维度后导航
+            navigateToGlobalPosition(locatorData.getGlobalPos(), config);
+        } else {
+            if (config.notifyOnFailure()) {
+                mc.player.sendSystemMessage(Component.translatable("simple_path_finder.locator.no_target"));
+            }
+        }
+    }
+
+    /**
+     * 通过UUID导航到玩家
+     *
+     * @param targetUuid 目标玩家UUID
+     * @param config     通知配置
+     */
+    private static void navigateToPlayerByUuid(java.util.UUID targetUuid, NavNotificationConfig config) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+
+        // 查找目标玩家
+        Player targetPlayer = mc.level.players().stream()
+                .filter(p -> p.getUUID().equals(targetUuid))
+                .findFirst()
+                .orElse(null);
+
+        if (targetPlayer == null) {
+            if (config.notifyOnFailure()) {
+                mc.player.sendSystemMessage(Component.translatable("simple_path_finder.locator.player_offline"));
+            }
+            return;
+        }
+
+        BlockPos targetPos = targetPlayer.blockPosition();
+        String playerName = targetPlayer.getName().getString();
+        navigateToPosition(targetPos, playerName, config);
+    }
+
+    /**
+     * 导航到全局位置（包含维度检查）
+     *
+     * @param globalPos 全局位置
+     * @param config    通知配置
+     */
+    private static void navigateToGlobalPosition(net.minecraft.core.GlobalPos globalPos, NavNotificationConfig config) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+
+        ResourceKey<Level> targetDimension = globalPos.dimension();
+        ResourceKey<Level> currentDimension = mc.player.level().dimension();
+
+        if (!targetDimension.equals(currentDimension)) {
+            if (config.notifyOnFailure()) {
+                mc.player.sendSystemMessage(Component.translatable("simple_path_finder.nav.wrong_dimension"));
+            }
+            return;
+        }
+
+        BlockPos targetPos = globalPos.pos();
+        navigateToPosition(targetPos, config);
+    }
+
+    /**
+     * 清除当前导航结果
+     */
+    public static void clearNavigationResult() {
+        NavigationManager.clearNavigationResult();
+    }
+
+    /**
+     * 获取当前导航结果
+     *
+     * @return 当前导航结果，可能为null
+     */
+    public static NavResult getCurrentNavigationResult() {
+        return NavigationManager.getCurrentNavigationResult();
+    }
+
+    /**
+     * 检查是否有活动的导航
+     *
+     * @return 是否有活动的导航
+     */
+    public static boolean hasActiveNavigation() {
+        return NavigationManager.hasActiveNavigation();
+    }
+
+    /**
+     * 检查是否正在执行寻路任务
+     *
+     * @return 是否有寻路任务在执行
+     */
+    public static boolean isPathfinding() {
+        return NavigationManager.isPathfinding();
+    }
+
+    /**
+     * 取消当前正在执行的寻路任务
+     */
+    public static void cancelCurrentTask() {
+        NavigationManager.cancelCurrentTask();
+    }
+
+    /**
+     * 获取当前任务信息
+     *
+     * @return 当前任务信息字符串
+     */
+    public static String getCurrentTaskInfo() {
+        return NavigationManager.getCurrentTaskInfo();
+    }
+}

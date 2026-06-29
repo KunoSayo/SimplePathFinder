@@ -35,37 +35,12 @@ public final class NavChunk implements INavChunk {
 
     /**
      * Stream codec for nav links map
-     * Uses a list format for serialization: List<Record<ChunkInnerPos, List<NavLink>>>
+     * Uses composite with map codec for serialization
      */
-    private static final StreamCodec<ByteBuf, Map<ChunkInnerPos, List<NavLink>>> NAV_LINKS_MAP_CODEC = StreamCodec.of(
-            (buf, map) -> {
-                // Write map size using ByteBufCodecs
-                ByteBufCodecs.VAR_INT.encode(buf, map.size());
-                // Write each entry
-                for (var entry : map.entrySet()) {
-                    ChunkInnerPos.STREAM_CODEC.encode(buf, entry.getKey());
-                    // Write list size
-                    ByteBufCodecs.VAR_INT.encode(buf, entry.getValue().size());
-                    // Write each link
-                    for (var link : entry.getValue()) {
-                        NavLink.STREAM_CODEC.encode(buf, link);
-                    }
-                }
-            },
-            (buf) -> {
-                int size = ByteBufCodecs.VAR_INT.decode(buf);
-                Map<ChunkInnerPos, List<NavLink>> map = new HashMap<>();
-                for (int i = 0; i < size; i++) {
-                    ChunkInnerPos key = ChunkInnerPos.STREAM_CODEC.decode(buf);
-                    int listSize = ByteBufCodecs.VAR_INT.decode(buf);
-                    List<NavLink> links = new ArrayList<>(listSize);
-                    for (int j = 0; j < listSize; j++) {
-                        links.add(NavLink.STREAM_CODEC.decode(buf));
-                    }
-                    map.put(key, links);
-                }
-                return map;
-            }
+    private static final StreamCodec<ByteBuf, Map<ChunkInnerPos, List<NavLink>>> NAV_LINKS_MAP_CODEC = ByteBufCodecs.map(
+            HashMap::new,
+            ChunkInnerPos.STREAM_CODEC,
+            ByteBufCodecs.<ByteBuf, NavLink>list().apply(NavLink.STREAM_CODEC)
     );
 
     public static final StreamCodec<ByteBuf, NavChunk> STREAM_CODEC = StreamCodec

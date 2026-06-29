@@ -2,6 +2,8 @@ package io.github.kunosayo.simplepathfinder.item;
 
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
+import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
+import io.github.kunosayo.simplepathfinder.nav.NavigationService;
 import io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -9,8 +11,11 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -34,6 +39,35 @@ public class LocatorItem extends Item {
     }
 
     @Override
+    public InteractionResult use(@NonNull Level level, @NonNull Player player, @NonNull InteractionHand hand) {
+        var stack = player.getItemInHand(hand);
+        LocatorData data = getLocatorData(stack);
+
+
+        if (data == null) {
+            return super.use(level, player, hand);
+        }
+
+        // 有目标数据：触发导航
+        if (!player.isShiftKeyDown()) {
+            if (level.isClientSide()) {
+                if (data.isPosBound()) {
+                    // 客户端：使用导航服务处理导航
+                    NavigationService.navigate(data, NavNotificationConfig.all());
+                }
+            } else {
+                if (data.isPlayerBound()) {
+                    // 服务端：发送网络包告诉客户端目标位置
+                    sendNavigationPacket((ServerLevel) level, (ServerPlayer) player, data);
+                }
+            }
+            return InteractionResult.SUCCESS_SERVER;
+        }
+
+        return super.use(level, player, hand);
+    }
+
+    @Override
     public @NonNull InteractionResult onItemUseFirst(@NonNull ItemStack stack, UseOnContext context) {
         var player = context.getPlayer();
         if (player == null) {
@@ -53,19 +87,46 @@ public class LocatorItem extends Item {
                 }
                 return InteractionResult.SUCCESS_SERVER;
             }
-            return super.onItemUseFirst(stack, context);
         }
-
-        // 有目标数据：触发导航
-        if (!player.isShiftKeyDown()) {
-            if (!level.isClientSide()) {
-                // 服务端：处理目标并发送网络包
-                handleLocatorNavigation(level, (ServerPlayer) player, data);
-            }
-            return InteractionResult.SUCCESS_SERVER;
-        }
-
         return super.onItemUseFirst(stack, context);
+    }
+
+    /**
+     * 发送导航网络包到客户端
+     *
+     * @param level       服务端世界
+     * @param player      目标玩家
+     * @param locatorData 定位器数据
+     */
+    private void sendNavigationPacket(ServerLevel level, ServerPlayer player, LocatorData locatorData) {
+        if (locatorData.isPlayerBound()) {
+            // 绑定到玩家：检查玩家是否在线
+            UUID targetUuid = locatorData.getPlayerUuid();
+            var targetPlayer = level.getServer().getPlayerList().getPlayer(targetUuid);
+            if (targetPlayer == null) {
+                // 目标玩家不在线
+                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.offline());
+            } else {
+                // 目标玩家在线，发送位置
+                BlockPos targetPos = targetPlayer.blockPosition();
+                String playerName = targetPlayer.getName().getString();
+                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.online(targetPos, playerName));
+            }
+        } else if (locatorData.isPosBound()) {
+            // 绑定到位置：检查维度后发送位置
+            var globalPos = locatorData.getGlobalPos();
+            ResourceKey<Level> targetDimension = globalPos.dimension();
+            ResourceKey<Level> currentDimension = level.dimension();
+
+            if (!targetDimension.equals(currentDimension)) {
+                // 维度不匹配
+                player.sendSystemMessage(Component.translatable("simple_path_finder.nav.wrong_dimension"));
+                return;
+            }
+
+            BlockPos targetPos = globalPos.pos();
+            PacketDistributor.sendToPlayer(player, PlayerLocationPacket.online(targetPos, ""));
+        }
     }
 
     @Override
@@ -78,26 +139,6 @@ public class LocatorItem extends Item {
             return InteractionResult.SUCCESS_SERVER;
         }
         return super.useOn(context);
-    }
-
-    /**
-     * 处理定位器导航
-     */
-    private void handleLocatorNavigation(Level level, ServerPlayer player, LocatorData data) {
-        if (data.isPlayerBound()) {
-            // 绑定到玩家：检查玩家是否在线
-            UUID targetUuid = data.getPlayerUuid();
-            var targetPlayer = level.getServer().getPlayerList().getPlayer(targetUuid);
-            if (targetPlayer == null) {
-                // 目标玩家不在线
-                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.offline());
-            } else {
-                // 目标玩家在线，发送位置
-                BlockPos targetPos = targetPlayer.blockPosition();
-                String playerName = targetPlayer.getName().getString();
-                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.online(targetPos, playerName));
-            }
-        }
     }
 
     @Override

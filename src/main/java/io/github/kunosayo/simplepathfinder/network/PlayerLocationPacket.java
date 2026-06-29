@@ -3,6 +3,8 @@ package io.github.kunosayo.simplepathfinder.network;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
+import io.github.kunosayo.simplepathfinder.nav.NavigationService;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -101,15 +103,12 @@ public class PlayerLocationPacket implements CustomPacketPayload {
 
             BlockPos targetPos = packet.pos;
 
-            // 异步执行寻路
-            Util.backgroundExecutor().execute(() -> {
-                navData.findNav(player.blockPosition(), targetPos).ifPresent(navResult -> {
-                    SimplePathFinder.clientNavResult = navResult;
-                    if (!packet.playerName.isEmpty()) {
-                        player.sendSystemMessage(Component.translatable("simple_path_finder.nav.to_player", packet.playerName));
-                    }
-                });
-            });
+            // 使用客户端导航服务执行寻路
+            if (!packet.playerName.isEmpty()) {
+                NavigationService.navigateToPosition(targetPos, packet.playerName, NavNotificationConfig.all());
+            } else {
+                NavigationService.navigateToPosition(targetPos, NavNotificationConfig.all());
+            }
         });
     }
 }

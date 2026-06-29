@@ -4,8 +4,12 @@ import com.mojang.serialization.MapCodec;
 import io.github.kunosayo.simplepathfinder.block.entity.PathFinderBlockEntity;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.item.LocatorItem;
+import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
+import io.github.kunosayo.simplepathfinder.nav.NavigationService;
+import io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -100,10 +104,8 @@ public class PathFinderBlock extends BaseEntityBlock {
                 if (blockData.hasLocator()) {
                     LocatorData locatorData = blockData.getLocatorData();
                     if (level.isClientSide()) {
-                        if (locatorData.isPosBound()) {
-                            // 绑定到位置：发送网络包告诉客户端目标位置
-                            handlePosTarget(player, locatorData.getGlobalPos().pos());
-                        }
+                        // 客户端：使用导航服务处理导航
+                        NavigationService.navigate(locatorData, NavNotificationConfig.all());
                     }
                     return InteractionResult.SUCCESS;
                 }
@@ -114,27 +116,40 @@ public class PathFinderBlock extends BaseEntityBlock {
     }
 
     /**
-     * 处理玩家目标导航
+     * 发送导航网络包到客户端
+     *
+     * @param level       服务端世界
+     * @param player      目标玩家
+     * @param locatorData 定位器数据
      */
-    private void handlePlayerTarget(ServerLevel level, ServerPlayer requester, java.util.UUID targetUuid) {
-        var targetPlayer = level.getServer().getPlayerList().getPlayer(targetUuid);
-        if (targetPlayer == null) {
-            // 目标玩家不在线
-            PacketDistributor.sendToPlayer(requester, io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket.offline());
-        } else {
-            // 目标玩家在线，发送位置
-            BlockPos targetPos = targetPlayer.blockPosition();
-            String playerName = targetPlayer.getName().getString();
-            PacketDistributor.sendToPlayer(requester, io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket.online(targetPos, playerName));
-        }
-    }
+    private void sendNavigationPacket(ServerLevel level, ServerPlayer player, LocatorData locatorData) {
+        if (locatorData.isPlayerBound()) {
+            // 绑定到玩家：检查玩家是否在线
+            java.util.UUID targetUuid = locatorData.getPlayerUuid();
+            var targetPlayer = level.getServer().getPlayerList().getPlayer(targetUuid);
+            if (targetPlayer == null) {
+                // 目标玩家不在线
+                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.offline());
+            } else {
+                // 目标玩家在线，发送位置
+                BlockPos targetPos = targetPlayer.blockPosition();
+                String playerName = targetPlayer.getName().getString();
+                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.online(targetPos, playerName));
+            }
+        } else if (locatorData.isPosBound()) {
+            // 绑定到位置：检查维度后发送位置
+            var globalPos = locatorData.getGlobalPos();
+            ResourceKey<Level> targetDimension = globalPos.dimension();
+            ResourceKey<Level> currentDimension = level.dimension();
 
-    /**
-     * 处理位置目标导航
-     */
-    private void handlePosTarget(Player requester, BlockPos targetPos) {
-        if (requester.isLocalPlayer()) {
+            if (!targetDimension.equals(currentDimension)) {
+                // 维度不匹配
+                player.sendSystemMessage(Component.translatable("simple_path_finder.nav.wrong_dimension"));
+                return;
+            }
 
+            BlockPos targetPos = globalPos.pos();
+            PacketDistributor.sendToPlayer(player, PlayerLocationPacket.online(targetPos, ""));
         }
     }
 }
