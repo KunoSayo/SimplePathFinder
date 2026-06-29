@@ -20,6 +20,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -64,6 +65,18 @@ public class NavigationItem extends Item {
             }
         }
         return super.useOn(context);
+    }
+
+    @Override
+    public @NonNull InteractionResult use(@NonNull Level level, @NonNull Player player, @NonNull InteractionHand hand) {
+        if (player.isCrouching()) {
+            if (level.isClientSide()) {
+                NavigationScreen.open(player.getItemInHand(hand), hand);
+            }
+            return InteractionResult.SUCCESS;
+        }
+        return super.use(level, player, hand);
+
     }
 
     @Override
