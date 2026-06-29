@@ -262,7 +262,15 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
     private static final long D_CANNOT_REACH = packDistanceResult(-1, -1);
 
     private static long packDistanceResult(int distance, int walkY) {
-        return Integer.toUnsignedLong(distance) << 32 | walkY;
+        final long result = Integer.toUnsignedLong(distance) << 32 | Integer.toUnsignedLong(walkY);
+        if (result < 0) {
+            trap();
+        }
+        return result;
+    }
+
+    static void trap() {
+        System.out.println("TRAP");
     }
 
     static int unpackDistance(long dResult) {

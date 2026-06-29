@@ -113,25 +113,21 @@ public final class SimplePathFinderCommand {
                                                                                     }
                                                                                     var acp = new ChunkPos(x + cp.x(), z + cp.z());
                                                                                     ++total;
-                                                                                    data.levelNavData.buildFromLayerStart(level, data.levelNavData, layer, acp).whenComplete((_, th) -> {
-                                                                                        if (th != null) {
-                                                                                            th.printStackTrace();
-                                                                                            return;
-                                                                                        }
+                                                                                    data.levelNavData.buildFromLayerStart(level, data.levelNavData, layer, acp).whenCompleteAsync((_, th) -> {
                                                                                         dirty = true;
                                                                                         ++chunkDirty;
                                                                                         runOnce();
-                                                                                    });
+                                                                                    }, sl.getServer());
 
                                                                                     return false;
                                                                                 }
 
                                                                                 @Override
                                                                                 public void run() {
-                                                                                    data.levelNavData.buildForPlayer(player, layer).whenComplete((_, th) -> {
+                                                                                    data.levelNavData.buildForPlayer(player, layer).whenCompleteAsync((_, th) -> {
                                                                                         data.setDirty();
                                                                                         runOnce();
-                                                                                    });
+                                                                                    }, sl.getServer());
                                                                                 }
                                                                             }
                                                                             new Runner().run();

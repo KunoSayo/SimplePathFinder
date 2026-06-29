@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav.layered;
 
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -108,11 +109,11 @@ class AsyncSolver {
             if (tx < 0 || tz < 0) {
                 continue;
             }
-            final int toX = blockX(tx), toZ = blockZ(tz);
 
-            long distance = getDistance(levelIn, blockX(x), y, blockZ(z), toX, toZ);
-            markDistance(x, z, tx, tz, unpackDistance(distance));
-            if (!canReachDistance(distance) || tx >= 16 || tz >= 16) {
+            long dResult = getDistance(levelIn, blockX(x), y, blockZ(z), blockX(tx), blockZ(tz));
+            final int distance = unpackDistance(dResult);
+            markDistance(x, z, tx, tz, distance);
+            if (!canReachDistance(dResult) || tx >= 16 || tz >= 16) {
                 continue;
             }
             final int thatIdx = convertToIndex(tx, tz);
@@ -120,7 +121,7 @@ class AsyncSolver {
                 continue;
             }
             // Why bother doing this anyway
-            final short walkY = (short) unpackWalkY(distance);
+            final short walkY = (short) unpackWalkY(dResult);
             chunkIn.walkY[thatIdx] = walkY;
             // InitAuther97: mark early so it won't be queued for many times
             markVisited(thatIdx);
