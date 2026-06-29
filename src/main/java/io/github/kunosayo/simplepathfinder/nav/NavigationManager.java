@@ -133,7 +133,7 @@ public class NavigationManager {
                 navData.findNav(startPos, targetPos).ifPresentOrElse(
                         navResult -> {
                             // 寻路成功
-                            SimplePathFinder.clientNavResult = navResult;
+                            SimplePathFinder.clientNavResult.set(navResult);
                             if (config.notifyOnSuccess()) {
                                 Minecraft mc = Minecraft.getInstance();
                                 mc.submitAsync(() -> {
@@ -165,30 +165,5 @@ public class NavigationManager {
                 isPathfinding.set(false);
             }
         });
-    }
-
-    /**
-     * 清除当前导航结果（但不影响正在执行的任务）
-     */
-    public static void clearNavigationResult() {
-        SimplePathFinder.clientNavResult = null;
-    }
-
-    /**
-     * 获取当前导航结果
-     *
-     * @return 当前导航结果，可能为null
-     */
-    public static NavResult getCurrentNavigationResult() {
-        return SimplePathFinder.clientNavResult;
-    }
-
-    /**
-     * 检查是否有活动的导航（有结果显示）
-     *
-     * @return 是否有活动的导航
-     */
-    public static boolean hasActiveNavigation() {
-        return SimplePathFinder.clientNavResult != null;
     }
 }

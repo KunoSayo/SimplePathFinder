@@ -45,7 +45,7 @@ public class NavRenderingSupport {
         NavigationRenderTriggerEvent renderNavEvent = new NavigationRenderTriggerEvent(player);
         if (NeoForge.EVENT_BUS.post(renderNavEvent).isCanceled()) return;
 
-        NavResult clientNavResult = SimplePathFinder.clientNavResult;
+        NavResult clientNavResult = SimplePathFinder.clientNavResult.get();
         if (clientNavResult != null && clientNavResult.modNavResult != null) {
             this.prepareNavigationPath(clientNavResult.modNavResult);
         }

@@ -25,17 +25,19 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NonNls;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Mod(SimplePathFinder.MOD_ID)
 public final class SimplePathFinder {
     public static final Logger LOGGER = LogManager.getLogger(SimplePathFinder.MOD_ID);
 
-    @Nullable
-    public static volatile NavResult clientNavResult = null;
+    @NonNls
+    public static AtomicReference<NavResult> clientNavResult = new AtomicReference<>();
     private static final HashSet<UUID> playerGotNav = new HashSet<>();
     public static final String MOD_ID = "simple_path_finder";
 

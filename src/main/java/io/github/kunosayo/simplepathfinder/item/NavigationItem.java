@@ -218,7 +218,7 @@ public class NavigationItem extends Item {
         net.minecraft.util.Util.backgroundExecutor().execute(() -> {
             long startTime = System.currentTimeMillis();
             navData.findNav(player.blockPosition(), targetPos).ifPresent(navResult -> {
-                SimplePathFinder.clientNavResult = navResult;
+                SimplePathFinder.clientNavResult.set(navResult);
                 mc.execute(() -> {
                     player.sendSystemMessage(Component.translatable("simple_path_finder.nav.success"));
                 });

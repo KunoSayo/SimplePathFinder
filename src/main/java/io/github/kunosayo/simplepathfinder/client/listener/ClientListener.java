@@ -43,10 +43,9 @@ public class ClientListener {
      */
     @SubscribeEvent
     public static void onServerConnect(PlayerEvent.PlayerLoggedInEvent event) {
-        // Only run on client side
-        if (event.getEntity().level().isClientSide()) {
-            ClientNavDataManager.onServerConnect();
-        }
+
+        ClientNavDataManager.onServerConnect();
+
     }
 
     /**
@@ -54,11 +53,8 @@ public class ClientListener {
      */
     @SubscribeEvent
     public static void onServerDisconnect(PlayerEvent.PlayerLoggedOutEvent event) {
-        // Only run on client side
-        if (event.getEntity().level().isClientSide()) {
-            ClientNavDataManager.clear();
-            SimplePathFinder.clientNavResult = null;
-        }
+        ClientNavDataManager.clear();
+        SimplePathFinder.clientNavResult.set(null);
     }
 
     private static LevelNavData getNavData(Player player) {
@@ -80,12 +76,9 @@ public class ClientListener {
         BlockPos start = player.blockPosition();
 
         // Run pathfinding asynchronously on the background executor to avoid blocking the main thread
-        Util.backgroundExecutor().execute(() -> {
-            data.findNav(start, target).ifPresent(navResult -> {
-                // Update the result on the main thread
-                SimplePathFinder.clientNavResult = navResult;
-            });
-        });
+        Util.backgroundExecutor().execute(() -> data.findNav(start, target).ifPresent(navResult -> {
+            SimplePathFinder.clientNavResult.set(navResult);
+        }));
     }
 
     @SubscribeEvent
@@ -93,6 +86,11 @@ public class ClientListener {
         var dispatcher = event.getDispatcher();
         CommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf").then(
                 Commands.literal("nav")
+                        .then(Commands.literal("clear")
+                                .executes(commandContext -> {
+                                    SimplePathFinder.clientNavResult.set(null);
+                                    return 0;
+                                }))
                         .then(Commands.argument("target", BlockPosArgument.blockPos())
                                 .executes(context -> {
                                     var target = BlockPosArgument.getBlockPos(context, "target");
@@ -156,6 +154,13 @@ public class ClientListener {
         if (player == null) {
             return;
         }
+        var result = SimplePathFinder.clientNavResult.get();
+        if (result != null) {
+            var pos = result.getNavTarget();
+            if (pos.distManhattan(player.blockPosition()) <= 1) {
+                SimplePathFinder.clientNavResult.compareAndSet(result, null);
+            }
+        }
         if (!player.getMainHandItem().is(ModItems.DEBUG_NAV)) {
             return;
         }
@@ -172,7 +177,7 @@ public class ClientListener {
             return;
         }
         if (amount == 63) {
-            NavResult clientNavResult = SimplePathFinder.clientNavResult;
+            NavResult clientNavResult = SimplePathFinder.clientNavResult.get();
             if (clientNavResult != null) {
                 doNav(player, clientNavResult.getNavTarget());
             }
