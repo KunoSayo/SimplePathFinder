@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav.layered;
 
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.codec.ArrayCodecs;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
@@ -8,14 +9,12 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.util.Mth;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
 import static io.github.kunosayo.simplepathfinder.util.NavUtil.considerSafeCross;
 import static io.github.kunosayo.simplepathfinder.util.NavUtil.considerSafeGround;
@@ -126,44 +125,44 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         distances[getDistanceIdx(x, z, isZ)] = value;
     }
 
-    private static int convertToIndex(int x, int z) {
+    static int convertToIndex(int x, int z) {
         return (x << 4) | z;
     }
 
-    private static int getDistanceIdx(int sx, int sz, boolean isZ) {
+    static int getDistanceIdx(int sx, int sz, boolean isZ) {
         return (convertToIndex(sx, sz) << 1) | (isZ ? 1 : 0);
     }
 
 
-    private static DistanceResult getDistanceResult(BlockState standBlock, int walkY) {
+    private static int getDistanceResult(BlockState standBlock) {
         var fluid = standBlock.getFluidState();
         if (!fluid.isEmpty()) {
             if (fluid.getType().isSame(Fluids.WATER) || fluid.getType().isSame(Fluids.FLOWING_WATER)) {
-                return new DistanceResult(127, walkY);
+                return 4;
+            } else if (fluid.getType().isSame(Fluids.LAVA) || fluid.getType().isSame(Fluids.FLOWING_LAVA)) {
+                return 12737;
             }
-            if (fluid.getType().isSame(Fluids.LAVA) || fluid.getType().isSame(Fluids.FLOWING_LAVA)) {
-                return new DistanceResult(12737, walkY);
-            }
-            return new DistanceResult(30, walkY);
+            return 30;
         }
-        return new DistanceResult(10, walkY);
+        return 10;
     }
 
-    private static DistanceResult getDistance(Level level, int sx, int sy, int sz, int tx, int tz) {
-        var posTargetStartY = new BlockPos(tx, sy, tz);
-
+    static long getDistance(Level level, int sx, int sy, int sz, int tx, int tz) {
+        final var mutable = new BlockPos.MutableBlockPos(tx, sy, tz);
         //   13
         //   .2
         //sy:.4
         //   #5
         //    6
 
-        if (!considerSafeCross(level, posTargetStartY.offset(0, 1, 0))) {
+        mutable.move(0, 1, 0);
+        var upBaseBlock = level.getBlockState(mutable);
+        if (!considerSafeCross(level, mutable, upBaseBlock)) {
             // check 2, blocked, no way!
-            return DistanceResult.CANNOT_REACH;
+            return D_CANNOT_REACH;
         }
-        var upBaseBlock = level.getBlockState(posTargetStartY);
-        if (considerSafeGround(level, posTargetStartY, upBaseBlock)) {
+        mutable.move(0, -1, 0);
+        if (considerSafeGround(level, mutable, upBaseBlock)) {
             // (4 is block)
             // we should go up
 
@@ -172,17 +171,19 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
             //sy:.#
             //   #
 
-            if (!considerSafeCross(level, new BlockPos(sx, sy + 2, sz))) {
+            mutable.set(sx, sy + 2, sz);
+            if (!considerSafeCross(level, mutable)) {
                 // checked 1
                 // we cannot go up (blocked)
-                return DistanceResult.CANNOT_REACH;
+                return D_CANNOT_REACH;
             }
-            if (!considerSafeCross(level, posTargetStartY.offset(0, 2, 0))) {
+            mutable.set(tx, sy + 2, tz);
+            if (!considerSafeCross(level, mutable)) {
                 // checked 3
                 // we cannot go up (blocked)
-                return DistanceResult.CANNOT_REACH;
+                return D_CANNOT_REACH;
             }
-            return getDistanceResult(upBaseBlock, posTargetStartY.getY() + 1);
+            return packDistanceResult(getDistanceResult(upBaseBlock), sy + 1);
         }
         //   13
         //   .2
@@ -196,11 +197,13 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         //sy:..
         //   #5
         //    6
-        var sameGroundYPos = posTargetStartY.offset(0, -1, 0);
+
+        // mutable is moved into sameGroundYPos
+        final var sameGroundYPos = mutable.move(0, -1, 0);
         var sameBaseBlock = level.getBlockState(sameGroundYPos);
         if (considerSafeGround(level, sameGroundYPos, sameBaseBlock)) {
             // checked 5
-            return getDistanceResult(sameBaseBlock, posTargetStartY.getY());
+            return packDistanceResult(getDistanceResult(sameBaseBlock), sy);
         }
         //   13
         //   ..
@@ -213,84 +216,32 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         //sy:..
         //   #.
         //    6
-        var downGroundPos = sameGroundYPos.offset(0, -1, 0);
+
+        // sameGroundYPos is moved into downGroundPos
+        final var downGroundPos = sameGroundYPos.move(0, -1, 0);
         var downBase = level.getBlockState(downGroundPos);
         if (considerSafeGround(level, downGroundPos, downBase)) {
             // checked 6
-            return getDistanceResult(downBase, sameGroundYPos.getY());
+            return packDistanceResult(getDistanceResult(downBase), sy - 1);
         }
 
-        return DistanceResult.CANNOT_REACH;
+        return D_CANNOT_REACH;
 
     }
 
     @Override
-    public void parse(Level level, BlockPos trustedCenter) {
-        boolean[] visited = new boolean[LevelNavData.CHUNK_AREA];
-        final int startX = Mth.positiveModulo(trustedCenter.getX(), 16);
-        final int startZ = Mth.positiveModulo(trustedCenter.getZ(), 16);
-        walkY[convertToIndex(startX, startZ)] = (short) trustedCenter.getY();
-
-        var chunkPos = ChunkPos.containing(trustedCenter);
-        class Solver {
-            final ArrayDeque<int[]> q = new ArrayDeque<>();
-
-            void dfs(int x, int y, int z) {
-                // in fact, we run bfs
-                q.addLast(new int[]{x, y, z});
-            }
-
-            void markDistance(int x, int z, int tx, int tz, int distance) {
-                boolean isZ = z != tz;
-                int fromX = Math.min(x, tx);
-                int fromZ = Math.min(z, tz);
-                distances[getDistanceIdx(fromX, fromZ, isZ)] = distance;
-            }
-
-            void once(int x, int y, int z) {
-                // the x, z in [0, 15]
-                // the y is real world
-                final int idx = convertToIndex(x, z);
-                visited[idx] = true;
-
-                for (int i = 0; i < 4; i++) {
-                    int tx = x + SEARCH_DX[i];
-                    int tz = z + SEARCH_DZ[i];
-                    if (tx < 0 || tz < 0) {
-                        continue;
-                    }
-                    var distance = getDistance(level,
-                            chunkPos.getBlockX(x), y, chunkPos.getBlockZ(z),
-                            chunkPos.getBlockX(tx), chunkPos.getBlockZ(tz));
-                    markDistance(x, z, tx, tz, distance.distance);
-                    if (distance.canReach()) {
-                        if (tx >= 16 || tz >= 16) {
-                            continue;
-                        }
-                        final int thatIdx = convertToIndex(tx, tz);
-                        if (!visited[thatIdx]) {
-                            walkY[thatIdx] = distance.walkY;
-                            visited[thatIdx] = true;
-                            dfs(tx, distance.walkY, tz);
-                        }
-                    }
-                }
-            }
-
-            void run() {
-                while (!q.isEmpty()) {
-                    var pos = q.pollFirst();
-                    once(pos[0], pos[1], pos[2]);
-                }
-            }
+    public CompletableFuture<?> parse(Level level, BlockPos trustedCenter) {
+        final var server = level.getServer();
+        if (server == null) {
+            SimplePathFinder.LOGGER.warn("Cannot obtain MinecraftServer from Level (expected ServerLevel, what do we got here huh?), fall back to synchronously parsing");
         }
 
-        var solver = new Solver();
-        solver.dfs(startX, trustedCenter.getY(), startZ);
-        solver.run();
+        return new AsyncSolver(level, this, trustedCenter).begin();
     }
 
-    public static ILayeredNavChunk getDefault() {
+    /// Fuck, it won't kill you to just return LayeredNavChunk
+    /// I'd prefer to delete the whole ILayeredNavChunk if I can
+    public static LayeredNavChunk getDefault() {
         short[] walkY = new short[LevelNavData.CHUNK_AREA];
         int[] distance = new int[LevelNavData.CHUNK_AREA << 1];
         Arrays.fill(distance, -1);
@@ -308,15 +259,21 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         return isWalkYValid(getWalkY(x, z));
     }
 
-    private record DistanceResult(int distance, short walkY) {
-        public static final DistanceResult CANNOT_REACH = new DistanceResult(-1, (short) -1);
+    private static final long D_CANNOT_REACH = packDistanceResult(-1, -1);
 
-        DistanceResult(int d, int y) {
-            this(d, (short) y);
-        }
+    private static long packDistanceResult(int distance, int walkY) {
+        return Integer.toUnsignedLong(distance) << 32 | walkY;
+    }
 
-        public boolean canReach() {
-            return distance >= 0;
-        }
+    static int unpackDistance(long dResult) {
+        return (int) (dResult >>> 32);
+    }
+
+    static int unpackWalkY(long dResult) {
+        return (int) dResult;
+    }
+
+    static boolean canReachDistance(long dResult) {
+        return dResult >= 0;
     }
 }

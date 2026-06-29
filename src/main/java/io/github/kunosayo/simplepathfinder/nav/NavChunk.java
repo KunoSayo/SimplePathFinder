@@ -189,7 +189,7 @@ public final class NavChunk implements INavChunk {
     @Override
     public void removeNavChunk(ILayeredNavChunk layeredNavChunk) {
         if (layeredNavChunk instanceof LayeredNavChunk) {
-            this.layers.remove((LayeredNavChunk) layeredNavChunk);
+            this.layers.remove(layeredNavChunk);
         }
     }
 

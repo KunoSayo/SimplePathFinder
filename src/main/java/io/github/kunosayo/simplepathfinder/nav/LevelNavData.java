@@ -1,5 +1,7 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.config.NavBuildConfig;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
@@ -22,6 +24,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -153,7 +156,9 @@ public class LevelNavData {
         return groundPos;
     }
 
-    public boolean buildForPlayer(Player player, byte layer) {
+    private static final CompletableFuture<?> FAILED_FUTURE = CompletableFuture.failedFuture(new Throwable("This is only a marker throwable. It should never appear in the console anyway."));
+
+    public CompletableFuture<?> buildForPlayer(Player player, byte layer) {
         var level = player.level();
         var groundPos = player.blockPosition();
 
@@ -161,37 +166,32 @@ public class LevelNavData {
             groundPos = groundPos.offset(0, -1, 0);
         }
 
-
-        if (NavUtil.isNoCollision(level, groundPos)) {
+        // Require: on the ground, body not occupied by blocks
+        if (NavUtil.isNoCollision(level, groundPos) &&
+                !NavUtil.isNoCollision(level, groundPos.offset(0, 1, 0)) &&
+                !NavUtil.isNoCollision(level, groundPos.offset(0, 2, 0))) {
             player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.failed"));
-            return false;
-        }
-
-        if (!NavUtil.isNoCollision(level, groundPos.offset(0, 1, 0))) {
-            player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.failed"));
-            return false;
-        }
-        if (!NavUtil.isNoCollision(level, groundPos.offset(0, 2, 0))) {
-            player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.failed"));
-            return false;
+            return FAILED_FUTURE;
         }
 
         net.minecraft.core.BlockPos finalGroundPos = groundPos;
-        boolean[] result = new boolean[]{false};
-        getNavChunk(ChunkPos.containing(groundPos), true).ifPresentOrElse(navChunk -> navChunk
-                .getLayer(layer, () -> (LayeredNavChunk) LayeredNavChunk.getDefault()).ifPresentOrElse(layeredNavChunk -> {
-                    if (layeredNavChunk instanceof LayeredNavChunk) {
-                        LayeredNavChunk chunk = (LayeredNavChunk) layeredNavChunk;
-                        chunk.setParentChunk(navChunk);
-                        chunk.setLayer(layer);
-                        chunk.parse(level, finalGroundPos.offset(0, 1, 0));
-                        player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.success"));
-                        result[0] = true;
-                    }
-                }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"))), () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited")));
-
-
-        return result[0];
+        final var optionalNavChunk = getNavChunk(ChunkPos.containing(groundPos), true);
+        if (optionalNavChunk.isPresent()) {
+            final var navChunk = optionalNavChunk.get();
+            final var optionalLayered = navChunk.getLayer(layer, LayeredNavChunk::getDefault);
+            if (optionalLayered.isPresent()) {
+                final var layered = optionalLayered.get();
+                if (!(layered instanceof LayeredNavChunk chunk)) {
+                    SimplePathFinder.LOGGER.error("Why isn't it LayeredNavChunk when building for player? Answer me!!!");
+                    return FAILED_FUTURE;
+                }
+                chunk.setParentChunk(navChunk);
+                chunk.setLayer(layer);
+                return chunk.parse(level, finalGroundPos.offset(0, 1, 0));
+            }
+        }
+        player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"));
+        return FAILED_FUTURE;
     }
 
     public Optional<NavResult> findNav(BlockPos from, BlockPos to) {
@@ -206,14 +206,24 @@ public class LevelNavData {
         return finder.search();
     }
 
-    public boolean buildFromLayerStart(Level level, LevelNavData levelNavData, byte layer, ChunkPos acp) {
+    public CompletableFuture<?> buildFromLayerStart(Level level, LevelNavData levelNavData, byte layer, ChunkPos acp) {
 
-        boolean[] result = new boolean[]{false};
-        getNavChunk(acp, true).ifPresent(navChunk -> navChunk
-                .getLayer(layer, () -> (LayeredNavChunk) LayeredNavChunk.getDefault()).ifPresent(layeredNavChunk -> {
-                    if (layeredNavChunk instanceof LayeredNavChunk chunk) {
-                        chunk.setParentChunk(navChunk);
-                        chunk.setLayer(layer);
+        final var optionalNavChunk = getNavChunk(acp, true);
+        if (optionalNavChunk.isEmpty()) {
+            return FAILED_FUTURE;
+        }
+        final var navChunk = optionalNavChunk.get();
+        final var optionalLayered = navChunk.getLayer(layer, LayeredNavChunk::getDefault);
+        if (optionalLayered.isEmpty()) {
+            return FAILED_FUTURE;
+        }
+        final var layered = optionalLayered.get();
+        if (!(layered instanceof LayeredNavChunk chunk)) {
+            SimplePathFinder.LOGGER.error("Why isn't it LayeredNavChunk when batch building? Answer me!!!");
+            return FAILED_FUTURE;
+        }
+        chunk.setParentChunk(navChunk);
+        chunk.setLayer(layer);
 
                         levelNavData.getNavChunk(new ChunkPos(acp.x() - 1, acp.z()), layer)
                                 .filter(navChunk1 -> navChunk1.canWalk(15, 0))

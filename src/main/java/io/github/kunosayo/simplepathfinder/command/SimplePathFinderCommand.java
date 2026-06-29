@@ -78,9 +78,9 @@ public final class SimplePathFinderCommand {
                                                                             var playerUUID = player.getUUID();
                                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
                                                                             var cp = ChunkPos.containing(player.blockPosition());
-                                                                            if (data.levelNavData.buildForPlayer(player, layer)) {
+                                                                            data.levelNavData.buildForPlayer(player, layer).whenCompleteAsync((_, th) -> {
                                                                                 data.setDirty();
-                                                                            }
+                                                                            }, sl.getServer());
                                                                             class Runner implements Runnable {
                                                                                 int x = 0;
                                                                                 int z = 0;
@@ -151,12 +151,12 @@ public final class SimplePathFinderCommand {
                                                                 var level = player.level();
                                                                 if (level instanceof ServerLevel sl) {
                                                                     var data = LevelNavDataSavedData.loadFromLevel(sl);
-                                                                    if (data.levelNavData.buildForPlayer(player, layer)) {
+                                                                    data.levelNavData.buildForPlayer(player, layer).whenCompleteAsync((_, th) -> {
                                                                         data.setDirty();
                                                                         if (player instanceof ServerPlayer sp && !level.isClientSide()) {
                                                                             SimplePathFinder.playerMadeServerNavDirty(sp);
                                                                         }
-                                                                    }
+                                                                    }, sl.getServer());
                                                                 }
                                                             }
                                                             return 0;
@@ -167,12 +167,12 @@ public final class SimplePathFinderCommand {
                                                         var level = player.level();
                                                         if (level instanceof ServerLevel sl) {
                                                             var data = LevelNavDataSavedData.loadFromLevel(sl);
-                                                            if (data.levelNavData.buildForPlayer(player, (byte) 0)) {
+                                                            data.levelNavData.buildForPlayer(player, (byte) 0).whenCompleteAsync((_, th) -> {
                                                                 data.setDirty();
                                                                 if (player instanceof ServerPlayer sp && !level.isClientSide()) {
                                                                     SimplePathFinder.playerMadeServerNavDirty(sp);
                                                                 }
-                                                            }
+                                                            }, sl.getServer());
                                                         }
                                                     }
                                                     return 0;
