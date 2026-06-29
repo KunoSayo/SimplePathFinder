@@ -1,7 +1,5 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
-import io.github.kunosayo.simplepathfinder.SimplePathFinder;
-import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;

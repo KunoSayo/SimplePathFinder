@@ -154,7 +154,7 @@ public class NavigationManager {
                                 Minecraft mc = Minecraft.getInstance();
                                 mc.submitAsync(() -> {
                                     if (mc.player != null) {
-                                        mc.player.sendSystemMessage(Component.translatable("simple_path_finder.nav.chunk_not_found"));
+                                        mc.player.sendSystemMessage(Component.translatable("simple_path_finder.nav.no_path"));
                                     }
                                 });
                             }

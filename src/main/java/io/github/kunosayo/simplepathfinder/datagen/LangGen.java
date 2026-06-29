@@ -235,6 +235,7 @@ public class LangGen {
 
         // 导航系统消息（新增）
         add("simple_path_finder.nav.invalid_block", "无效的导航方块", "Invalid navigation block");
+        add("simple_path_finder.nav.no_path", "无法寻找到有效路径", "Cannot find valid path");
         add("simple_path_finder.nav.no_target_in_block", "导航方块中没有目标", "No target in navigation block");
         add("simple_path_finder.nav.wrong_dimension", "目标位置在不同维度", "Target is in different dimension");
         add("simple_path_finder.nav.already_pathfinding", "已有寻路任务正在执行中，请稍后再试", "A pathfinding task is already in progress, please try again later");

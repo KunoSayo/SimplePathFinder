@@ -61,6 +61,7 @@
   "simple_path_finder.nav.link.start_pos_set": "已设置起始位置： %s, %s, %s，请右键点击目标位置",
   "simple_path_finder.nav.no_data": "没有可用的导航数据",
   "simple_path_finder.nav.no_layer_at_pos": "此位置未找到导航层级",
+  "simple_path_finder.nav.no_path": "无法寻找到有效路径",
   "simple_path_finder.nav.no_target_in_block": "导航方块中没有目标",
   "simple_path_finder.nav.starting": "开始寻路至 %s, %s, %s",
   "simple_path_finder.nav.success": "开始寻路",

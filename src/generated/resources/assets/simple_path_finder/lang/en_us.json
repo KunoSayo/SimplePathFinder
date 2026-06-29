@@ -61,6 +61,7 @@
   "simple_path_finder.nav.link.start_pos_set": "Start position set: %s, %s, %s, now right-click target position",
   "simple_path_finder.nav.no_data": "No navigation data available",
   "simple_path_finder.nav.no_layer_at_pos": "No navigation layer found at this position",
+  "simple_path_finder.nav.no_path": "Cannot find valid path",
   "simple_path_finder.nav.no_target_in_block": "No target in navigation block",
   "simple_path_finder.nav.starting": "Starting pathfinding to %s, %s, %s",
   "simple_path_finder.nav.success": "Starting pathfinding",
