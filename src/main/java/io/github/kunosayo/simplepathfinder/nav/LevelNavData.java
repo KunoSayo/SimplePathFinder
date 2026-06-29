@@ -1,7 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
-import io.github.kunosayo.simplepathfinder.config.NavBuildConfig;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
@@ -207,7 +206,7 @@ public class LevelNavData {
     }
 
     public CompletableFuture<?> buildFromLayerStart(Level level, LevelNavData levelNavData, byte layer, ChunkPos acp) {
-
+        final var server = level.getServer();
         final var optionalNavChunk = getNavChunk(acp, true);
         if (optionalNavChunk.isEmpty()) {
             return FAILED_FUTURE;
@@ -224,43 +223,40 @@ public class LevelNavData {
         }
         chunk.setParentChunk(navChunk);
         chunk.setLayer(layer);
-
-                        levelNavData.getNavChunk(new ChunkPos(acp.x() - 1, acp.z()), layer)
-                                .filter(navChunk1 -> navChunk1.canWalk(15, 0))
-                                .ifPresentOrElse(navChunk1 -> {
-                                    for (int i = 0; i < 16; i++) {
-                                        int y = navChunk1.getWalkY(15, i);
-                                        if (y != ILayeredNavChunk.INVALID_WALK_Y) {
-                                            var blockPos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(i));
-                                            var groundPos = getGroundPos(level, blockPos);
-                                            layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
-                                            result[0] = true;
-                                            break;
-                                        }
-                                    }
-
-                                }, () -> levelNavData.getNavChunk(new ChunkPos(acp.x(), acp.z() - 1), layer).ifPresent(navChunk1 -> {
-                                    for (int i = 0; i < 16; i++) {
-                                        int y = navChunk1.getWalkY(i, 15);
-                                        if (y != ILayeredNavChunk.INVALID_WALK_Y) {
-                                            var blockPos = new BlockPos(acp.getBlockX(i), y + 2, acp.getBlockZ(0));
-                                            var groundPos = getGroundPos(level, blockPos);
-                                            layeredNavChunk.parse(level, groundPos.offset(0, 1, 0));
-                                            result[0] = true;
-                                            break;
-                                        }
-                                    }
-
-                                }));
-
-                        if (!chunk.isAnyValid()) {
-                            navChunk.removeNavChunk(chunk);
-                        }
-                    }
-                }));
-
-
-        return result[0];
+        final var check = levelNavData.getNavChunk(new ChunkPos(acp.x() - 1, acp.z()), layer)
+                .filter(navChunk1 -> navChunk1.canWalk(15, 0));
+        BlockPos pos = null;
+        if (check.isPresent()) {
+            final var nav1 = check.get();
+            for (int i = 0; i < 16; i++) {
+                int y = nav1.getWalkY(15, i);
+                if (y == ILayeredNavChunk.INVALID_WALK_Y) continue;
+                pos = new BlockPos(acp.getBlockX(0), y + 2, acp.getBlockZ(i));
+                break;
+            }
+        } else {
+            final var check2 = levelNavData.getNavChunk(new ChunkPos(acp.x(), acp.z() - 1), layer);
+            if (check2.isPresent()) {
+                final var nav2 = check2.get();
+                for (int i = 0; i < 16; i++) {
+                    int y = nav2.getWalkY(i, 15);
+                    if (y == ILayeredNavChunk.INVALID_WALK_Y) continue;
+                    pos = new BlockPos(acp.getBlockX(i), y + 2, acp.getBlockZ(0));
+                    break;
+                }
+            }
+        }
+        if (pos == null) {
+            if (!chunk.isAnyValid()) {
+                navChunk.removeNavChunk(chunk);
+            }
+        }
+        final var groundPos = getGroundPos(level, pos);
+        return layered.parse(level, groundPos.offset(0, 1, 0)).whenComplete((_, _) -> {
+            if (!chunk.isAnyValid()) {
+                navChunk.removeNavChunk(chunk);
+            }
+        });
     }
 
     public long getTotalLayers() {

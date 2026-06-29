@@ -129,7 +129,7 @@ public interface ILayeredNavChunk {
      *
      * @param level         the level to parse
      * @param trustedCenter the trusted center position
-     * @return
+     * @return a future that fires on the server thread when finish parsing.
      */
     CompletableFuture<?> parse(Level level, BlockPos trustedCenter);
 
