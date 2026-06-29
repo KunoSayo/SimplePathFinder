@@ -39,12 +39,22 @@ public class LocatorItem extends Item {
     }
 
     @Override
-    public InteractionResult use(@NonNull Level level, @NonNull Player player, @NonNull InteractionHand hand) {
+    public @NonNull InteractionResult use(@NonNull Level level, @NonNull Player player, @NonNull InteractionHand hand) {
         var stack = player.getItemInHand(hand);
         LocatorData data = getLocatorData(stack);
 
 
         if (data == null) {
+            // 没有设置目标，按Shift写入玩家UUID
+            if (player.isCrouching()) {
+                if (!level.isClientSide()) {
+                    LocatorData newData = LocatorData.forPlayer(player.getUUID());
+                    stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
+                    player.sendSystemMessage(Component.translatable("item.simple_path_finder.locator.bound.player",
+                            player.getName()));
+                }
+                return InteractionResult.SUCCESS_SERVER;
+            }
             return super.use(level, player, hand);
         }
 
