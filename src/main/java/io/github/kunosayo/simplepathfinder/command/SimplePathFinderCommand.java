@@ -114,8 +114,10 @@ public final class SimplePathFinderCommand {
                                                                                     var acp = new ChunkPos(x + cp.x(), z + cp.z());
                                                                                     ++total;
                                                                                     data.levelNavData.buildFromLayerStart(level, data.levelNavData, layer, acp).whenCompleteAsync((_, th) -> {
-                                                                                        dirty = true;
-                                                                                        ++chunkDirty;
+                                                                                        if (th == null) {
+                                                                                            dirty = true;
+                                                                                            ++chunkDirty;
+                                                                                        }
                                                                                         runOnce();
                                                                                     }, sl.getServer());
 
