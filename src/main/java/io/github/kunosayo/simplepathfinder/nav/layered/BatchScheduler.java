@@ -257,6 +257,7 @@ public class BatchScheduler implements Runnable {
             }
             acquireChunk(x, z);
             this.state = STATE_OBTAIN_FUTURE;
+            CompletableFuture.supplyAsync(this, ASYNC_REQUESTER).thenCompose(Function.identity()).whenCompleteAsync(this, level.getServer());
         }
 
         /// Run on async worker, step 2 for a chunk, request chunk future
