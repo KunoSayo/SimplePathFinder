@@ -297,13 +297,13 @@ public class NavigationItem extends Item {
         final var optional = data.levelNavData.getNavChunk(chunkPos, true);
         if (optional.isEmpty()) {
             player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"));
-            return false;
+            return true;
         }
         final var navChunk = optional.get();
         final var optionalLayered = navChunk.getLayer(layer, LayeredNavChunk::getDefault);
         if (optionalLayered.isEmpty()) {
             player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_limit", maxLayers - 1));
-            return false;
+            return true;
         }
         final var chunk = (LayeredNavChunk) optionalLayered.get();
         chunk.setParentChunk(navChunk);
