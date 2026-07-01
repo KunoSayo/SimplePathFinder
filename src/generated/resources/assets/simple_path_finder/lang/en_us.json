@@ -41,7 +41,7 @@
   "item.simple_path_finder.navigation": "Navigation",
   "item_group.simple_path_finder.name": "Simple Path Finder",
   "simple_path_finder": "Simple Path Finder",
-  "simple_path_finder.build.nav.batch_success": "Successfully built navigation chunk, dirty %s, failure %s, total updated %s",
+  "simple_path_finder.build.nav.batch_success": "Successfully built navigation chunk, dirty %s, failure %s, total %s, expected %s",
   "simple_path_finder.build.nav.failed": "Current environment is not suitable for pathfinding",
   "simple_path_finder.build.nav.limited": "Current navigation chunk count exceeds limit",
   "simple_path_finder.build.nav.success": "Successfully built navigation chunk",
