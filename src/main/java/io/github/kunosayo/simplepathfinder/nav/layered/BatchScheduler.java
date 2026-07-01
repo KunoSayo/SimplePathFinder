@@ -129,7 +129,7 @@ public class BatchScheduler implements Runnable {
     }
 
     /// Run on server thread, final step of a chunk, schedule neighbors & return chunks
-    private boolean afterCompletion(int x, int z, byte result) {
+    private void afterCompletion(int x, int z, byte result) {
         ++current;
         if ((counter = ((counter + 1) & intervalMask)) == 0) {
             var player = getPlayer();
@@ -155,9 +155,7 @@ public class BatchScheduler implements Runnable {
         // otherwise, live counter is down to zero too early
         if (--this.liveCounter == 0) {
             done();
-            return true;
         }
-        return true;
     }
 
     /// Run on server thread, utility, try to schedule a chunk, taking one free task to occupy
