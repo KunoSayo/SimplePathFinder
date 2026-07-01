@@ -126,13 +126,26 @@ public class NavPathFinder {
         }
     }
 
-    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca, Consumer<EdgeInfo> edgeInfoConsumer) {
+    private void getEdge(SearchNode node, Consumer<EdgeInfo> edgeInfoConsumer) {
+        var layeredNavChunk = node.layer();
+        var navChunk = layeredNavChunk.getParentChunk();
+        var a = node.pos();
+        var ca = ChunkPos.containing(a);
         // First, get edges from navigation links (teleports, vehicles, etc.)
         getNavLinkEdges(navChunk, layeredNavChunk, a, ca, edgeInfoConsumer);
 
         // Then, get normal walking edges
+        BlockPos lastPos = null;
+        if (node.lastNode != null) {
+            lastPos = node.lastNode.pos;
+        }
         for (int i = 0; i < 4; i++) {
             var t = a.offset(LayeredNavChunk.SEARCH_DX[i], 0, LayeredNavChunk.SEARCH_DZ[i]);
+            if (lastPos != null) {
+                if (lastPos.getX() == t.getX() && lastPos.getZ() == t.getZ()) {
+                    continue;
+                }
+            }
             boolean isSame = NavUtil.isSameChunk(a, t);
             var thatChunk = navChunk;
             if (!isSame) {
@@ -159,17 +172,10 @@ public class NavPathFinder {
             if (node.pos().distManhattan(this.end) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            getEdge(node.layer().getParentChunk(), node.layer(), node.pos(), ChunkPos.containing(node.pos()), edgeInfo -> {
-                if (node.lastNode != null) {
-                    var lastPos = node.lastNode.pos;
-                    if (lastPos.getX() == edgeInfo.targetPos.getX() && lastPos.getY() == edgeInfo.targetPos.getY() && lastPos.getZ() == edgeInfo.targetPos.getZ()) {
-                        return;
-                    }
-                }
+            getEdge(node, edgeInfo -> {
                 if (visitedPos.contains(SearchedPos.toLong(edgeInfo.targetLayeredChunk.getLayer(), edgeInfo.targetPos))) {
                     return;
                 }
-
                 long extraCost = node.getExtraCost(edgeInfo.targetPos);
                 var targetNode = new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node);
                 searchNodes.enqueue(targetNode);
