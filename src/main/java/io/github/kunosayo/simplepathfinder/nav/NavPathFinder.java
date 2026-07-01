@@ -162,7 +162,7 @@ public class NavPathFinder {
             getEdge(node.layer().getParentChunk(), node.layer(), node.pos(), ChunkPos.containing(node.pos()), edgeInfo -> {
                 if (node.lastNode != null) {
                     var lastPos = node.lastNode.pos;
-                    if (lastPos.getX() == edgeInfo.targetPos.getX() && lastPos.getZ() == edgeInfo.targetPos.getZ()) {
+                    if (lastPos.getX() == edgeInfo.targetPos.getX() && lastPos.getY() == edgeInfo.targetPos.getY() && lastPos.getZ() == edgeInfo.targetPos.getZ()) {
                         return;
                     }
                 }
