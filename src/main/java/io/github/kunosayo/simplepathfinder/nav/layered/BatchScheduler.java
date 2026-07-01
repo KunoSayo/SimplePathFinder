@@ -11,6 +11,7 @@ import net.minecraft.server.level.*;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -20,11 +21,13 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class BatchScheduler implements Runnable {
+
+    public static final ThreadLocal<BatchScheduler> THREAD_LOCAL = new ThreadLocal<>();
     private static final ExecutorService ASYNC_REQUESTER = Executors.newSingleThreadExecutor(it -> new Thread(it, "SimplePathFinder async chunk source"));
     private static final TicketType TYPE_SOLVER = new TicketType(TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING);
     private static final Ticket TICKET = new Ticket(TYPE_SOLVER, ChunkLevel.byStatus(ChunkStatus.FULL));
 
-    private static final int MAX_CONCURRENT_TASKS = 20;
+    private static final int MAX_CONCURRENT_TASKS = 8;
 
     private final LevelNavDataSavedData data;
     private final ServerLevel level;
@@ -73,6 +76,12 @@ public class BatchScheduler implements Runnable {
         fill(this.pool);
     }
 
+    public boolean isInRange(ChunkPos p) {
+        final int x = p.x();
+        final int z = p.z();
+        return x >= beginX && x <= endX && z >= beginZ && z <= endZ;
+    }
+
     void fill(Stack<ChunkTask> pool) {
         for (int i = 0; i < MAX_CONCURRENT_TASKS; i++) {
             pool.push(new ChunkTask());
@@ -105,6 +114,7 @@ public class BatchScheduler implements Runnable {
 
     /// Final step of BatchScheduler lifecycle, everything done
     void done() {
+        // THREAD_LOCAL.remove();
         if (chunkDirty != 0) {
             data.setDirty();
         }
@@ -114,19 +124,19 @@ public class BatchScheduler implements Runnable {
         if (player == null) {
             return;
         }
-        player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.batch_success", chunkDirty, failureCounter, current));
+        player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.batch_success", chunkDirty, failureCounter, current, totalCount));
         SimplePathFinder.playerMadeServerNavDirty(player);
     }
 
     /// Run on server thread, final step of a chunk, schedule neighbors & return chunks
     private boolean afterCompletion(int x, int z, byte result) {
+        ++current;
         if ((counter = ((counter + 1) & intervalMask)) == 0) {
             var player = getPlayer();
             if (player != null) {
-                player.sendSystemMessage(Component.literal("[SPF] Built " + ++current + " / " + totalCount));
+                player.sendSystemMessage(Component.literal("[SPF] Built " + current + " / " + totalCount));
             }
         }
-        ++current;
         if (result > 0) {
             if ((result & Solver.R_X) != 0 && x < endX) {
                 // Kick-start calculation on x+ if we need to
@@ -185,6 +195,7 @@ public class BatchScheduler implements Runnable {
 
     /// Run by command on server thread, before everything, begin execution
     public void fire() {
+        // THREAD_LOCAL.set(this);
         afterCompletion(beginX, beginZ, (byte) 3);
     }
 
@@ -246,7 +257,6 @@ public class BatchScheduler implements Runnable {
             }
             acquireChunk(x, z);
             this.state = STATE_OBTAIN_FUTURE;
-            CompletableFuture.supplyAsync(this, ASYNC_REQUESTER).thenCompose(Function.identity()).whenCompleteAsync(this, level.getServer());
         }
 
         /// Run on async worker, step 2 for a chunk, request chunk future

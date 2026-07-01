@@ -2,6 +2,7 @@ package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
+import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
@@ -102,13 +103,24 @@ public class LevelNavData {
         this.navChunks = new ConcurrentHashMap<>(chunkPosHashMap);
     }
 
-    public Optional<INavChunk> getNavChunk(ChunkPos pos, boolean create) {
-        return Optional.ofNullable(navChunks.computeIfAbsent(pos, chunkPos -> {
-            if (!create || (navChunks.size() >= NavConfig.NAV_CONFIG.getLeft().maxNavChunks.get())) {
-                return null;
+    static void trap() {
+        SimplePathFinder.LOGGER.warn("TRAP: out of range nav chunk creation during batch generation");
+    }
+
+    static void checkBoundedAccess(ChunkPos pos, boolean create) {
+        final var batch = BatchScheduler.THREAD_LOCAL.get();
+        if (batch != null && create) {
+            if (!batch.isInRange(pos)) {
+                trap();
             }
-            return new NavChunk(pos);
-        }));
+        }
+    }
+
+    public Optional<INavChunk> getNavChunk(ChunkPos pos, boolean create) {
+        // checkBoundedAccess(pos, create);
+        // When create is only attempted on the main thread, there's no trouble
+        return !create || (navChunks.size() >= NavConfig.NAV_CONFIG.getLeft().maxNavChunks.get()) ?
+                Optional.ofNullable(navChunks.get(pos)) : Optional.of(navChunks.computeIfAbsent(pos, NavChunk::new));
     }
 
     public Optional<ILayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
