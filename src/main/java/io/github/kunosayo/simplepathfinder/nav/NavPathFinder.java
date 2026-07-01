@@ -3,8 +3,9 @@ package io.github.kunosayo.simplepathfinder.nav;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
@@ -17,9 +18,12 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public class NavPathFinder {
-    private final LongOpenHashSet visitedPos = new LongOpenHashSet(1024, 0.5f);
+    // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
+    public static final long HEURISTIC_WEIGHT_PERCENT = 110L;
+
+    private final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
     private final LevelNavData levelNavData;
-    private final ObjectHeapPriorityQueue<SearchNode> searchNodes = new ObjectHeapPriorityQueue<>();
+    private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
     private final BlockPos start;
     private final BlockPos end;
     private final ResourceKey<Level> dimension;
@@ -38,16 +42,29 @@ public class NavPathFinder {
         this.end = end;
     }
 
+    private long getHeuristic(BlockPos pos) {
+        long horizontal = Math.abs(pos.getX() - end.getX()) + Math.abs(pos.getZ() - end.getZ());
+        long vertical = Math.abs(pos.getY() - end.getY());
+
+        // TODO: 这里 10L 是最小边权，
+        // 可能改成 1L 或者当场算一下用户配置。
+        return Math.max(horizontal, vertical) * 10L;
+    }
+
     private void init() {
         var startChunk = ChunkPos.containing(start);
         levelNavData.getNavChunk(startChunk, false)
                 .flatMap(navChunk -> navChunk.getLayerNav(start))
                 .ifPresent(layeredNavChunk -> {
                     if (layeredNavChunk instanceof LayeredNavChunk) {
-                        searchNodes.enqueue(new SearchNode(0, start, (LayeredNavChunk) layeredNavChunk, null));
+                        long h = getHeuristic(start);
+                        long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                        SearchNode startNode = new SearchNode(0, priority, h, start, (LayeredNavChunk) layeredNavChunk, null);
+                        long startKey = SearchedPos.toLong(layeredNavChunk.getLayer(), start);
+                        visitedNodes.put(startKey, startNode);
+                        searchNodes.push(startNode);
                     }
                 });
-
     }
 
     private void getEdge(INavChunk navChunk, INavChunk bNavChunk, BlockPos a, BlockPos b, Consumer<EdgeInfo> edgeInfoConsumer) {
@@ -72,7 +89,7 @@ public class NavPathFinder {
      * Get edges from navigation links at the current position.
      * This allows the pathfinder to consider teleports, vehicles, and other travel methods.
      */
-    private void getNavLinkEdges(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, ChunkPos ca, Consumer<EdgeInfo> edgeInfoConsumer) {
+    private void getNavLinkEdges(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, Consumer<EdgeInfo> edgeInfoConsumer) {
         var chunkInnerPos = new ChunkInnerPos(a);
 
         // Get all nav links from this position
@@ -126,19 +143,11 @@ public class NavPathFinder {
         }
     }
 
-    private void getEdge(SearchNode node, Consumer<EdgeInfo> edgeInfoConsumer) {
-        var layeredNavChunk = node.layer();
-        var navChunk = layeredNavChunk.getParentChunk();
-        var a = node.pos();
-        var ca = ChunkPos.containing(a);
+    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, @Nullable BlockPos lastPos, Consumer<EdgeInfo> edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
-        getNavLinkEdges(navChunk, layeredNavChunk, a, ca, edgeInfoConsumer);
+        getNavLinkEdges(navChunk, layeredNavChunk, a, edgeInfoConsumer);
 
         // Then, get normal walking edges
-        BlockPos lastPos = null;
-        if (node.lastNode != null) {
-            lastPos = node.lastNode.pos;
-        }
         for (int i = 0; i < 4; i++) {
             var t = a.offset(LayeredNavChunk.SEARCH_DX[i], 0, LayeredNavChunk.SEARCH_DZ[i]);
             if (lastPos != null) {
@@ -160,25 +169,120 @@ public class NavPathFinder {
         }
     }
 
+    private void getEdge(SearchNode node, Consumer<EdgeInfo> edgeInfoConsumer) {
+        getEdge(node.layer.getParentChunk(), node.layer, node.pos, node.lastNode != null ? node.lastNode.pos : null, edgeInfoConsumer);
+    }
+
+    private boolean checkConnectivity() {
+        // Target check
+        var endChunkPos = ChunkPos.containing(end);
+        var endChunkOpt = levelNavData.getNavChunk(endChunkPos, false);
+        if (endChunkOpt.isEmpty()) {
+            return false;
+        }
+        var endLayerOpt = endChunkOpt.get().getLayerNav(end);
+        if (endLayerOpt.isEmpty()) {
+            return false;
+        }
+
+        // Start check
+        var startChunkPos = ChunkPos.containing(start);
+        var startChunkOpt = levelNavData.getNavChunk(startChunkPos, false);
+        if (startChunkOpt.isEmpty()) {
+            return false;
+        }
+        var startLayerOpt = startChunkOpt.get().getLayerNav(start);
+        if (startLayerOpt.isEmpty()) {
+            return false;
+        }
+
+        long startKey = SearchedPos.toLong(startLayerOpt.get().getLayer(), start);
+        long targetKey = SearchedPos.toLong(endLayerOpt.get().getLayer(), end);
+
+        if (startKey == targetKey) {
+            return true;
+        }
+
+        LongArrayList queue = new LongArrayList(1024);
+        LongOpenHashSet visited = new LongOpenHashSet(1024);
+
+        queue.add(startKey);
+        visited.add(startKey);
+
+        int head = 0;
+        while (head < queue.size()) {
+            long currentKey = queue.getLong(head++);
+
+            if (currentKey == targetKey) {
+                return true;
+            }
+
+            // Unpack currentKey
+            int cx = (int) ((currentKey >> 27) & 0x7FFFFFF);
+            if ((cx & 0x4000000) != 0) cx |= 0xF8000000;
+            int cz = (int) (currentKey & 0x7FFFFFF);
+            if ((cz & 0x4000000) != 0) cz |= 0xF8000000;
+            byte clayer = (byte) (currentKey >> 54);
+
+            ChunkPos ccp = new ChunkPos(cx >> 4, cz >> 4);
+            var currentChunkOpt = levelNavData.getNavChunk(ccp, false);
+            if (currentChunkOpt.isEmpty()) continue;
+            var currentChunk = currentChunkOpt.get();
+            var currentLayerOpt = levelNavData.getNavChunk(ccp, clayer);
+            if (currentLayerOpt.isEmpty()) continue;
+            var currentLayer = currentLayerOpt.get();
+
+            int y = currentLayer.getWalkY(cx & 15, cz & 15);
+            if (!currentLayer.isWalkYValid(y)) continue;
+            BlockPos cpos = new BlockPos(cx, y, cz);
+
+            getEdge(currentChunk, currentLayer, cpos, null, edgeInfo -> {
+                long nextKey = SearchedPos.toLong(edgeInfo.targetLayeredChunk.getLayer(), edgeInfo.targetPos);
+                if (visited.add(nextKey)) {
+                    queue.add(nextKey);
+                }
+            });
+        }
+
+        return false;
+    }
+
     Optional<NavResult> search() {
+        if (!checkConnectivity()) {
+            return Optional.empty();
+        }
+
         init();
 
         while (!searchNodes.isEmpty()) {
-            var node = searchNodes.dequeue();
+            var node = searchNodes.pop();
 
-            if (!this.visitedPos.add(SearchedPos.toLong(node.layer().getLayer(), node.pos()))) {
-                continue;
-            }
-            if (node.pos().distManhattan(this.end) <= 1) {
+            if (node.pos.distManhattan(this.end) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
             getEdge(node, edgeInfo -> {
-                if (visitedPos.contains(SearchedPos.toLong(edgeInfo.targetLayeredChunk.getLayer(), edgeInfo.targetPos))) {
+                long vKey = SearchedPos.toLong(edgeInfo.targetLayeredChunk.getLayer(), edgeInfo.targetPos);
+                SearchNode existingNode = visitedNodes.get(vKey);
+
+                if (existingNode != null && existingNode.heapIndex == -2) {
                     return;
                 }
+
                 long extraCost = node.getExtraCost(edgeInfo.targetPos);
-                var targetNode = new SearchNode(extraCost + edgeInfo.distance + node.cost, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node);
-                searchNodes.enqueue(targetNode);
+                long new_g = extraCost + edgeInfo.distance + node.cost;
+
+                if (existingNode == null) {
+                    long h = getHeuristic(edgeInfo.targetPos);
+                    long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                    SearchNode targetNode = new SearchNode(new_g, new_f, h, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node);
+                    visitedNodes.put(vKey, targetNode);
+                    searchNodes.push(targetNode);
+                } else if (new_g < existingNode.cost) {
+                    existingNode.cost = new_g;
+                    existingNode.priority = new_g + (existingNode.hValue * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                    existingNode.lastNode = node;
+                    searchNodes.decreaseKey(existingNode);
+                }
             });
         }
         return Optional.empty();
@@ -206,20 +310,53 @@ public class NavPathFinder {
         }
 
         public static long toLong(byte layer, BlockPos pos) {
-
-//        return BlockPos.asLong(pos.getX(), ((int) layer) + 128, pos.getZ());
-
             // y use 8 bit
             // 27 bit for x and y
             return (((long) pos.getX() & 0x7FFFFFF) << 27) | (pos.getZ() & 0x7FFFFFF) | ((long) layer << 54);
         }
     }
 
-    public record SearchNode(long cost, BlockPos pos, ILayeredNavChunk layer,
-                             @Nullable SearchNode lastNode) implements Comparable<SearchNode> {
+    public static class SearchNode implements Comparable<SearchNode> {
+        public long cost; // g(u)
+        public long priority; // f(u)
+        public final long hValue; // h(u)
+        public final BlockPos pos;
+        public final ILayeredNavChunk layer;
+        public SearchNode lastNode;
+        public int heapIndex = -1;
+
+        public SearchNode(long cost, long priority, long hValue, BlockPos pos, ILayeredNavChunk layer, SearchNode lastNode) {
+            this.cost = cost;
+            this.priority = priority;
+            this.hValue = hValue;
+            this.pos = pos;
+            this.layer = layer;
+            this.lastNode = lastNode;
+        }
+
+        public BlockPos pos() {
+            return pos;
+        }
+
+        public ILayeredNavChunk layer() {
+            return layer;
+        }
+
+        public SearchNode lastNode() {
+            return lastNode;
+        }
+
+        public long cost() {
+            return cost;
+        }
+
         @Override
         public int compareTo(@NotNull SearchNode o) {
-            return Long.compare(cost, o.cost);
+            int cmp = Long.compare(this.priority, o.priority);
+            if (cmp != 0) {
+                return cmp;
+            }
+            return Long.compare(this.hValue, o.hValue);
         }
 
         public long getExtraCost(BlockPos next) {
@@ -242,7 +379,90 @@ public class NavPathFinder {
             }
             return 37;
         }
+    }
 
+    public static class SearchNodeHeap {
+        private SearchNode[] heap;
+        private int size;
+
+        public SearchNodeHeap(int capacity) {
+            this.heap = new SearchNode[capacity];
+            this.size = 0;
+        }
+
+        public boolean isEmpty() {
+            return size == 0;
+        }
+
+        public void push(SearchNode node) {
+            if (size == heap.length) {
+                SearchNode[] newHeap = new SearchNode[heap.length * 2];
+                System.arraycopy(heap, 0, newHeap, 0, heap.length);
+                heap = newHeap;
+            }
+            heap[size] = node;
+            node.heapIndex = size;
+            size++;
+            siftUp(size - 1);
+        }
+
+        public SearchNode pop() {
+            if (size == 0) return null;
+            SearchNode minNode = heap[0];
+            minNode.heapIndex = -2;
+            SearchNode lastNode = heap[size - 1];
+            size--;
+            if (size > 0) {
+                heap[0] = lastNode;
+                lastNode.heapIndex = 0;
+                siftDown(0);
+            }
+            heap[size] = null;
+            return minNode;
+        }
+
+        public void decreaseKey(SearchNode node) {
+            if (node.heapIndex >= 0) {
+                siftUp(node.heapIndex);
+            }
+        }
+
+        private void siftUp(int index) {
+            SearchNode node = heap[index];
+            while (index > 0) {
+                int parentIndex = (index - 1) >>> 1;
+                SearchNode parent = heap[parentIndex];
+                if (node.compareTo(parent) >= 0) {
+                    break;
+                }
+                heap[index] = parent;
+                parent.heapIndex = index;
+                index = parentIndex;
+            }
+            heap[index] = node;
+            node.heapIndex = index;
+        }
+
+        private void siftDown(int index) {
+            SearchNode node = heap[index];
+            int half = size >>> 1;
+            while (index < half) {
+                int childIndex = (index << 1) + 1;
+                SearchNode child = heap[childIndex];
+                int rightIndex = childIndex + 1;
+                if (rightIndex < size && heap[rightIndex].compareTo(child) < 0) {
+                    childIndex = rightIndex;
+                    child = heap[rightIndex];
+                }
+                if (node.compareTo(child) <= 0) {
+                    break;
+                }
+                heap[index] = child;
+                child.heapIndex = index;
+                index = childIndex;
+            }
+            heap[index] = node;
+            node.heapIndex = index;
+        }
     }
 }
-
