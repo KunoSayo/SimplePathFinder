@@ -186,7 +186,7 @@ public class LevelNavData {
                 }
                 chunk.setParentChunk(navChunk);
                 chunk.setLayer(layer);
-                return chunk.parse(level, finalGroundPos.offset(0, 1, 0));
+                return chunk.parse(level, finalGroundPos.offset(0, 1, 0), false);
             }
         }
         player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"));
@@ -252,7 +252,7 @@ public class LevelNavData {
             return FAILED_FUTURE;
         }
         final var groundPos = getGroundPos(level, pos);
-        return layered.parse(level, groundPos.offset(0, 1, 0)).whenComplete((_, _) -> {
+        return layered.parse(level, groundPos.offset(0, 1, 0), false).whenComplete((_, _) -> {
             if (!chunk.isAnyValid()) {
                 navChunk.removeNavChunk(chunk);
             }

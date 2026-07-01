@@ -1,6 +1,5 @@
 package io.github.kunosayo.simplepathfinder.nav.layered;
 
-import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -25,7 +24,7 @@ import static io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk.*;
 class AsyncSolver {
 
     private static final int VISITED_SIZE = Math.ceilDiv(LevelNavData.CHUNK_AREA, 64);
-    private static final CompletableFuture<?> COMPLETED = CompletableFuture.completedFuture(null);
+    static final CompletableFuture<?> COMPLETED = CompletableFuture.completedFuture(null);
     private static final ExecutorService ASYNC_REQUESTER = Executors.newSingleThreadExecutor(it -> new Thread(it, "SimplePathFinder async chunk source"));
     private static final TicketType TYPE_SOLVER = new TicketType(TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING);
     private static final Ticket TICKET = new Ticket(TYPE_SOLVER, ChunkLevel.byStatus(ChunkStatus.FULL));
@@ -144,7 +143,7 @@ class AsyncSolver {
         } while (!working.isEmpty());
     }
 
-    CompletableFuture<?> begin() {
+    void pushInitial() {
         final int startX = Mth.positiveModulo(trustedCenter.getX(), 16);
         final int startZ = Mth.positiveModulo(trustedCenter.getZ(), 16);
         final int idx = convertToIndex(startX, startZ);
@@ -152,6 +151,10 @@ class AsyncSolver {
         // in fact, we run bfs
         q2.addLast(BlockPos.asLong(startX, trustedCenter.getY(), startZ));
         markVisited(idx);
+    }
+
+    CompletableFuture<?> begin() {
+        pushInitial();
         if (!detectDependencies()) {
             return loadChunkForAsyncProcessing()
                     .thenRunAsync(this::doWork, levelIn.getServer())
@@ -159,5 +162,13 @@ class AsyncSolver {
         }
         doWork();
         return COMPLETED;
+    }
+
+    void runBlocking() {
+        pushInitial();
+        levelIn.getChunk(cx, cz);
+        levelIn.getChunk(cx, cz + 1);
+        levelIn.getChunk(cx + 1, cz);
+        doWork();
     }
 }

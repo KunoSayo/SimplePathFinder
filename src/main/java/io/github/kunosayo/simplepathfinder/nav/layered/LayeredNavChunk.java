@@ -230,13 +230,17 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
     }
 
     @Override
-    public CompletableFuture<?> parse(Level level, BlockPos trustedCenter) {
+    public CompletableFuture<?> parse(Level level, BlockPos trustedCenter, boolean blocking) {
         final var server = level.getServer();
         if (server == null) {
             SimplePathFinder.LOGGER.warn("Cannot obtain MinecraftServer from Level (expected ServerLevel, what do we got here huh?), fall back to synchronously parsing");
         }
-
-        return new AsyncSolver(level, this, trustedCenter).begin();
+        final var solver = new AsyncSolver(level, this, trustedCenter);
+        if (blocking) {
+            solver.runBlocking();
+            return AsyncSolver.COMPLETED;
+        }
+        return solver.begin();
     }
 
     /// Fuck, it won't kill you to just return LayeredNavChunk

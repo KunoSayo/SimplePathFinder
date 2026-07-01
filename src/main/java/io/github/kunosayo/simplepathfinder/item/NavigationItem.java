@@ -9,6 +9,7 @@ import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.network.UpdateItemPropertiesPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -293,25 +294,26 @@ public class NavigationItem extends Item {
         // 检查是否达到最大层数限制
         var maxLayers = io.github.kunosayo.simplepathfinder.config.NavConfig.NAV_CONFIG.getLeft().maxLayers.get();
 
+        final var optional = data.levelNavData.getNavChunk(chunkPos, true);
+        if (optional.isEmpty()) {
+            player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"));
+            return false;
+        }
+        final var navChunk = optional.get();
+        final var optionalLayered = navChunk.getLayer(layer, LayeredNavChunk::getDefault);
+        if (optionalLayered.isEmpty()) {
+            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_limit", maxLayers - 1));
+            return false;
+        }
+        final var chunk = (LayeredNavChunk) optionalLayered.get();
+        chunk.setParentChunk(navChunk);
+        chunk.setLayer(layer);
+        chunk.parse(level, clickedPos, true);
+        player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_created", layer, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()));
 
-        data.levelNavData.getNavChunk(chunkPos, true).ifPresentOrElse(navChunk -> {
-
-            // 获取或创建导航层
-            navChunk.getLayer(layer, () -> (io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk)
-                    io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk.getDefault()).ifPresentOrElse(layeredNavChunk -> {
-                if (layeredNavChunk instanceof io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk chunk) {
-                    chunk.setParentChunk(navChunk);
-                    chunk.setLayer(layer);
-                    chunk.parse(level, clickedPos);
-                    player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_created", layer, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()));
-
-                    // 标记数据为脏并同步单个区块
-                    data.setDirty();
-                    SimplePathFinder.syncSingleChunk(level, chunkPos);
-                }
-            }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_limit", maxLayers - 1)));
-        }, () -> player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited")));
-
+        // 标记数据为脏并同步单个区块
+        data.setDirty();
+        SimplePathFinder.syncSingleChunk(level, chunkPos);
         return true;
     }
 

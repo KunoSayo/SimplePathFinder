@@ -129,9 +129,10 @@ public interface ILayeredNavChunk {
      *
      * @param level         the level to parse
      * @param trustedCenter the trusted center position
+     * @param blocking      if parsing should block until completion
      * @return a future that fires on the server thread when finish parsing.
      */
-    CompletableFuture<?> parse(Level level, BlockPos trustedCenter);
+    CompletableFuture<?> parse(Level level, BlockPos trustedCenter, boolean blocking);
 
     /**
      * Check if walk Y coordinate is valid
