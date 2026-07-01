@@ -5,8 +5,6 @@ import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 
-import java.util.concurrent.CompletableFuture;
-
 /**
  * Interface for layered navigation chunk functionality
  */
@@ -129,10 +127,9 @@ public interface ILayeredNavChunk {
      *
      * @param level         the level to parse
      * @param trustedCenter the trusted center position
-     * @param blocking      if parsing should block until completion
-     * @return a future that fires on the server thread when finish parsing.
+     * @return A marker noting the directions neighbors are ready
      */
-    CompletableFuture<?> parse(Level level, BlockPos trustedCenter, boolean blocking);
+    byte parse(Level level, BlockPos trustedCenter);
 
     /**
      * Check if walk Y coordinate is valid

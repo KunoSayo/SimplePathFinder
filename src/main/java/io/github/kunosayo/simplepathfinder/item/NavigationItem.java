@@ -308,7 +308,7 @@ public class NavigationItem extends Item {
         final var chunk = (LayeredNavChunk) optionalLayered.get();
         chunk.setParentChunk(navChunk);
         chunk.setLayer(layer);
-        chunk.parse(level, clickedPos, true);
+        chunk.parse(level, clickedPos);
         player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_created", layer, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()));
 
         // 标记数据为脏并同步单个区块

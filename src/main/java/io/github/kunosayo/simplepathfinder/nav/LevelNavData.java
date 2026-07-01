@@ -23,7 +23,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -155,9 +154,7 @@ public class LevelNavData {
         return groundPos;
     }
 
-    private static final CompletableFuture<?> FAILED_FUTURE = CompletableFuture.failedFuture(new Throwable("This is only a marker throwable. It should never appear in the console anyway."));
-
-    public CompletableFuture<?> buildForPlayer(Player player, byte layer) {
+    public boolean buildForPlayer(Player player, byte layer) {
         var level = player.level();
         var groundPos = player.blockPosition();
 
@@ -170,7 +167,7 @@ public class LevelNavData {
                 !NavUtil.isNoCollision(level, groundPos.offset(0, 1, 0)) &&
                 !NavUtil.isNoCollision(level, groundPos.offset(0, 2, 0))) {
             player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.failed"));
-            return FAILED_FUTURE;
+            return false;
         }
 
         net.minecraft.core.BlockPos finalGroundPos = groundPos;
@@ -182,15 +179,17 @@ public class LevelNavData {
                 final var layered = optionalLayered.get();
                 if (!(layered instanceof LayeredNavChunk chunk)) {
                     SimplePathFinder.LOGGER.error("Why isn't it LayeredNavChunk when building for player? Answer me!!!");
-                    return FAILED_FUTURE;
+                    return false;
                 }
                 chunk.setParentChunk(navChunk);
                 chunk.setLayer(layer);
-                return chunk.parse(level, finalGroundPos.offset(0, 1, 0), false);
+                chunk.parse(level, finalGroundPos.offset(0, 1, 0));
+                player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.success"));
+                return true;
             }
         }
         player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"));
-        return FAILED_FUTURE;
+        return false;
     }
 
     public Optional<NavResult> findNav(BlockPos from, BlockPos to) {
@@ -205,20 +204,20 @@ public class LevelNavData {
         return finder.search();
     }
 
-    public CompletableFuture<?> buildFromLayerStart(Level level, LevelNavData levelNavData, byte layer, ChunkPos acp) {
+    public byte buildFromLayerStart(Level level, LevelNavData levelNavData, byte layer, ChunkPos acp) {
         final var optionalNavChunk = getNavChunk(acp, true);
         if (optionalNavChunk.isEmpty()) {
-            return FAILED_FUTURE;
+            return Byte.MIN_VALUE;
         }
         final var navChunk = optionalNavChunk.get();
         final var optionalLayered = navChunk.getLayer(layer, LayeredNavChunk::getDefault);
         if (optionalLayered.isEmpty()) {
-            return FAILED_FUTURE;
+            return Byte.MIN_VALUE;
         }
         final var layered = optionalLayered.get();
         if (!(layered instanceof LayeredNavChunk chunk)) {
             SimplePathFinder.LOGGER.error("Why isn't it LayeredNavChunk when batch building? Answer me!!!");
-            return FAILED_FUTURE;
+            return Byte.MIN_VALUE;
         }
         chunk.setParentChunk(navChunk);
         chunk.setLayer(layer);
@@ -245,18 +244,15 @@ public class LevelNavData {
                 }
             }
         }
-        if (pos == null) {
-            if (!chunk.isAnyValid()) {
-                navChunk.removeNavChunk(chunk);
-            }
-            return FAILED_FUTURE;
+        byte result = 0;
+        if (pos != null) {
+            final var groundPos = getGroundPos(level, pos);
+            result = layered.parse(level, groundPos.offset(0, 1, 0));
         }
-        final var groundPos = getGroundPos(level, pos);
-        return layered.parse(level, groundPos.offset(0, 1, 0), false).whenComplete((_, _) -> {
-            if (!chunk.isAnyValid()) {
-                navChunk.removeNavChunk(chunk);
-            }
-        });
+        if (!chunk.isAnyValid()) {
+            navChunk.removeNavChunk(chunk);
+        }
+        return result;
     }
 
     public long getTotalLayers() {
