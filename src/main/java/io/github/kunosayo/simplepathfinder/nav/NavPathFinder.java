@@ -46,9 +46,19 @@ public class NavPathFinder {
         long horizontal = Math.abs(pos.getX() - end.getX()) + Math.abs(pos.getZ() - end.getZ());
         long vertical = Math.abs(pos.getY() - end.getY());
 
-        // TODO: 这里 10L 是最小边权，
-        // 可能改成 1L 或者当场算一下用户配置。
-        return Math.max(horizontal, vertical) * 10L;
+        // TODO: 10L
+        long h = Math.max(horizontal, vertical) * 10L;
+
+        if (HEURISTIC_WEIGHT_PERCENT == 100L) {
+            long dx1 = pos.getX() - end.getX();
+            long dz1 = pos.getZ() - end.getZ();
+            long dx2 = start.getX() - end.getX();
+            long dz2 = start.getZ() - end.getZ();
+            long cross = Math.abs(dx1 * dz2 - dx2 * dz1);
+            return h + (cross / 1000L); // TODO: 1000L
+        }
+
+        return h;
     }
 
     private void init() {
