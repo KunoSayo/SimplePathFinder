@@ -24,13 +24,14 @@ public class BatchScheduler implements Runnable {
     private static final TicketType TYPE_SOLVER = new TicketType(TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING);
     private static final Ticket TICKET = new Ticket(TYPE_SOLVER, ChunkLevel.byStatus(ChunkStatus.FULL));
 
-    private static final int MAX_CONCURRENT_TASKS = 10;
+    private static final int MAX_CONCURRENT_TASKS = 20;
 
     private final LevelNavDataSavedData data;
     private final ServerLevel level;
     private final UUID playerUUID;
     private final byte layer;
     private final int beginX, beginZ;
+    private final int endX, endZ;
     private final int widthBits, heightBits;
     private final int intervalMask;
     private final int totalCount;
@@ -41,6 +42,8 @@ public class BatchScheduler implements Runnable {
     private final long[] bitset;
     private int current = 0, counter = 0;
     private int chunkDirty = 0;
+    /// InitAuther97: we use 1 because player chunk build also invokes afterCompletion
+    private int liveCounter = 1, failureCounter = 0;
     private boolean scheduled = false;
 
     static void trap(ServerLevel level) {
@@ -56,6 +59,8 @@ public class BatchScheduler implements Runnable {
         this.layer = layer;
         this.beginX = beginX;
         this.beginZ = beginZ;
+        this.endX = beginX + deltaX;
+        this.endZ = beginZ + deltaZ;
         // Calculate bits used to represent width/height
         // This saves us from multiplication into bit shift for bitset bit operation.
         this.widthBits = 32 - Integer.numberOfLeadingZeros(deltaX);
@@ -109,7 +114,7 @@ public class BatchScheduler implements Runnable {
         if (player == null) {
             return;
         }
-        player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.batch_success", chunkDirty, current));
+        player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.batch_success", chunkDirty, failureCounter, current));
         SimplePathFinder.playerMadeServerNavDirty(player);
     }
 
@@ -121,23 +126,27 @@ public class BatchScheduler implements Runnable {
                 player.sendSystemMessage(Component.literal("[SPF] Built " + ++current + " / " + totalCount));
             }
         }
-        if (current == totalCount) {
-            done();
-            return true;
-        }
         ++current;
         if (result > 0) {
-            if ((result & Solver.R_X) != 0) {
+            if ((result & Solver.R_X) != 0 && x < endX) {
                 // Kick-start calculation on x+ if we need to
                 schedule(x + 1, z);
             }
-            if ((result & Solver.R_Z) != 0) {
+            if ((result & Solver.R_Z) != 0 && z < endZ) {
                 // Kick-start calculation on z+ if we need to
                 schedule(x, z + 1);
             }
             ++chunkDirty;
+        } else {
+            ++failureCounter;
         }
         releaseChunk(x, z);
+        // InitAuther97: do not reorder this above schedule
+        // otherwise, live counter is down to zero too early
+        if (--this.liveCounter == 0) {
+            done();
+            return true;
+        }
         return true;
     }
 
@@ -146,6 +155,7 @@ public class BatchScheduler implements Runnable {
         if (isVisited(x, z)) {
             return;
         }
+        ++this.liveCounter;
         markVisited(x, z);
         pending.push(ChunkPos.pack(x, z));
         scheduleIfNeeded();
