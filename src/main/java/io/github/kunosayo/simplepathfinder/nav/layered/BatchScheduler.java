@@ -16,8 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class BatchScheduler implements Runnable {
 
@@ -27,6 +25,12 @@ public class BatchScheduler implements Runnable {
     private static final Ticket TICKET = new Ticket(TYPE_SOLVER, ChunkLevel.byStatus(ChunkStatus.FULL));
 
     private static final int MAX_CONCURRENT_TASKS = 8;
+
+    static void trap(ServerLevel level) {
+        if (level.isClientSide()) {
+            SimplePathFinder.LOGGER.warn("TRAP: Didn't expect ServerLevel#isClientSide() to return true");
+        }
+    }
 
     private final LevelNavDataSavedData data;
     private final ServerLevel level;
@@ -47,12 +51,6 @@ public class BatchScheduler implements Runnable {
     /// InitAuther97: we use 1 because player chunk build also invokes afterCompletion
     private int liveCounter = 1, failureCounter = 0;
     private boolean scheduled = false;
-
-    static void trap(ServerLevel level) {
-        if (level.isClientSide()) {
-            SimplePathFinder.LOGGER.warn("TRAP: Didn't expect ServerLevel#isClientSide() to return true");
-        }
-    }
 
     public BatchScheduler(LevelNavDataSavedData data, ServerLevel level, UUID playerUUID, byte layer, int beginX, int beginZ, int deltaX, int deltaZ) {
         this.data = data;
@@ -165,7 +163,6 @@ public class BatchScheduler implements Runnable {
         ++this.liveCounter;
         markVisited(x, z);
         pending.push(ChunkPos.pack(x, z));
-        scheduleIfNeeded();
     }
 
     /// Run by server thread, step 4 for a chunk, {@link net.minecraft.util.thread.ConsecutiveExecutor}
@@ -176,24 +173,25 @@ public class BatchScheduler implements Runnable {
         if (!workStack.isEmpty()) {
             final var task = workStack.pop();
             solve(task);
-            level.getServer().executeIfPossible(this);
-        } else {
-            scheduled = false;
-        }
-        // Try to assign all free slots to pending tasks
-        while (!this.pending.isEmpty() && !this.pool.isEmpty()) {
-            final var coord = pending.pop();
+        } else if (!this.pending.isEmpty() && !this.pool.isEmpty()) {
+            // Try to assign all free slots to pending tasks
+            final var coord = pending.popLong();
             final var task = pool.pop();
             task.x = ChunkPos.getX(coord);
             task.z = ChunkPos.getZ(coord);
-            level.getServer().executeIfPossible(task);
+            task.start();
+        } else {
+            scheduled = false;
+            return;
         }
+        level.getServer().executeIfPossible(this);
     }
 
     /// Run by command on server thread, before everything, begin execution
     public void fire() {
         // THREAD_LOCAL.set(this);
         afterCompletion(beginX, beginZ, (byte) 3);
+        level.getServer().executeIfPossible(this);
     }
 
     /// Run on server thread, utility, schedule {@link BatchScheduler} if needed
@@ -208,7 +206,6 @@ public class BatchScheduler implements Runnable {
         task.x = task.z = Integer.MIN_VALUE;
         task.state = ChunkTask.STATE_TICKET;
         pool.push(task);
-        scheduleIfNeeded();
     }
 
     /// Run on server thread, add ticket, step 1 for a chunk, ensure chunk load
@@ -239,7 +236,7 @@ public class BatchScheduler implements Runnable {
         chunkSource.removeTicketWithRadius(TYPE_SOLVER, new ChunkPos(cx, cz + 1), 0);
     }
 
-    class ChunkTask implements Runnable, Supplier<CompletableFuture<Void>>, BiConsumer<Void, Throwable> {
+    class ChunkTask implements Runnable, BiConsumer<Void, Throwable> {
 
         static final byte STATE_TICKET = 0, STATE_OBTAIN_FUTURE = 1, STATE_ENQUEUE = 2, STATE_SOLVE = 3;
 
@@ -247,29 +244,28 @@ public class BatchScheduler implements Runnable {
         byte state;
 
         /// Run on server thread, step 1 for a chunk, begin async solve logic
-        @Override
-        public void run() {
+        public void start() {
             if (state != STATE_TICKET) {
                 throw new IllegalStateException("ChunkTask is in incorrect state: cannot begin lifecycle when state is " + state);
             }
             acquireChunk(x, z);
             this.state = STATE_OBTAIN_FUTURE;
-            CompletableFuture.supplyAsync(this, ASYNC_REQUESTER).thenCompose(Function.identity()).whenCompleteAsync(this, level.getServer());
+            ASYNC_REQUESTER.execute(this);
         }
 
         /// Run on async worker, step 2 for a chunk, request chunk future
         @Override
-        public CompletableFuture<Void> get() {
+        public void run() {
             if (state != STATE_OBTAIN_FUTURE) {
                 throw new IllegalStateException("ChunkTask is in incorrect state: cannot obtain future when state is " + state);
             }
             state = STATE_ENQUEUE;
             final var chunkSource = level.getChunkSource();
-            return CompletableFuture.allOf(
+            CompletableFuture.allOf(
                     chunkSource.getChunkFuture(x, z, ChunkStatus.FULL, true),
                     chunkSource.getChunkFuture(x + 1, z, ChunkStatus.FULL, true),
                     chunkSource.getChunkFuture(x, z + 1, ChunkStatus.FULL, true)
-            );
+            ).whenCompleteAsync(this, level.getServer());
         }
 
         /// Run on server thread, step 3 for a chunk, ready for execution
