@@ -1,5 +1,9 @@
-package io.github.kunosayo.simplepathfinder.nav;
+package io.github.kunosayo.simplepathfinder.nav.finder;
 
+import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
+import io.github.kunosayo.simplepathfinder.nav.INavChunk;
+import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.NavLinkType;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
@@ -257,7 +261,7 @@ public class NavPathFinder {
         return false;
     }
 
-    Optional<NavResult> search() {
+    public Optional<NavResult> search() {
         if (!checkConnectivity()) {
             return Optional.empty();
         }

@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
-import net.minecraft.world.entity.player.Player;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

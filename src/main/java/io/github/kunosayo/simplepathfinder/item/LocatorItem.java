@@ -1,9 +1,11 @@
 package io.github.kunosayo.simplepathfinder.item;
 
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.nav.NavigationService;
+import io.github.kunosayo.simplepathfinder.network.PathfindingRequestPacket;
 import io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -22,6 +24,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
@@ -62,8 +65,14 @@ public class LocatorItem extends Item {
         if (!player.isShiftKeyDown()) {
             if (level.isClientSide()) {
                 if (data.isPosBound()) {
-                    // 客户端：使用导航服务处理导航
-                    NavigationService.navigate(data, NavNotificationConfig.all());
+                    // 客户端：检查是否有导航数据可用
+                    if (SimplePathFinder.isServerSidePathfindingEnabled()) {
+                        ClientPacketDistributor.sendToServer(new PathfindingRequestPacket(
+                                data.getGlobalPos().pos(), ""));
+                    } else {
+                        // 有导航数据，使用导航服务处理导航
+                        NavigationService.navigate(data, NavNotificationConfig.all());
+                    }
                 }
             } else {
                 if (data.isPlayerBound()) {

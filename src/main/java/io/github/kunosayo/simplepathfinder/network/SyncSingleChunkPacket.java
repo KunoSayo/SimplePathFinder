@@ -4,7 +4,6 @@ import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -90,14 +89,10 @@ public class SyncSingleChunkPacket implements CustomPacketPayload {
      */
     public static void clientHandler(final SyncSingleChunkPacket packet, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            var player = Minecraft.getInstance().player;
-            if (player != null) {
-                // Use packet dimension
-                var targetDimension = packet.dimension;
+            // Use packet dimension
 
-                // Update single chunk in ClientNavDataManager
-                ClientNavDataManager.updateSingleChunk(targetDimension, packet.chunkPos, packet.navChunk);
-            }
+            // Update single chunk in ClientNavDataManager
+            ClientNavDataManager.updateSingleChunk(packet.dimension, packet.chunkPos, packet.navChunk);
         });
     }
 

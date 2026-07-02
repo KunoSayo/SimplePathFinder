@@ -1,10 +1,7 @@
 package io.github.kunosayo.simplepathfinder.listener;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
-import io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket;
-import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
-import io.github.kunosayo.simplepathfinder.network.SyncSingleChunkPacket;
-import io.github.kunosayo.simplepathfinder.network.UpdateItemPropertiesPacket;
+import io.github.kunosayo.simplepathfinder.network.*;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.IModBusEvent;
@@ -22,6 +19,9 @@ public class ModListener implements IModBusEvent {
         registrar.playToClient(SyncLevelNavDataPacket.NETWORK_TYPE, SyncLevelNavDataPacket.STREAM_CODEC, SyncLevelNavDataPacket::clientHandler);
         registrar.playToClient(SyncSingleChunkPacket.NETWORK_TYPE, SyncSingleChunkPacket.STREAM_CODEC, SyncSingleChunkPacket::clientHandler);
         registrar.playToClient(PlayerLocationPacket.NETWORK_TYPE, PlayerLocationPacket.STREAM_CODEC, PlayerLocationPacket::clientHandler);
+        // Server-side pathfinding packets
+        registrar.playToClient(PathfindingResultPacket.NETWORK_TYPE, PathfindingResultPacket.STREAM_CODEC, PathfindingResultPacket::clientHandler);
+        registrar.playToServer(PathfindingRequestPacket.NETWORK_TYPE, PathfindingRequestPacket.STREAM_CODEC, PathfindingRequestPacket::serverHandler);
         registrar.playToServer(UpdateItemPropertiesPacket.NETWORK_TYPE, UpdateItemPropertiesPacket.STREAM_CODEC, UpdateItemPropertiesPacket::serverHandler);
     }
 

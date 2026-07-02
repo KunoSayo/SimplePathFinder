@@ -19,6 +19,9 @@ public class NavConfig {
     // Item usage settings
     public final ModConfigSpec.ConfigValue<Boolean> requireCreativeMode;
 
+    // Pathfinding settings
+    public final ModConfigSpec.ConfigValue<Boolean> serverSidePathfinding;
+
     NavConfig(ModConfigSpec.Builder builder) {
         // Build settings
         maxNavChunks = builder
@@ -38,5 +41,10 @@ public class NavConfig {
                 .comment(
                         "Require creative mode to use navigation item operations (add/remove navigation). Set to false to allow usage in any game mode.")
                 .define("require_creative_mode", false);
+
+        // Pathfinding settings
+        serverSidePathfinding = builder
+                .comment("Execute pathfinding on server side. When true, nav data sync is disabled and pathfinding results are sent to clients.")
+                .define("server_side_pathfinding", true);
     }
 }

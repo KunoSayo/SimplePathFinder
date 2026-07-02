@@ -2,17 +2,14 @@ package io.github.kunosayo.simplepathfinder.client;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.util.Util;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -75,7 +72,6 @@ public class ClientNavDataManager {
 
         // Load cached data for this server asynchronously - do NOT block the main thread
         String serverAddress = currentServerAddress;
-        Util.ioPool().execute(() -> loadCachedData(serverAddress));
     }
 
     /**
@@ -121,7 +117,6 @@ public class ClientNavDataManager {
 
         // Save to disk asynchronously - do NOT block the main thread
         String serverAddress = currentServerAddress;
-        Util.ioPool().execute(() -> saveDataToFile(serverAddress, dimension, data));
     }
 
     /**
@@ -146,7 +141,6 @@ public class ClientNavDataManager {
 
         // Save to disk asynchronously - do NOT block the main thread
         String serverAddress = currentServerAddress;
-        Util.ioPool().execute(() -> saveDataToFile(serverAddress, dimension, navData));
     }
 
     /**
@@ -172,132 +166,14 @@ public class ClientNavDataManager {
         return cacheDir.toPath();
     }
 
-    /**
-     * Save navigation data to a file.
-     */
-    private static void saveDataToFile(String serverAddress, Identifier dimensionKey, LevelNavData data) {
-        if (data == null) {
-            return;
-        }
-
-        try {
-            Path cacheDir = getCacheDir();
-            Path serverDir = cacheDir.resolve(serverAddress);
-
-            if (!serverDir.toFile().exists()) {
-                serverDir.toFile().mkdirs();
-            }
-
-            // Sanitize dimension key for filename
-            String safeFileName = dimensionKey.toString().replaceAll("[^a-zA-Z0-9_-]", "_") + ".nav";
-            Path filePath = serverDir.resolve(safeFileName);
-
-            // Encode data to byte array
-            byte[] encodedData;
-            var tempBuffer = io.netty.buffer.Unpooled.buffer();
-            LevelNavData.STREAM_CODEC.encode(tempBuffer, data);
-            encodedData = new byte[tempBuffer.readableBytes()];
-            tempBuffer.readBytes(encodedData);
-            tempBuffer.release();
-
-            // Write to file
-            try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-                fos.write(encodedData);
-            }
-        } catch (IOException e) {
-            SimplePathFinder.LOGGER.error("Failed to save nav data to file: {} - {}",
-                    serverAddress, dimensionKey, e);
-        }
-    }
 
     /**
-     * Load all cached data for a server.
+     * Handle server-side pathfinding result.
+     * Stores the result for rendering.
+     *
+     * @param result The pathfinding result from the server
      */
-    private static void loadCachedData(String serverAddress) {
-        Path cacheDir = getCacheDir();
-        Path serverDir = cacheDir.resolve(serverAddress);
-
-        if (!serverDir.toFile().exists()) {
-            return;
-        }
-
-        File[] files = serverDir.toFile().listFiles((dir, name) -> name.endsWith(".nav"));
-        if (files == null) {
-            return;
-        }
-
-        var serverCache = cachedNavData.computeIfAbsent(
-                serverAddress, k -> new HashMap<>());
-
-        for (File file : files) {
-            try {
-                byte[] fileData;
-                try (FileInputStream fis = new FileInputStream(file)) {
-                    fileData = fis.readAllBytes();
-                }
-
-                // Decode data
-                var buffer = io.netty.buffer.Unpooled.wrappedBuffer(fileData);
-                LevelNavData navData = LevelNavData.STREAM_CODEC.decode(buffer);
-                buffer.release();
-
-                // Extract dimension key from filename
-                var dimensionKey = Identifier.parse(file.getName().substring(0, file.getName().length() - 4));
-
-                // Add to cache and current storage
-                serverCache.put(dimensionKey, navData);
-                navDataByDimension.put(dimensionKey, navData);
-
-                SimplePathFinder.LOGGER.info("Loaded cached nav data: {} - {}",
-                        serverAddress, dimensionKey);
-            } catch (Exception e) {
-                SimplePathFinder.LOGGER.error("Failed to load nav data from file: {}",
-                        file.getName(), e);
-            }
-        }
-    }
-
-    /**
-     * Clear cached data for a specific server.
-     */
-    public static void clearServerCache(String serverAddress) {
-        cachedNavData.remove(serverAddress);
-
-        // Also delete files
-        Path cacheDir = getCacheDir();
-        Path serverDir = cacheDir.resolve(serverAddress);
-
-        if (serverDir.toFile().exists()) {
-            File[] files = serverDir.toFile().listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    file.delete();
-                }
-            }
-            serverDir.toFile().delete();
-        }
-    }
-
-    /**
-     * Clear all cached data.
-     */
-    public static void clearAllCache() {
-        cachedNavData.clear();
-
-        Path cacheDir = getCacheDir();
-        if (cacheDir.toFile().exists()) {
-            File[] servers = cacheDir.toFile().listFiles();
-            if (servers != null) {
-                for (File server : servers) {
-                    File[] files = server.listFiles();
-                    if (files != null) {
-                        for (File file : files) {
-                            file.delete();
-                        }
-                    }
-                    server.delete();
-                }
-            }
-        }
+    public static void handleServerPathfindingResult(NavResult result) {
+        SimplePathFinder.clientNavResult.set(result);
     }
 }

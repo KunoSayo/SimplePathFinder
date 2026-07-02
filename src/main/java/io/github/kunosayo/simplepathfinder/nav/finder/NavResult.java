@@ -1,4 +1,4 @@
-package io.github.kunosayo.simplepathfinder.nav;
+package io.github.kunosayo.simplepathfinder.nav.finder;
 
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.BlockPos;

@@ -2,6 +2,7 @@ package io.github.kunosayo.simplepathfinder.network;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.nav.NavigationService;
@@ -12,7 +13,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Util;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
@@ -96,8 +97,8 @@ public class PlayerLocationPacket implements CustomPacketPayload {
 
             // Player is online, start pathfinding
             LevelNavData navData = ClientNavDataManager.getNavDataForPlayer();
-            if (navData == null) {
-                player.sendSystemMessage(Component.translatable("simple_path_finder.nav.no_data"));
+            if (NavConfig.NAV_CONFIG.getLeft().serverSidePathfinding.get()) {
+                ClientPacketDistributor.sendToServer(new PathfindingRequestPacket(packet.pos, packet.playerName));
                 return;
             }
 

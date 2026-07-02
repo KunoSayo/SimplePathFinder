@@ -58,6 +58,7 @@ public class NavigationItem extends Item {
             ItemStack stack = player.getItemInHand(hand);
             var clickedPos = context.getClickedPos().relative(context.getClickedFace());
 
+
             if (!level.isClientSide()) {
                 // 如果是服务端，处理物品功能
                 if (handleNavigationItem(level, (ServerPlayer) player, stack, clickedPos)) {

@@ -2,6 +2,8 @@ package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
+import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
+import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;

@@ -6,10 +6,12 @@ import io.github.kunosayo.simplepathfinder.config.ClientConfig;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.*;
-import io.github.kunosayo.simplepathfinder.nav.NavResult;
+import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
+import io.github.kunosayo.simplepathfinder.network.SyncSingleChunkPacket;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,6 +25,7 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.ChunkWatchEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -31,6 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NonNls;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,7 +45,7 @@ public final class SimplePathFinder {
 
     @NonNls
     public static AtomicReference<NavResult> clientNavResult = new AtomicReference<>();
-    private static final HashSet<UUID> playerGotNav = new HashSet<>();
+    private static final HashMap<UUID, HashMap<Identifier, HashSet<ChunkPos>>> playerGotNav = new HashMap<>();
     public static final String MOD_ID = "simple_path_finder";
 
 
@@ -63,6 +67,14 @@ public final class SimplePathFinder {
         syncAllPlayerNav(sp);
     }
 
+    /**
+     * Check if server-side pathfinding is enabled.
+     * When enabled, nav data sync is disabled.
+     */
+    public static boolean isServerSidePathfindingEnabled() {
+        return NavConfig.NAV_CONFIG.getLeft().serverSidePathfinding.get();
+    }
+
     @SubscribeEvent
     public void onRegisterCommand(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
@@ -72,13 +84,20 @@ public final class SimplePathFinder {
     @SubscribeEvent
     public void onJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
-            syncPlayerFullNav(sp);
+            // Only sync nav data if server-side pathfinding is disabled
+            if (!isServerSidePathfindingEnabled()) {
+                syncPlayerFullNav(sp);
+            }
         }
     }
 
     @SubscribeEvent
     public void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
-        playerGotNav.remove(event.getEntity().getUUID());
+        if (event.getEntity().level().isClientSide()) {
+            playerGotNav.clear();
+        } else {
+            playerGotNav.remove(event.getEntity().getUUID());
+        }
     }
 
     public static void syncPlayerFullNav(ServerPlayer sp) {
@@ -96,6 +115,11 @@ public final class SimplePathFinder {
     }
 
     public static void syncAllPlayerNav(ServerPlayer sp) {
+        // Don't sync if server-side pathfinding is enabled
+        if (isServerSidePathfindingEnabled()) {
+            return;
+        }
+
         var level = sp.level();
         var data = LevelNavDataSavedData.loadFromLevel(level);
         for (ServerPlayer player : sp.level().players()) {
@@ -111,6 +135,7 @@ public final class SimplePathFinder {
      * @param chunkPos the chunk position to synchronize
      */
     public static void syncSingleChunk(ServerLevel level, ChunkPos chunkPos) {
+
         var data = LevelNavDataSavedData.loadFromLevel(level);
         var navChunkOpt = data.levelNavData.getNavChunkForSync(chunkPos);
 
@@ -137,6 +162,22 @@ public final class SimplePathFinder {
             LevelNavDataSavedData.loadFromLevel(l);
         }
     }
+
+    @SubscribeEvent
+    public void onTrackChunk(ChunkWatchEvent.Sent event) {
+        if (isServerSidePathfindingEnabled()) {
+            var data = LevelNavDataSavedData.loadFromLevel(event.getLevel());
+            data.levelNavData.getNavChunk(event.getPos(), false).ifPresent(iNavChunk -> {
+                var worldMap = playerGotNav.computeIfAbsent(event.getPlayer().getUUID(), (_) -> new HashMap<>());
+                var set = worldMap.computeIfAbsent(event.getLevel().dimension().identifier(), _ -> new HashSet<>());
+                if (set.add(event.getPos())) {
+                    var packet = new SyncSingleChunkPacket(event.getLevel().dimension().identifier(), event.getPos(), iNavChunk);
+                    PacketDistributor.sendToPlayer(event.getPlayer(), packet);
+                }
+            });
+        }
+    }
+
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {

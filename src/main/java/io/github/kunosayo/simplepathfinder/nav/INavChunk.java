@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
+import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.netty.buffer.ByteBuf;
