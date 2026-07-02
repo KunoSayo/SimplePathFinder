@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.network;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.nav.finder.ServerPathfindingManager;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
@@ -24,21 +25,34 @@ public class PathfindingRequestPacket implements CustomPacketPayload {
             PathfindingRequestPacket::targetPos,
             ByteBufCodecs.STRING_UTF8,
             PathfindingRequestPacket::targetDesc,
+            NavNotificationConfig.STREAM_CODEC,
+            PathfindingRequestPacket::config,
             PathfindingRequestPacket::new
     );
 
     private final BlockPos targetPos;
     private final String targetDesc;
+    private final NavNotificationConfig config;
 
     /**
      * Creates a pathfinding request packet.
      *
      * @param targetPos  The target position to pathfind to
      * @param targetDesc Optional description of the target (e.g., player name)
+     * @param config     Notification config for this request
      */
-    public PathfindingRequestPacket(BlockPos targetPos, String targetDesc) {
+    public PathfindingRequestPacket(BlockPos targetPos, String targetDesc, NavNotificationConfig config) {
         this.targetPos = targetPos;
         this.targetDesc = targetDesc;
+        this.config = config;
+    }
+
+    /**
+     * Legacy constructor for compatibility.
+     * Uses default notification config (all notifications enabled).
+     */
+    public PathfindingRequestPacket(BlockPos targetPos, String targetDesc) {
+        this(targetPos, targetDesc, NavNotificationConfig.all());
     }
 
     public BlockPos targetPos() {
@@ -47,6 +61,10 @@ public class PathfindingRequestPacket implements CustomPacketPayload {
 
     public String targetDesc() {
         return targetDesc;
+    }
+
+    public NavNotificationConfig config() {
+        return config;
     }
 
     @Override
@@ -63,8 +81,8 @@ public class PathfindingRequestPacket implements CustomPacketPayload {
             if (!(context.player() instanceof ServerPlayer serverPlayer)) {
                 return;
             }
-            // Submit to server pathfinding manager
-            ServerPathfindingManager.submitRequest(serverPlayer, packet.targetPos, packet.targetDesc);
+            // Submit to server pathfinding manager with config
+            ServerPathfindingManager.submitRequest(serverPlayer, packet.targetPos, packet.targetDesc, packet.config);
         });
     }
 }

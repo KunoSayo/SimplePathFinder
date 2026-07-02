@@ -66,12 +66,13 @@ public class LocatorItem extends Item {
             if (level.isClientSide()) {
                 if (data.isPosBound()) {
                     // 客户端：检查是否有导航数据可用
+                    var config = NavNotificationConfig.all();
                     if (SimplePathFinder.isServerSidePathfindingEnabled()) {
                         ClientPacketDistributor.sendToServer(new PathfindingRequestPacket(
-                                data.getGlobalPos().pos(), ""));
+                                data.getGlobalPos().pos(), "", config));
                     } else {
                         // 有导航数据，使用导航服务处理导航
-                        NavigationService.navigate(data, NavNotificationConfig.all());
+                        NavigationService.navigate(data, config);
                     }
                 }
             } else {

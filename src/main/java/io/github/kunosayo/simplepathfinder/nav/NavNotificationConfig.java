@@ -1,5 +1,9 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
+import io.netty.buffer.ByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+
 /**
  * 导航通知配置
  * 用于控制导航操作时是否向玩家发送提示消息
@@ -18,6 +22,20 @@ public record NavNotificationConfig(
          */
         boolean notifyOnBusy
 ) {
+    /**
+     * Stream codec for network serialization.
+     * Order: notifyOnSuccess, notifyOnFailure, notifyOnBusy
+     */
+    public static final StreamCodec<ByteBuf, NavNotificationConfig> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.BOOL,
+            NavNotificationConfig::notifyOnSuccess,
+            ByteBufCodecs.BOOL,
+            NavNotificationConfig::notifyOnFailure,
+            ByteBufCodecs.BOOL,
+            NavNotificationConfig::notifyOnBusy,
+            NavNotificationConfig::new
+    );
+
     /**
      * 创建一个启用所有通知的配置
      */

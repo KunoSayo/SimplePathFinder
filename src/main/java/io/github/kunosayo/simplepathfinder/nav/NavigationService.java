@@ -1,12 +1,15 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
+import io.github.kunosayo.simplepathfinder.network.PathfindingRequestPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 /**
  * 客户端导航服务类
@@ -26,10 +29,15 @@ public class NavigationService {
             return;
         }
 
-        BlockPos playerPos = mc.player.blockPosition();
-
-        // 使用导航管理器执行寻路
-        NavigationManager.requestNavigation(playerPos, targetPos, "", config);
+        // 检查是否启用服务端寻路
+        if (SimplePathFinder.isServerSidePathfindingEnabled()) {
+            // 发送寻路请求到服务端
+            ClientPacketDistributor.sendToServer(new PathfindingRequestPacket(targetPos, "", config));
+        } else {
+            // 客户端寻路
+            BlockPos playerPos = mc.player.blockPosition();
+            NavigationManager.requestNavigation(playerPos, targetPos, "", config);
+        }
     }
 
     /**
@@ -45,10 +53,15 @@ public class NavigationService {
             return;
         }
 
-        BlockPos playerPos = mc.player.blockPosition();
-
-        // 使用导航管理器执行寻路
-        NavigationManager.requestNavigation(playerPos, targetPos, targetDesc, config);
+        // 检查是否启用服务端寻路
+        if (SimplePathFinder.isServerSidePathfindingEnabled()) {
+            // 发送寻路请求到服务端
+            ClientPacketDistributor.sendToServer(new PathfindingRequestPacket(targetPos, targetDesc, config));
+        } else {
+            // 客户端寻路
+            BlockPos playerPos = mc.player.blockPosition();
+            NavigationManager.requestNavigation(playerPos, targetPos, targetDesc, config);
+        }
     }
 
     /**

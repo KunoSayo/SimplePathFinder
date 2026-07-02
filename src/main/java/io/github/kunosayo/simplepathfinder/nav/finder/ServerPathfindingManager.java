@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav.finder;
 
+import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.network.PathfindingResultPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -64,9 +65,10 @@ public class ServerPathfindingManager {
      * @param player     The player requesting pathfinding
      * @param targetPos  The target position to pathfind to
      * @param targetDesc Optional description of the target (e.g., player name)
+     * @param config     Notification config for this request
      * @return true if request was accepted, false if queue is full
      */
-    public static boolean submitRequest(ServerPlayer player, BlockPos targetPos, String targetDesc) {
+    public static boolean submitRequest(ServerPlayer player, BlockPos targetPos, String targetDesc, NavNotificationConfig config) {
         // Check if server queue is full
         if (taskQueue.size() >= MAX_QUEUED_REQUESTS) {
             // Queue is full, send rejection message
@@ -80,7 +82,7 @@ public class ServerPathfindingManager {
         }
 
         // Create and add task to queue
-        PathfindingTask task = new PathfindingTask(new WeakReference<>(player.level().getServer()), player.getUUID(), targetPos, targetDesc, System.currentTimeMillis());
+        PathfindingTask task = new PathfindingTask(new WeakReference<>(player.level().getServer()), player.getUUID(), targetPos, targetDesc, config, System.currentTimeMillis());
         if (!taskQueue.offer(task)) {
             // Failed to add to queue (shouldn't happen with LinkedBlockingQueue, but just in case)
             PacketDistributor.sendToPlayer(player, new PathfindingResultPacket("simple_path_finder.nav.already_pathfinding"));
@@ -117,23 +119,31 @@ public class ServerPathfindingManager {
      * Must be called on the main thread.
      */
     public static void sendPathfindingResult(ServerPlayer player, BlockPos targetPos, String targetDesc,
-                                             Optional<NavResult> result) {
+                                             Optional<NavResult> result, NavNotificationConfig config) {
         if (result.isPresent() && result.get().modNavResult != null) {
             // Success - send path result
             PacketDistributor.sendToPlayer(player, new PathfindingResultPacket(result.get().modNavResult));
 
-            // Also send success message
-            if (!targetDesc.isEmpty()) {
-                player.sendSystemMessage(Component.translatable("simple_path_finder.nav.to_player", targetDesc));
-            } else {
+            // Also send success message if config allows
+            if (config.notifyOnSuccess()) {
                 player.sendSystemMessage(Component.translatable("simple_path_finder.nav.starting",
                         targetPos.getX(), targetPos.getY(), targetPos.getZ()));
+                if (!targetDesc.isEmpty()) {
+                    player.sendSystemMessage(Component.translatable("simple_path_finder.nav.to_player", targetDesc));
+                }
             }
         } else {
-            // Failed - send failure message
             PacketDistributor.sendToPlayer(player, new PathfindingResultPacket(
                     "simple_path_finder.nav.no_path"));
         }
+    }
+
+    /**
+     * Helper method to send pathfinding result to player with default config.
+     */
+    public static void sendPathfindingResult(ServerPlayer player, BlockPos targetPos, String targetDesc,
+                                             Optional<NavResult> result) {
+        sendPathfindingResult(player, targetPos, targetDesc, result, NavNotificationConfig.all());
     }
 
 
