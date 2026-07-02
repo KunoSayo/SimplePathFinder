@@ -6,6 +6,7 @@ import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.*;
 import io.github.kunosayo.simplepathfinder.nav.NavResult;
+import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceKey;
@@ -22,12 +23,14 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NonNls;
 
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -132,5 +135,15 @@ public final class SimplePathFinder {
         if (load.getLevel() instanceof ServerLevel l) {
             LevelNavDataSavedData.loadFromLevel(l);
         }
+    }
+
+    @SubscribeEvent
+    public void onServerStarted(ServerStartedEvent event) {
+        BatchScheduler.initializeCallbackExecutor(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void onServerStopping(ServerStoppedEvent event) {
+        BatchScheduler.resetCallbackExecutor();
     }
 }

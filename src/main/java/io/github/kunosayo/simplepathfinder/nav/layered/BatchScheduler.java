@@ -7,12 +7,15 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongStack;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.*;
+import net.minecraft.util.thread.ConsecutiveExecutor;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
@@ -26,10 +29,23 @@ public class BatchScheduler implements Runnable {
 
     private static final int MAX_CONCURRENT_TASKS = 8;
 
+    private static ConsecutiveExecutor callbackPool;
+    private static Executor callbackExecutor;
+
     static void trap(ServerLevel level) {
         if (level.isClientSide()) {
             SimplePathFinder.LOGGER.warn("TRAP: Didn't expect ServerLevel#isClientSide() to return true");
         }
+    }
+
+    public static void initializeCallbackExecutor(MinecraftServer server) {
+        callbackPool = new ConsecutiveExecutor(server, "spf-BatchScheduler-callback");
+        callbackExecutor = callbackPool::schedule;
+    }
+
+    public static void resetCallbackExecutor() {
+        callbackPool = null;
+        callbackExecutor = null;
     }
 
     private final LevelNavDataSavedData data;
@@ -44,7 +60,7 @@ public class BatchScheduler implements Runnable {
 
     private final Stack<ChunkTask> workStack = new ReferenceArrayList<>(MAX_CONCURRENT_TASKS);
     private final Stack<ChunkTask> pool = new ReferenceArrayList<>(MAX_CONCURRENT_TASKS);
-    private final LongStack pending = new LongArrayList(MAX_CONCURRENT_TASKS);
+    private final LongStack pending = new LongArrayList();
     private final long[] bitset;
     private int current = 0, counter = 0;
     private int chunkDirty = 0;
@@ -53,6 +69,9 @@ public class BatchScheduler implements Runnable {
     private boolean scheduled = false;
 
     public BatchScheduler(LevelNavDataSavedData data, ServerLevel level, UUID playerUUID, byte layer, int beginX, int beginZ, int deltaX, int deltaZ) {
+        if (callbackExecutor == null) {
+            throw new IllegalStateException("Callback executor has not been initialized yet");
+        }
         this.data = data;
         this.level = level;
         this.playerUUID = playerUUID;
@@ -191,7 +210,7 @@ public class BatchScheduler implements Runnable {
     public void fire() {
         // THREAD_LOCAL.set(this);
         afterCompletion(beginX, beginZ, (byte) 3);
-        level.getServer().executeIfPossible(this);
+        scheduleIfNeeded();
     }
 
     /// Run on server thread, utility, schedule {@link BatchScheduler} if needed
@@ -265,7 +284,7 @@ public class BatchScheduler implements Runnable {
                     chunkSource.getChunkFuture(x, z, ChunkStatus.FULL, true),
                     chunkSource.getChunkFuture(x + 1, z, ChunkStatus.FULL, true),
                     chunkSource.getChunkFuture(x, z + 1, ChunkStatus.FULL, true)
-            ).whenCompleteAsync(this, level.getServer());
+            ).whenCompleteAsync(this, callbackExecutor);
         }
 
         /// Run on server thread, step 3 for a chunk, ready for execution
