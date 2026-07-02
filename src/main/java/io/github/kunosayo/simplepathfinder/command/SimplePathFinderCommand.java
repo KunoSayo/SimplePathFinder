@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import net.minecraft.commands.CommandSourceStack;
@@ -23,6 +24,11 @@ public final class SimplePathFinderCommand {
         LiteralCommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf")
                 .then(Commands.literal("admin")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+
+                        .then(Commands.literal("config")
+                                .then(Commands.literal("maxConcurrentTasks")
+                                        .then(Commands.argument("value", IntegerArgumentType.integer(1, 16))
+                                                .executes(SimplePathFinderCommand::adjustMaxConcurrentTasks))))
 
                         .then(Commands.literal("stats")
                                 .executes(SimplePathFinderCommand::requestStats))
@@ -130,6 +136,12 @@ public final class SimplePathFinderCommand {
         data.levelNavData.buildForPlayer(player, layer);
         data.setDirty();
         new BatchScheduler(data, sl, playerUUID, layer, chunkX, chunkZ, dx, dz).fire();
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int adjustMaxConcurrentTasks(CommandContext<CommandSourceStack> context) {
+        int concurrency = IntegerArgumentType.getInteger(context, "value");
+        NavConfig.NAV_CONFIG.getLeft().maxConcurrentTasks.set(concurrency);
         return Command.SINGLE_SUCCESS;
     }
 }

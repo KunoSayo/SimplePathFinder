@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import it.unimi.dsi.fastutil.Stack;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -26,8 +27,6 @@ public class BatchScheduler implements Runnable {
     private static final ExecutorService ASYNC_REQUESTER = Executors.newSingleThreadExecutor(it -> new Thread(it, "SimplePathFinder async chunk source"));
     private static final TicketType TYPE_SOLVER = new TicketType(TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING);
     private static final Ticket TICKET = new Ticket(TYPE_SOLVER, ChunkLevel.byStatus(ChunkStatus.FULL));
-
-    private static final int MAX_CONCURRENT_TASKS = 8;
 
     private static ConsecutiveExecutor callbackPool;
     private static Executor callbackExecutor;
@@ -58,8 +57,8 @@ public class BatchScheduler implements Runnable {
     private final int intervalMask;
     private final int totalCount;
 
-    private final Stack<ChunkTask> workStack = new ReferenceArrayList<>(MAX_CONCURRENT_TASKS);
-    private final Stack<ChunkTask> pool = new ReferenceArrayList<>(MAX_CONCURRENT_TASKS);
+    private final Stack<ChunkTask> workStack;
+    private final Stack<ChunkTask> pool;
     private final LongStack pending = new LongArrayList();
     private final long[] bitset;
     private int current = 0, counter = 0;
@@ -89,7 +88,10 @@ public class BatchScheduler implements Runnable {
         this.totalCount = (deltaX + 1) * (deltaZ + 1);
         intervalMask = Integer.highestOneBit((int) Math.sqrt(deltaX * deltaZ)) - 1;
         this.bitset = new long[length];
-        fill(this.pool);
+        final int concurrency = NavConfig.NAV_CONFIG.getLeft().maxConcurrentTasks.get();
+        this.workStack = new ReferenceArrayList<>(concurrency);
+        this.pool = new ReferenceArrayList<>(concurrency);
+        fill(this.pool, concurrency);
     }
 
     public boolean isInRange(ChunkPos p) {
@@ -98,8 +100,8 @@ public class BatchScheduler implements Runnable {
         return x >= beginX && x <= endX && z >= beginZ && z <= endZ;
     }
 
-    void fill(Stack<ChunkTask> pool) {
-        for (int i = 0; i < MAX_CONCURRENT_TASKS; i++) {
+    void fill(Stack<ChunkTask> pool, int size) {
+        for (int i = 0; i < size; i++) {
             pool.push(new ChunkTask());
         }
     }

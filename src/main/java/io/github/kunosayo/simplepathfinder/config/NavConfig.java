@@ -19,6 +19,7 @@ public class NavConfig {
     // Build settings
     public final ModConfigSpec.ConfigValue<Integer> maxNavChunks;
     public final ModConfigSpec.ConfigValue<Integer> maxLayers;
+    public final ModConfigSpec.ConfigValue<Integer> maxConcurrentTasks;
 
     // Item usage settings
     public final ModConfigSpec.ConfigValue<Boolean> requireCreativeMode;
@@ -42,6 +43,10 @@ public class NavConfig {
         defaultBlockDistance = builder
                 .comment("The default distance of block when parse nav chunk")
                 .define("defaultBlockDistance", 10);
+
+        maxConcurrentTasks = builder
+                .comment("The maximum concurrent chunk solving tasks in a batch building progress")
+                .define("max_concurrent_tasks", 4);
 
         // Item usage settings
         requireCreativeMode = builder
