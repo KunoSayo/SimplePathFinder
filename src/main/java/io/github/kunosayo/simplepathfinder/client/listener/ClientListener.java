@@ -3,7 +3,7 @@ package io.github.kunosayo.simplepathfinder.client.listener;
 import com.mojang.brigadier.tree.CommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
-import io.github.kunosayo.simplepathfinder.client.NavRenderingSupport;
+import io.github.kunosayo.simplepathfinder.client.rendering.NavRenderingSupport;
 import io.github.kunosayo.simplepathfinder.client.event.NavigationRenderTriggerEvent;
 import io.github.kunosayo.simplepathfinder.client.property.LocatorModelProperty;
 import io.github.kunosayo.simplepathfinder.client.property.NavBrushModelProperty;
@@ -145,7 +145,7 @@ public class ClientListener {
 
     @SubscribeEvent
     public static void on(SubmitCustomGeometryEvent event) {
-        NavRenderingSupport.INSTANCE.submit(event.getPoseStack(), event.getSubmitNodeCollector());
+        NavRenderingSupport.INSTANCE.submit(event.getPoseStack(), event.getSubmitNodeCollector(), event.getLevelRenderState().cameraRenderState);
     }
 
     @SubscribeEvent
