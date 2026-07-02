@@ -1,7 +1,6 @@
 package io.github.kunosayo.simplepathfinder.client.rendering;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.client.event.NavigationRenderTriggerEvent;
@@ -14,7 +13,6 @@ import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -202,13 +200,15 @@ public class NavRenderingSupport {
         }
         int lastIndex = lineElements.size() - 1;
         Line last = lineElements.get(lastIndex);
-        if (last.thickness != line.thickness || !samePosition(last.end, line.start) || last.start.distanceToSqr(last.end) >= 64.0 * 64.0) {
+        if (last.thickness() != line.thickness()
+                || !samePosition(last.end(), line.start())
+                || last.start().distanceToSqr(last.end()) >= 64.0 * 64.0) {
             return false;
         }
-        if (!sameDirection(last.start, last.end, line.start, line.end)) {
+        if (!sameDirection(last.start(), last.end(), line.start(), line.end())) {
             return false;
         }
-        lineElements.set(lastIndex, new Line(last.start, line.end, last.thickness, last.startColor, line.endColor));
+        lineElements.set(lastIndex, new Line(last.start(), line.end(), last.thickness(), last.startColor(), line.endColor()));
         return true;
     }
 
@@ -267,107 +267,6 @@ public class NavRenderingSupport {
                 0.0f,
                 1.0f + layer * 0.125f
         );
-    }
-
-    private interface IRenderElement {
-        void render(PoseStack poseStack, SubmitNodeCollector collector);
-    }
-
-    private record Line(
-            Vec3 start,
-            Vec3 end,
-            float length,
-            int thickness,
-            int startColor,
-            int endColor
-    ) implements IRenderElement {
-
-        public Line(Vec3 start, Vec3 end, int thickness, int startColor, int endColor) {
-            this(start, end, (float) start.distanceTo(end), thickness, startColor, endColor);
-        }
-
-        @Override
-        public void render(PoseStack poseStack, SubmitNodeCollector collector) {
-            collector.submitCustomGeometry(
-                    poseStack,
-                    RenderTypes.lines(),
-                    (pose, vertex) -> {
-                        float dx = (float) (this.start().x - this.end().x);
-                        float dy = (float) (this.start().y - this.end().y);
-                        float dz = (float) (this.start().z - this.end().z);
-                        vertex.addVertex(
-                                        pose.pose(),
-                                        (float) (this.start().x),
-                                        (float) (this.start().y),
-                                        (float) (this.start().z)
-                                )
-                                .setColor(startColor)
-                                .setLineWidth(this.thickness)
-                                .setNormal(pose, dx /= this.length(), dy /= this.length(), dz /= this.length());
-                        vertex.addVertex(
-                                        pose.pose(),
-                                        (float) (this.end().x),
-                                        (float) (this.end().y),
-                                        (float) (this.end().z)
-                                )
-                                .setLineWidth(this.thickness)
-                                .setColor(endColor)
-                                .setNormal(pose, dx, dy, dz);
-                    }
-            );
-        }
-    }
-
-    private record FilledBox(
-            Vec3 center,
-            float size,
-            int color
-    ) implements IRenderElement {
-        @Override
-        public void render(PoseStack poseStack, SubmitNodeCollector collector) {
-            float radius = size * 0.5f;
-            float minX = (float) center.x - radius;
-            float minY = (float) center.y - radius;
-            float minZ = (float) center.z - radius;
-            float maxX = (float) center.x + radius;
-            float maxY = (float) center.y + radius;
-            float maxZ = (float) center.z + radius;
-
-            collector.submitCustomGeometry(
-                    poseStack,
-                    RenderTypes.debugFilledBox(),
-                    (pose, vertex) -> {
-                        quad(vertex, pose, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, maxX, minY, minZ);
-                        quad(vertex, pose, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ);
-                        quad(vertex, pose, minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ);
-                        quad(vertex, pose, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ);
-                        quad(vertex, pose, minX, minY, minZ, maxX, minY, minZ, maxX, minY, maxZ, minX, minY, maxZ);
-                        quad(vertex, pose, minX, maxY, minZ, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ);
-                    }
-            );
-        }
-
-        private void quad(
-                VertexConsumer vertex,
-                PoseStack.Pose pose,
-                float x1,
-                float y1,
-                float z1,
-                float x2,
-                float y2,
-                float z2,
-                float x3,
-                float y3,
-                float z3,
-                float x4,
-                float y4,
-                float z4
-        ) {
-            vertex.addVertex(pose.pose(), x1, y1, z1).setColor(color);
-            vertex.addVertex(pose.pose(), x2, y2, z2).setColor(color);
-            vertex.addVertex(pose.pose(), x3, y3, z3).setColor(color);
-            vertex.addVertex(pose.pose(), x4, y4, z4).setColor(color);
-        }
     }
 
     /// copied from ae2
