@@ -146,8 +146,7 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         }
         return standBlock.typeHolder().unwrapKey()
                 .map(blockResourceKey -> NavConfig.NAV_CONFIG.getLeft().blockDistanceMap
-                        .getOrDefault(blockResourceKey.identifier()
-                                , NavConfig.NAV_CONFIG.getLeft().defaultBlockDistance.getDefault()))
+                        .get(blockResourceKey.identifier()))
                 .orElse(NavConfig.NAV_CONFIG.getLeft().defaultBlockDistance.getDefault());
     }
 
