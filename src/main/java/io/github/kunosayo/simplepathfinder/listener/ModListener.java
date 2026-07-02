@@ -1,10 +1,12 @@
 package io.github.kunosayo.simplepathfinder.listener;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.network.*;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.IModBusEvent;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
@@ -25,4 +27,18 @@ public class ModListener implements IModBusEvent {
         registrar.playToServer(UpdateItemPropertiesPacket.NETWORK_TYPE, UpdateItemPropertiesPacket.STREAM_CODEC, UpdateItemPropertiesPacket::serverHandler);
     }
 
+
+    @SubscribeEvent
+    public static void onLoading(ModConfigEvent.Loading event) {
+        if (event.getConfig().getSpec() == NavConfig.NAV_CONFIG.getRight()) {
+            NavConfig.NAV_CONFIG.getLeft().update();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onReload(ModConfigEvent.Reloading event) {
+        if (event.getConfig().getSpec() == NavConfig.NAV_CONFIG.getRight()) {
+            NavConfig.NAV_CONFIG.getLeft().update();
+        }
+    }
 }

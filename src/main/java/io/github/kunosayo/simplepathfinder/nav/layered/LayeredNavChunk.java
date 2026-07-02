@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.codec.ArrayCodecs;
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
@@ -9,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 
@@ -142,7 +144,11 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
             }
             return 30;
         }
-        return 10;
+        return standBlock.typeHolder().unwrapKey()
+                .map(blockResourceKey -> NavConfig.NAV_CONFIG.getLeft().blockDistanceMap
+                        .getOrDefault(blockResourceKey.identifier()
+                                , NavConfig.NAV_CONFIG.getLeft().defaultBlockDistance.getDefault()))
+                .orElse(NavConfig.NAV_CONFIG.getLeft().defaultBlockDistance.getDefault());
     }
 
     static long getDistance(Level level, int sx, int sy, int sz, int tx, int tz) {
