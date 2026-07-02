@@ -9,8 +9,12 @@ public final class PathCurveSmoother {
     private PathCurveSmoother() {
     }
 
-    public static List<Vec3> smoothPath(List<Vec3> points, double rdpTolerance, int chaikinIterations) {
-        return smoothChaikin(simplifyRdp(points, rdpTolerance), chaikinIterations);
+    public static List<Vec3> smoothPath(List<Vec3> points, int chaikinIterations) {
+        return postProcessPoints(smoothChaikin(points, chaikinIterations));
+    }
+
+    public static List<Vec3> smoothPathRdp(List<Vec3> points, double rdpTolerance, int chaikinIterations) {
+        return postProcessPoints(smoothChaikin(simplifyRdp(points, rdpTolerance), chaikinIterations));
     }
 
     public static List<Vec3> simplifyRdp(List<Vec3> points, double tolerance) {
@@ -31,7 +35,13 @@ public final class PathCurveSmoother {
         return result;
     }
 
-    private static void simplifySection(List<Vec3> points, int startIndex, int endIndex, double toleranceSqr, boolean[] keep) {
+    private static void simplifySection(
+        List<Vec3> points,
+        int startIndex,
+        int endIndex,
+        double toleranceSqr,
+        boolean[] keep
+    ) {
         if (endIndex <= startIndex + 1) {
             return;
         }
@@ -86,5 +96,33 @@ public final class PathCurveSmoother {
             current = next;
         }
         return current;
+    }
+
+    public static List<Vec3> postProcessPoints(List<Vec3> points) {
+        if (points.size() <= 2) {
+            return List.copyOf(points);
+        }
+
+        List<Vec3> processed = new ArrayList<>();
+        processed.add(points.getFirst());
+        for (int index = 1; index < points.size() - 1; index++) {
+            Vec3 start = processed.getLast();
+            Vec3 middle = points.get(index);
+            Vec3 end = points.get(index + 1);
+            if (!isSameDirection(start, middle, end)) {
+                processed.add(middle);
+            }
+        }
+        processed.add(points.getLast());
+        return processed;
+    }
+
+    private static boolean isSameDirection(Vec3 start, Vec3 middle, Vec3 end) {
+        Vec3 first = middle.subtract(start);
+        Vec3 second = end.subtract(middle);
+        if (first.lengthSqr() == 0.0 || second.lengthSqr() == 0.0) {
+            return false;
+        }
+        return first.dot(second) > 0.0 && first.cross(second).lengthSqr() < 1.0E-12;
     }
 }

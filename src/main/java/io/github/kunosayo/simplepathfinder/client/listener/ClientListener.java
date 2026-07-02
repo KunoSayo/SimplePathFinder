@@ -145,7 +145,7 @@ public class ClientListener {
 
     @SubscribeEvent
     public static void on(SubmitCustomGeometryEvent event) {
-        NavRenderingSupport.INSTANCE.submit(event.getPoseStack(), event.getSubmitNodeCollector());
+        NavRenderingSupport.INSTANCE.submit(event.getPoseStack(), event.getSubmitNodeCollector(), event.getLevelRenderState().cameraRenderState);
     }
 
     @SubscribeEvent

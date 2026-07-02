@@ -2,6 +2,7 @@ package io.github.kunosayo.simplepathfinder;
 
 import com.mojang.brigadier.CommandDispatcher;
 import io.github.kunosayo.simplepathfinder.command.SimplePathFinderCommand;
+import io.github.kunosayo.simplepathfinder.config.ClientConfig;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.*;
@@ -54,6 +55,7 @@ public final class SimplePathFinder {
         ModCreativeTab.TABS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.SERVER, NavConfig.NAV_CONFIG.getRight());
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG.getRight());
     }
 
     public static void playerMadeServerNavDirty(ServerPlayer sp) {
