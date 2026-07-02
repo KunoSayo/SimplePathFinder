@@ -41,7 +41,7 @@
   "item.simple_path_finder.navigation": "导航",
   "item_group.simple_path_finder.name": "简单路径查找器",
   "simple_path_finder": "简单路径查找器",
-  "simple_path_finder.build.nav.batch_success": "成功构建导航区块 %s/%s",
+  "simple_path_finder.build.nav.batch_success": "成功构建导航区块，%s个更改，%s个失败，总计构建%s个，预期构建%s个",
   "simple_path_finder.build.nav.failed": "当前环境不易于构造寻路",
   "simple_path_finder.build.nav.limited": "当前导航区块数量超过上限",
   "simple_path_finder.build.nav.success": "成功构建导航区块",
