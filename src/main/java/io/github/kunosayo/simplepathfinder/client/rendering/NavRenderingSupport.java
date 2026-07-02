@@ -28,6 +28,8 @@ public class NavRenderingSupport {
     public static final NavRenderingSupport INSTANCE = new NavRenderingSupport();
 
     private static final double EPSILON = 1.0E-6;
+    private static final double PATH_RDP_TOLERANCE = 0.6;
+    private static final int PATH_CHAIKIN_ITERATIONS = 2;
     private static final float DEFAULT_BOX_SIZE = 0.4f;
     private static final float DEBUG_BOX_SIZE = 0.4f;
 
@@ -181,48 +183,68 @@ public class NavRenderingSupport {
             return;
         }
         lineElements.clear();
-        Iterator<IRenderElement> iterator = elements.iterator();
-        while (iterator.hasNext()) {
-            IRenderElement element = iterator.next();
-            if (element instanceof Line line) {
-                if (!tryMergeLine(line)) {
-                    lineElements.add(line);
-                }
-                iterator.remove();
-            }
+        List<Line> extractedLines = extractLines();
+        List<Vec3> points = extractContinuousPoints(extractedLines);
+        if (points.size() >= 2) {
+            List<Vec3> smoothedPoints = PathCurveSmoother.smoothPath(
+                    points,
+                    PATH_RDP_TOLERANCE,
+                    PATH_CHAIKIN_ITERATIONS
+            );
+            rebuildLineElements(smoothedPoints, extractedLines.getFirst());
         }
         linesDirty = false;
     }
 
-    private boolean tryMergeLine(Line line) {
-        if (lineElements.isEmpty()) {
-            return false;
+    private List<Line> extractLines() {
+        List<Line> extractedLines = new ArrayList<>();
+        Iterator<IRenderElement> iterator = elements.iterator();
+        while (iterator.hasNext()) {
+            IRenderElement element = iterator.next();
+            if (element instanceof Line line) {
+                extractedLines.add(line);
+                iterator.remove();
+            }
         }
-        int lastIndex = lineElements.size() - 1;
-        Line last = lineElements.get(lastIndex);
-        if (last.thickness() != line.thickness()
-                || !samePosition(last.end(), line.start())
-                || last.start().distanceToSqr(last.end()) >= 64.0 * 64.0) {
-            return false;
+        return extractedLines;
+    }
+
+    private List<Vec3> extractContinuousPoints(List<Line> lines) {
+        if (lines.isEmpty()) {
+            return List.of();
         }
-        if (!sameDirection(last.start(), last.end(), line.start(), line.end())) {
-            return false;
+
+        List<Vec3> points = new ArrayList<>();
+        Line first = lines.getFirst();
+        points.add(first.start());
+        points.add(first.end());
+        for (int index = 1; index < lines.size(); index++) {
+            Line line = lines.get(index);
+            if (!samePosition(points.getLast(), line.start())) {
+                points.add(line.start());
+            }
+            points.add(line.end());
         }
-        lineElements.set(lastIndex, new Line(last.start(), line.end(), last.thickness(), last.startColor(), line.endColor()));
-        return true;
+        return points;
+    }
+
+    private void rebuildLineElements(List<Vec3> points, Line sourceLine) {
+        int lineCount = points.size() - 1;
+        for (int index = 1; index < points.size(); index++) {
+            double startRatio = (double) (index - 1) / lineCount;
+            double endRatio = (double) index / lineCount;
+            lineElements.add(new Line(
+                    points.get(index - 1),
+                    points.get(index),
+                    sourceLine.thickness(),
+                    colorFromRatio(startRatio, true),
+                    colorFromRatio(endRatio, true)
+            ));
+        }
     }
 
     private boolean samePosition(Vec3 first, Vec3 second) {
         return first.distanceToSqr(second) < EPSILON * EPSILON;
-    }
-
-    private boolean sameDirection(Vec3 firstStart, Vec3 firstEnd, Vec3 secondStart, Vec3 secondEnd) {
-        Vec3 first = firstEnd.subtract(firstStart);
-        Vec3 second = secondEnd.subtract(secondStart);
-        return first.dot(second) > 0.0
-                && Math.abs(first.y * second.z - first.z * second.y) < EPSILON
-                && Math.abs(first.z * second.x - first.x * second.z) < EPSILON
-                && Math.abs(first.x * second.y - first.y * second.x) < EPSILON;
     }
 
     public void prepareNavigationPath(ModNavResult navResult) {
