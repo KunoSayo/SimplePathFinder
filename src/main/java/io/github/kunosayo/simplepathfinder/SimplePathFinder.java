@@ -181,11 +181,13 @@ public final class SimplePathFinder {
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
+        playerGotNav.clear();
         BatchScheduler.initializeCallbackExecutor(event.getServer());
     }
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppedEvent event) {
+        playerGotNav.clear();
         BatchScheduler.resetCallbackExecutor();
     }
 }
