@@ -123,6 +123,18 @@ dependencies {
 
     // JEI
     runtimeOnly("mezz.jei:jei-26.1.2-neoforge:29.5.0.26")
+
+    testImplementation platform("org.junit:junit-bom:5.13.1")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+}
+
+tasks.named("compileTestJava", JavaCompile).configure {
+    classpath += sourceSets.main.compileClasspath
+}
+
+tasks.named("test", Test).configure {
+    classpath += sourceSets.main.runtimeClasspath
+    useJUnitPlatform()
 }
 
 // 用于 neoforge.mods 里替换那一堆 ${xxxx}
