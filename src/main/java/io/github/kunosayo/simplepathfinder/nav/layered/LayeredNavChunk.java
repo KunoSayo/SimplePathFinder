@@ -9,6 +9,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -145,8 +146,8 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
             return 30;
         }
         return standBlock.typeHolder().unwrapKey()
-                .map(blockResourceKey -> NavConfig.NAV_CONFIG.getLeft().blockDistanceMap
-                        .get(blockResourceKey.identifier()))
+                .map(ResourceKey::identifier)
+                .map(id -> NavConfig.NAV_CONFIG.getLeft().blockDistanceMap.get(id))
                 .orElse(NavConfig.NAV_CONFIG.getLeft().defaultBlockDistance.getDefault());
     }
 
