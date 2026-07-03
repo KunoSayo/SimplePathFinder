@@ -77,12 +77,12 @@ public interface INavChunk {
      * @param target the target block position
      * @return stream of matching layers
      */
-    default Stream<ILayeredNavChunk> getEdgeForLayers(BlockPos target) {
+    default Stream<ILayeredNavChunk> getLayers(BlockPos target) {
         var inner = ChunkInnerPos.get(target);
-        return getEdgeForLayers().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
+        return getLayers().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
     }
 
-    default Stream<ILayeredNavChunk> getEdgeForLayers() {
+    default Stream<ILayeredNavChunk> getLayers() {
         return getLayersCollection().stream();
     }
 

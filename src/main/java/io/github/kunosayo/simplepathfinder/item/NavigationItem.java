@@ -331,7 +331,7 @@ public class NavigationItem extends Item {
             var chunkInnerPos = ChunkInnerPos.get(
                     clickedPos.getX() & 15, clickedPos.getZ() & 15);
 
-            navChunk.getEdgeForLayers()
+            navChunk.getLayers()
                     .filter(layer -> {
                         // 检查该位置是否可以行走
                         int walkY = layer.getWalkY(chunkInnerPos.x, chunkInnerPos.z);
