@@ -55,8 +55,10 @@ public class ClientListener {
      */
     @SubscribeEvent
     public static void onServerDisconnect(PlayerEvent.PlayerLoggedOutEvent event) {
-        ClientNavDataManager.clear();
-        SimplePathFinder.clientNavResult.set(null);
+        if (event.getEntity().isLocalPlayer()) {
+            ClientNavDataManager.clear();
+            SimplePathFinder.clientNavResult.set(null);
+        }
     }
 
     @SubscribeEvent
