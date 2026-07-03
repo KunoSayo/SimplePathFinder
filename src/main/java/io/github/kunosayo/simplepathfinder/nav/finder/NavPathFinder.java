@@ -38,7 +38,7 @@ public class NavPathFinder {
     private final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
     private final LevelNavData levelNavData;
     private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
-    private final BlockPos start;
+    private BlockPos start;
     private final BlockPos end;
     private final ResourceKey<Level> dimension;
     private int cacheIndex = -1;
@@ -88,6 +88,19 @@ public class NavPathFinder {
                     visitedNodes.put(startKey, startNode);
                     searchNodes.push(startNode);
                 }));
+        if (visitedNodes.isEmpty()) {
+            start = new BlockPos(start.getX(), start.getY() + 1, start.getZ());
+            levelNavData.getNavChunk(startChunk, false)
+                    .map(navChunk -> navChunk.getLayerNav(start))
+                    .ifPresent(layeredNavChunks -> layeredNavChunks.forEach(layeredNavChunk -> {
+                        long h = getHeuristic(start.getX(), start.getY(), start.getZ());
+                        long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                        SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null);
+                        long startKey = SearchedPos.toLong(layeredNavChunk.getLayer(), start);
+                        visitedNodes.put(startKey, startNode);
+                        searchNodes.push(startNode);
+                    }));
+        }
     }
 
     private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, EdgeConsumer edgeInfoConsumer) {
