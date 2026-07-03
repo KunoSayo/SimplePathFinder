@@ -13,10 +13,11 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
         }
     }
 
+
     @Override
-    public boolean markVisited(int cacheIndex, int cnt, BlockPos pos) {
+    public boolean markVisited(int cacheIndex, int cnt, int tx, int tz) {
         final int[] data = visitedCache[cacheIndex];
-        final int idx = convertToIndex(pos.getX() & 15, pos.getZ() & 15);
+        final int idx = convertToIndex(tx & 15, tz & 15);
         boolean result = data[idx] != cnt;
         data[idx] = cnt;
         return result;

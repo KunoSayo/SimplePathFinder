@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
+import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
@@ -14,6 +15,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public final class NavChunk implements INavChunk {
     private static final StreamCodec<ByteBuf, ILayeredNavChunk> TYPED_LAYERED_NAV_CHUNK_CODEC = StreamCodec.of((buffer, value) -> {
@@ -110,12 +112,10 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
-    public Optional<ILayeredNavChunk> getLayerNav(BlockPos pos) {
-        var inner = new ChunkInnerPos(pos);
+    public Stream<ILayeredNavChunk> getLayerNav(BlockPos pos) {
+        var inner = ChunkInnerPos.get(pos);
         // return the layer with walk y in range and possible max.
-        return layers.stream().filter(layeredNavChunk -> isInRange(layeredNavChunk.getWalkY(inner.x, inner.z), pos.getY() - 2, pos.getY()))
-                .max(Comparator.comparingInt(o -> o.getWalkY(inner.x, inner.z)))
-                .map(layeredNavChunk -> (ILayeredNavChunk) layeredNavChunk);
+        return layers.stream().filter(layeredNavChunk -> isInRange(layeredNavChunk.getWalkY(inner.x, inner.z), pos.getY() - 2, pos.getY()));
     }
 
     @Override
@@ -123,30 +123,17 @@ public final class NavChunk implements INavChunk {
         return this.layers;
     }
 
-    @Override
-    public void getLayers(BlockPos target, Consumer<ILayeredNavChunk> consumer) {
-        var inner = new ChunkInnerPos(target);
+    public void getLayers(int x, int y, int z, int distance, EdgeConsumer edgeInfoConsumer) {
+        int innerX = ChunkInnerPos.getInnerPos(x);
+        int innerZ = ChunkInnerPos.getInnerPos(z);
         //noinspection ForLoopReplaceableByForEach
         for (int i = 0; i < this.layers.size(); i++) {
             var layer = layers.get(i);
 
-            if (Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1) {
-                consumer.accept(layer);
-            }
-        }
-    }
-
-    public void getLayers(BlockPos target, int distance, Consumer<NavPathFinder.EdgeInfo> edgeInfoConsumer) {
-        int innerX = ChunkInnerPos.getInnerPos(target.getX());
-        int innerZ = ChunkInnerPos.getInnerPos(target.getZ());
-        //noinspection ForLoopReplaceableByForEach
-        for (int i = 0; i < this.layers.size(); i++) {
-            var layer = layers.get(i);
-
-            final int y = layer.getWalkY(innerX, innerZ);
-            final int delta = y - target.getY();
+            final int wy = layer.getWalkY(innerX, innerZ);
+            final int delta = y - wy;
             if (-1 <= delta && delta <= 1) {
-                edgeInfoConsumer.accept(new NavPathFinder.EdgeInfo(distance, new BlockPos(target.getX(), y, target.getZ()), this, layer));
+                edgeInfoConsumer.acceptEdge(distance, x, wy, z, layer, null);
             }
         }
     }
@@ -167,18 +154,12 @@ public final class NavChunk implements INavChunk {
                 .filter(layeredNavChunk -> Math.abs(y - layeredNavChunk) <= 1).findAny();
     }
 
-    /***
-     * Return the distance sampled from the pos with +x or +z
-     * @param pos the pos to sample distance
-     * @param isZ is +z
-     * @return the distance or -1 if not found
-     */
-    public int getDistance(BlockPos pos, boolean isZ) {
-        var inner = new ChunkInnerPos(pos);
+    public int getDistance(int x, int y, int z, boolean isZ) {
+        var inner = ChunkInnerPos.getWithModulo(x, z);
         //noinspection ForLoopReplaceableByForEach
         for (int i = 0; i < layers.size(); i++) {
             var layeredNavChunk = layers.get(i);
-            final int delta = (layeredNavChunk.getWalkY(inner.x, inner.z) - pos.getY());
+            final int delta = (layeredNavChunk.getWalkY(inner.x, inner.z) - y);
             if (-1 <= delta && delta <= 1) {
                 // we checked for the walk y is checked.
                 return layeredNavChunk.getDistance(inner.x, inner.z, isZ);

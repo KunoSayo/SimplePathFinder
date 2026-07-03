@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
+import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
@@ -66,7 +67,7 @@ public interface INavChunk {
      * @param pos the block position
      * @return optional containing the layer that can walk to this position
      */
-    Optional<ILayeredNavChunk> getLayerNav(BlockPos pos);
+    Stream<ILayeredNavChunk> getLayerNav(BlockPos pos);
 
     /**
      * Get all layers that are within 1 block of the target Y position
@@ -75,9 +76,8 @@ public interface INavChunk {
      * @return stream of matching layers
      */
     default Stream<ILayeredNavChunk> getLayers(BlockPos target) {
-        var inner = new ChunkInnerPos(target);
-        return getLayers().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1)
-                .map(layer -> layer);
+        var inner = ChunkInnerPos.get(target);
+        return getLayers().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
     }
 
     default Stream<ILayeredNavChunk> getLayers() {
@@ -87,21 +87,17 @@ public interface INavChunk {
     Collection<ILayeredNavChunk> getLayersCollection();
 
     /**
-     * Process all layers within 1 block of the target Y position
-     *
-     * @param target   the target block position
-     * @param consumer consumer for each matching layer
-     */
-    void getLayers(BlockPos target, Consumer<ILayeredNavChunk> consumer);
-
-    /**
      * Process all layers within 1 block of the target Y position with distance information
      *
      * @param target   the target block position
      * @param distance the current distance
      * @param consumer consumer for each edge info
      */
-    void getLayers(BlockPos target, int distance, Consumer<NavPathFinder.EdgeInfo> consumer);
+    default void getLayers(BlockPos target, int distance, EdgeConsumer consumer) {
+        getLayers(target.getX(), target.getY(), target.getZ(), distance, consumer);
+    }
+
+    void getLayers(int x, int y, int z, int distance, EdgeConsumer consumer);
 
     /**
      * Get the nearest layer within 1 block of the specified Y position
@@ -130,7 +126,11 @@ public interface INavChunk {
      * @param isZ whether to sample in Z direction
      * @return the distance or -1 if not found
      */
-    int getDistance(BlockPos pos, boolean isZ);
+    default int getDistance(BlockPos pos, boolean isZ) {
+        return getDistance(pos.getX(), pos.getY(), pos.getZ(), isZ);
+    }
+
+    int getDistance(int x, int y, int z, boolean isZ);
 
     /**
      * Remove a layered navigation chunk

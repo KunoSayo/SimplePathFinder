@@ -141,5 +141,9 @@ public interface ILayeredNavChunk {
         return y != INVALID_WALK_Y;
     }
 
-    boolean markVisited(int cacheIndex, int cnt, BlockPos pos);
+    default boolean markVisited(int cacheIndex, int cnt, BlockPos pos) {
+        return markVisited(cacheIndex, cnt, pos.getX(), pos.getZ());
+    }
+
+    boolean markVisited(int cacheIndex, int cnt, int tx, int tz);
 }

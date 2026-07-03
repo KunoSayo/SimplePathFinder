@@ -3,6 +3,7 @@ package io.github.kunosayo.simplepathfinder.util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -29,7 +30,22 @@ public class NavUtil {
 
     public static boolean isSameChunk(BlockPos a, BlockPos b) {
         final int ax = a.getX(), bx = b.getX(), az = a.getZ(), bz = b.getZ();
+        return isSameChunk(ax, az, bx, bz);
+    }
+
+    public static boolean isSameChunk(int ax, int az, int bx, int bz) {
         return SectionPos.blockToSectionCoord(ax) == SectionPos.blockToSectionCoord(bx) &&
                 SectionPos.blockToSectionCoord(az) == SectionPos.blockToSectionCoord(bz);
+    }
+
+    public static ChunkPos containingChunkPos(int tx, int tz) {
+        return new ChunkPos(SectionPos.blockToSectionCoord(tx), SectionPos.blockToSectionCoord(tz));
+    }
+
+    public static int distManhattan(BlockPos pos, int x, int y, int z) {
+        int xd = Math.abs(pos.getX() - x);
+        int yd = Math.abs(pos.getY() - y);
+        int zd = Math.abs(pos.getZ() - z);
+        return (int)(xd + yd + zd);
     }
 }

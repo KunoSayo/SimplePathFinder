@@ -26,6 +26,7 @@ public class NavPathFinder {
     // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
     public static final long HEURISTIC_WEIGHT_PERCENT = 110L;
     public static final int VISIT_CACHE_SIZE = 3;
+    public static final int NULL_POS = Integer.MIN_VALUE + 9;
     private static final AtomicBoolean[] USING_CACHE_VISIT;
     private static final int[] CACHE_COUNT = new int[VISIT_CACHE_SIZE];
 
@@ -58,16 +59,16 @@ public class NavPathFinder {
         this.end = end;
     }
 
-    private long getHeuristic(BlockPos pos) {
-        long horizontal = Math.abs(pos.getX() - end.getX()) + Math.abs(pos.getZ() - end.getZ());
-        long vertical = Math.abs(pos.getY() - end.getY());
+    private long getHeuristic(int tx, int ty, int tz) {
+        long horizontal = Math.abs(tx - end.getX()) + Math.abs(tz - end.getZ());
+        long vertical = Math.abs(ty - end.getY());
 
         // TODO: 10L
         long h = Math.max(horizontal, vertical) * 10L;
 
         if (HEURISTIC_WEIGHT_PERCENT == 100L) {
-            long dx1 = pos.getX() - end.getX();
-            long dz1 = pos.getZ() - end.getZ();
+            long dx1 = tx - end.getX();
+            long dz1 = tz - end.getZ();
             long dx2 = start.getX() - end.getX();
             long dz2 = start.getZ() - end.getZ();
             long cross = Math.abs(dx1 * dz2 - dx2 * dz1);
@@ -80,43 +81,41 @@ public class NavPathFinder {
     private void init() {
         var startChunk = ChunkPos.containing(start);
         levelNavData.getNavChunk(startChunk, false)
-                .flatMap(navChunk -> navChunk.getLayerNav(start))
-                .ifPresent(layeredNavChunk -> {
-                    if (layeredNavChunk instanceof LayeredNavChunk) {
-                        long h = getHeuristic(start);
-                        long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                        SearchNode startNode = new SearchNode(0, priority, h, start, (LayeredNavChunk) layeredNavChunk, null);
-                        long startKey = SearchedPos.toLong(layeredNavChunk.getLayer(), start);
-                        visitedNodes.put(startKey, startNode);
-                        searchNodes.push(startNode);
-                    }
-                });
+                .map(navChunk -> navChunk.getLayerNav(start))
+                .ifPresent(layeredNavChunks -> layeredNavChunks.forEach(layeredNavChunk -> {
+                    long h = getHeuristic(start.getX(), start.getY(), start.getZ());
+                    long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                    SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null);
+                    long startKey = SearchedPos.toLong(layeredNavChunk.getLayer(), start);
+                    visitedNodes.put(startKey, startNode);
+                    searchNodes.push(startNode);
+                }));
     }
 
-    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, BlockPos a, BlockPos b, Consumer<EdgeInfo> edgeInfoConsumer) {
+    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, EdgeConsumer edgeInfoConsumer) {
         // the y of b should be the same as a
 
-        int situation = LayeredNavChunk.getPosSituation(a, b);
+        int situation = LayeredNavChunk.getPosSituation(ax, ax, bx, bz);
         boolean isZ = (situation & 1) == 1;
         int distance;
         if (situation > 1) {
-            distance = bNavChunk.getDistance(b, isZ);
+            distance = bNavChunk.getDistance(bx, y, bz, isZ);
         } else {
-            distance = navChunk.getDistance(a, isZ);
+            distance = navChunk.getDistance(ax, y, az, isZ);
         }
 
         if (distance < 0) {
             return;
         }
-        bNavChunk.getLayers(b, distance, edgeInfoConsumer);
+        bNavChunk.getLayers(bx, y, bz, distance, edgeInfoConsumer);
     }
 
     /**
      * Get edges from navigation links at the current position.
      * This allows the pathfinder to consider teleports, vehicles, and other travel methods.
      */
-    private void getNavLinkEdges(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, Consumer<EdgeInfo> edgeInfoConsumer) {
-        var chunkInnerPos = new ChunkInnerPos(a);
+    private void getNavLinkEdges(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int z, EdgeConsumer edgeInfoConsumer) {
+        var chunkInnerPos = ChunkInnerPos.getWithModulo(x, z);
 
         // Get all nav links from this position
         for (var navLink : navChunk.getNavLinks(chunkInnerPos)) {
@@ -128,9 +127,6 @@ public class NavPathFinder {
                 continue;
             }
 
-            // Calculate cost based on link type
-            double costMultiplier = navLink.getCostMultiplier();
-            int linkCost = (int) (100 * costMultiplier); // Base cost for using nav link
 
             // Get the nav chunk at destination
             var destChunkPos = ChunkPos.containing(destPos);
@@ -141,62 +137,44 @@ public class NavPathFinder {
             var destNavChunk = destNavChunkOpt.get();
 
             // Find the layer at destination
-            destNavChunk.getLayerNav(destPos).ifPresentOrElse(
+            destNavChunk.getLayerNav(destPos).forEach(
                     destLayer -> {
                         // Add edge info for the nav link
-                        edgeInfoConsumer.accept(new EdgeInfo(
-                                linkCost,
-                                destPos,
-                                destNavChunk,
-                                destLayer,
-                                navLink.type()
-                        ));
-                    },
-                    () -> {
-                        // No layer at destination, try to find nearest layer
-                        destNavChunk.getNearestLayer(destPos.getX(), destPos.getY(), destPos.getZ())
-                                .ifPresent(destLayer -> {
-                                    edgeInfoConsumer.accept(new EdgeInfo(
-                                            linkCost + 5, // Add penalty for layer mismatch
-                                            destPos,
-                                            destNavChunk,
-                                            destLayer,
-                                            navLink.type()
-                                    ));
-                                });
-                    }
-            );
+                        edgeInfoConsumer.acceptEdge(0, destPos.getX(), destPos.getY(), destPos.getZ(), destLayer, navLink.type());
+                    });
         }
     }
 
-    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, BlockPos a, @Nullable BlockPos lastPos, Consumer<EdgeInfo> edgeInfoConsumer) {
+    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int ly, int lz, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
-        getNavLinkEdges(navChunk, layeredNavChunk, a, edgeInfoConsumer);
+        getNavLinkEdges(navChunk, layeredNavChunk, x, z, edgeInfoConsumer);
 
         // Then, get normal walking edges
         for (int i = 0; i < 4; i++) {
-            var t = a.offset(LayeredNavChunk.SEARCH_DX[i], 0, LayeredNavChunk.SEARCH_DZ[i]);
-            if (lastPos != null) {
-                if (lastPos.getX() == t.getX() && lastPos.getZ() == t.getZ()) {
-                    continue;
-                }
+            int tx = x + LayeredNavChunk.SEARCH_DX[i];
+            int tz = z + LayeredNavChunk.SEARCH_DZ[i];
+            if (tx == lx && tz == lz) {
+                continue;
             }
-            boolean isSame = NavUtil.isSameChunk(a, t);
+            boolean isSame = NavUtil.isSameChunk(x, z, tx, tz);
             var thatChunk = navChunk;
             if (!isSame) {
-                Optional<INavChunk> thatChunkOpt = levelNavData.getNavChunk(ChunkPos.containing(t), false);
+                Optional<INavChunk> thatChunkOpt = levelNavData.getNavChunk(NavUtil.containingChunkPos(tx, tz), false);
                 if (thatChunkOpt.isEmpty()) {
                     continue;
                 }
                 thatChunk = thatChunkOpt.get();
             }
 
-            getEdge(navChunk, thatChunk, a, t, edgeInfoConsumer);
+            getEdge(navChunk, thatChunk, x, y, tx, tz, y, edgeInfoConsumer);
         }
     }
 
-    private void getEdge(SearchNode node, Consumer<EdgeInfo> edgeInfoConsumer) {
-        getEdge(node.layer.getParentChunk(), node.layer, node.pos, node.lastNode != null ? node.lastNode.pos : null, edgeInfoConsumer);
+    private void getEdge(SearchNode node, EdgeConsumer edgeInfoConsumer) {
+        getEdge(node.layer.getParentChunk(), node.layer, node.x, node.y, node.z,
+                node.lastNode != null ? node.lastNode.x : Integer.MIN_VALUE + 9,
+                node.lastNode != null ? node.lastNode.y : Integer.MIN_VALUE + 9,
+                node.lastNode != null ? node.lastNode.z : Integer.MIN_VALUE + 9, edgeInfoConsumer);
     }
 
     private boolean checkConnectivity() {
@@ -206,7 +184,7 @@ public class NavPathFinder {
         if (endChunkOpt.isEmpty()) {
             return false;
         }
-        var endLayerOpt = endChunkOpt.get().getLayerNav(end);
+        var endLayerOpt = endChunkOpt.get().getLayerNav(end).findAny();
         if (endLayerOpt.isEmpty()) {
             return false;
         }
@@ -217,7 +195,7 @@ public class NavPathFinder {
         if (startChunkOpt.isEmpty()) {
             return false;
         }
-        var startLayerOpt = startChunkOpt.get().getLayerNav(start);
+        var startLayerOpt = startChunkOpt.get().getLayerNav(start).findAny();
         if (startLayerOpt.isEmpty()) {
             return false;
         }
@@ -262,9 +240,9 @@ public class NavPathFinder {
             if (!currentLayer.isWalkYValid(y)) continue;
             BlockPos cpos = new BlockPos(cx, y, cz);
 
-            getEdge(currentChunk, currentLayer, cpos, null, edgeInfo -> {
-                long nextKey = SearchedPos.toLong(edgeInfo.targetLayeredChunk.getLayer(), edgeInfo.targetPos);
-                if (SearchedPos.markVisited(this, visited, edgeInfo.targetLayeredChunk, edgeInfo.targetPos)) {
+            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, (_, tx, _, tz, layerChunk, type) -> {
+                if (SearchedPos.markVisited(this, visited, layerChunk, tx, tz)) {
+                    long nextKey = SearchedPos.toLong(layerChunk.getLayer(), tx, tz);
                     queue.add(nextKey);
                 }
             });
@@ -283,24 +261,24 @@ public class NavPathFinder {
         while (!searchNodes.isEmpty()) {
             var node = searchNodes.pop();
 
-            if (node.pos.distManhattan(this.end) <= 1) {
+            if (NavUtil.distManhattan(this.end, node.x, node.y, node.z) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            getEdge(node, edgeInfo -> {
-                long vKey = SearchedPos.toLong(edgeInfo.targetLayeredChunk.getLayer(), edgeInfo.targetPos);
+            getEdge(node, (distance, tx, ty, tz, layer, type) -> {
+                long vKey = SearchedPos.toLong(layer.getLayer(), tx, tz);
                 SearchNode existingNode = visitedNodes.get(vKey);
 
                 if (existingNode != null && existingNode.heapIndex == -2) {
                     return;
                 }
 
-                long extraCost = node.getExtraCost(edgeInfo.targetPos);
-                long new_g = extraCost + edgeInfo.distance + node.cost;
+                long extraCost = node.getExtraCost(tx, ty, tz);
+                long new_g = extraCost + distance + node.cost;
 
                 if (existingNode == null) {
-                    long h = getHeuristic(edgeInfo.targetPos);
+                    long h = getHeuristic(tx, ty, tz);
                     long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    SearchNode targetNode = new SearchNode(new_g, new_f, h, edgeInfo.targetPos, edgeInfo.targetLayeredChunk, node);
+                    SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node);
                     visitedNodes.put(vKey, targetNode);
                     searchNodes.push(targetNode);
                 } else if (new_g < existingNode.cost) {
@@ -345,11 +323,18 @@ public class NavPathFinder {
         /**
          * @return true if not visited before.
          */
-        private static boolean markVisited(NavPathFinder finder, LongOpenHashSet visited, ILayeredNavChunk iLayeredNavChunk, BlockPos start) {
+        private static boolean markVisited(NavPathFinder finder, LongOpenHashSet visited, ILayeredNavChunk layerChunk, BlockPos start) {
             if (finder.cacheIndex == -1) {
-                return visited.add(toLong(iLayeredNavChunk.getLayer(), start));
+                return visited.add(toLong(layerChunk.getLayer(), start));
             }
-            return iLayeredNavChunk.markVisited(finder.cacheIndex, NavPathFinder.CACHE_COUNT[finder.cacheIndex], start);
+            return layerChunk.markVisited(finder.cacheIndex, NavPathFinder.CACHE_COUNT[finder.cacheIndex], start);
+        }
+
+        public static boolean markVisited(NavPathFinder finder, LongOpenHashSet visited, ILayeredNavChunk layerChunk, int tx, int tz) {
+            if (finder.cacheIndex == -1) {
+                return visited.add(toLong(layerChunk.getLayer(), tx, tz));
+            }
+            return layerChunk.markVisited(finder.cacheIndex, NavPathFinder.CACHE_COUNT[finder.cacheIndex], tx, tz);
         }
 
         @Override
@@ -370,28 +355,35 @@ public class NavPathFinder {
             return (((long) pos.getX() & 0x7FFFFFF) << 27) | (pos.getZ() & 0x7FFFFFF) | ((long) layer << 54);
         }
 
+        public static long toLong(byte layer, int x, int z) {
+            return (((long) x & 0x7FFFFFF) << 27) | (z & 0x7FFFFFF) | ((long) layer << 54);
+        }
     }
 
     public static class SearchNode implements Comparable<SearchNode> {
         public long cost; // g(u)
         public long priority; // f(u)
         public final long hValue; // h(u)
-        public final BlockPos pos;
+        public final int x;
+        public final int y;
+        public final int z;
         public final ILayeredNavChunk layer;
         public SearchNode lastNode;
         public int heapIndex = -1;
 
-        public SearchNode(long cost, long priority, long hValue, BlockPos pos, ILayeredNavChunk layer, SearchNode lastNode) {
+        public SearchNode(long cost, long priority, long hValue, int x, int y, int z, ILayeredNavChunk layer, SearchNode lastNode) {
             this.cost = cost;
             this.priority = priority;
             this.hValue = hValue;
-            this.pos = pos;
+            this.x = x;
+            this.y = y;
+            this.z = z;
             this.layer = layer;
             this.lastNode = lastNode;
         }
 
         public BlockPos pos() {
-            return pos;
+            return new BlockPos(x, y, z);
         }
 
         public ILayeredNavChunk layer() {
@@ -422,12 +414,30 @@ public class NavPathFinder {
             int nx = next.getX();
             int ny = next.getY();
             int nz = next.getZ();
-            int px = pos.getX();
-            int py = pos.getY();
-            int pz = pos.getZ();
-            int lx = lastNode.pos.getX();
-            int ly = lastNode.pos.getY();
-            int lz = lastNode.pos.getZ();
+            int px = x;
+            int py = y;
+            int pz = z;
+            int lx = lastNode.x;
+            int ly = lastNode.y;
+            int lz = lastNode.z;
+            if (nx - px == px - lx
+                    && ny - py == py - ly
+                    && nz - pz == pz - lz) {
+                return 0;
+            }
+            return 37;
+        }
+
+        public long getExtraCost(int nx, int ny, int nz) {
+            if (lastNode == null) {
+                return 0;
+            }
+            int px = x;
+            int py = y;
+            int pz = z;
+            int lx = lastNode.x;
+            int ly = lastNode.y;
+            int lz = lastNode.z;
             if (nx - px == px - lx
                     && ny - py == py - ly
                     && nz - pz == pz - lz) {

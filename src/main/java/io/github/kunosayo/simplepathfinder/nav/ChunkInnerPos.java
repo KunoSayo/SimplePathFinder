@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 
 public class ChunkInnerPos {
@@ -28,17 +27,12 @@ public class ChunkInnerPos {
             pos -> (byte) pos.x,
             ByteBufCodecs.BYTE,
             pos -> (byte) pos.z,
-            ChunkInnerPos::new
+            ChunkInnerPos::get
     );
 
     private ChunkInnerPos(int x, int z) {
         this.x = x;
         this.z = z;
-    }
-
-    public ChunkInnerPos(BlockPos pos) {
-        this.x = Mth.positiveModulo(pos.getX(), 16);
-        this.z = Mth.positiveModulo(pos.getZ(), 16);
     }
 
     public static ChunkInnerPos get(BlockPos pos) {
@@ -64,7 +58,7 @@ public class ChunkInnerPos {
     }
 
     public static int getInnerPos(int value) {
-        return Mth.positiveModulo(value, 16);
+        return value & 15;
     }
 
     // We do not override equals. We consider it is the same object when equals.

@@ -40,15 +40,19 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
      * @return 0: a+x, 1: a+z, 2: b+x, 3: b+z
      */
     public static int getPosSituation(BlockPos a, BlockPos b) {
-        if (a.getX() == b.getX()) {
-            if (a.getZ() < b.getZ()) {
+        return getPosSituation(a.getX(), a.getZ(), b.getX(), b.getZ());
+    }
+
+    public static int getPosSituation(int ax, int az, int bx, int bz) {
+        if (ax == bx) {
+            if (az < bz) {
                 // a+z
                 return 1;
             }
             // b+z
             return 3;
         }
-        if (a.getX() < b.getX()) {
+        if (az < bx) {
             // a+x
             return 0;
         }
@@ -117,7 +121,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
 
     @Override
     public int getDistance(BlockPos pos, boolean isZ) {
-        var inner = new ChunkInnerPos(pos);
+        var inner = ChunkInnerPos.get(pos);
         return distances[getDistanceIdx(inner.x, inner.z, isZ)];
     }
 

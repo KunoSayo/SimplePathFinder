@@ -172,10 +172,10 @@ public class NavBrushItem extends Item {
      * Apply operation to all edges at position
      */
     private InteractionResult applyAllEdgesOperation(ServerLevel level, ServerPlayer player, INavChunk navChunk, BlockPos clickedPos, NavBrushData brushData) {
-        var chunkInnerPos = new ChunkInnerPos(clickedPos);
+        var chunkInnerPos = ChunkInnerPos.get(clickedPos);
 
         // Get the layer at this position
-        var layerOpt = navChunk.getLayerNav(clickedPos);
+        var layerOpt = navChunk.getLayerNav(clickedPos).findAny();
         if (layerOpt.isEmpty()) {
             player.sendSystemMessage(Component.translatable("simple_path_finder.nav_brush.no_layer_at_pos"));
             return InteractionResult.FAIL;
@@ -222,10 +222,10 @@ public class NavBrushItem extends Item {
      * Apply operation to a single edge
      */
     private InteractionResult applySingleEdgeOperation(ServerLevel level, ServerPlayer player, INavChunk navChunk, BlockPos clickedPos, Direction clickedFace, NavBrushData brushData) {
-        var chunkInnerPos = new ChunkInnerPos(clickedPos);
+        var chunkInnerPos = ChunkInnerPos.get(clickedPos);
 
         // Get the layer at this position
-        var layerOpt = navChunk.getLayerNav(clickedPos);
+        var layerOpt = navChunk.getLayerNav(clickedPos).findAny();
         if (layerOpt.isEmpty()) {
             player.sendSystemMessage(Component.translatable("simple_path_finder.nav_brush.no_layer_at_pos"));
             return InteractionResult.FAIL;

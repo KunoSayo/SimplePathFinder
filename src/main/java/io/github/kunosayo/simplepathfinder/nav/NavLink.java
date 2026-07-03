@@ -63,16 +63,4 @@ public record NavLink(GlobalPos dest, NavLinkType type) {
     public static NavLink of(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos, NavLinkType type) {
         return new NavLink(GlobalPos.of(level.dimension(), pos), type);
     }
-
-    /**
-     * Get the cost multiplier for this link type.
-     * Higher values make the pathfinder avoid this link unless necessary.
-     */
-    public double getCostMultiplier() {
-        return switch (type) {
-            case NORMAL -> 1.0;
-            case TELEPORT -> 50.0;  // Teleportation is expensive
-            case VEHICLE -> 2.0;    // Vehicles are moderately expensive
-        };
-    }
 }

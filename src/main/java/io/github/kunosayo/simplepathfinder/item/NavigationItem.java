@@ -385,7 +385,7 @@ public class NavigationItem extends Item {
             }
 
             var navChunk = navChunkOpt.get();
-            var chunkInnerPos = new io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos(startPos.pos());
+            var chunkInnerPos = ChunkInnerPos.get(startPos.pos());
 
             // 创建链接
             var destPos = GlobalPos.of(level.dimension(), clickedPos);
