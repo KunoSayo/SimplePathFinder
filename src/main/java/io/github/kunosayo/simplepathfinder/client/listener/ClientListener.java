@@ -59,6 +59,17 @@ public class ClientListener {
         SimplePathFinder.clientNavResult.set(null);
     }
 
+    @SubscribeEvent
+    public static void onDimensionChanged(PlayerEvent.PlayerChangedDimensionEvent event) {
+        SimplePathFinder.clientNavResult.set(null);
+    }
+
+    @SubscribeEvent
+    public static void onServerDisconnect(ClientPlayerNetworkEvent.LoggingOut event) {
+        ClientNavDataManager.clear();
+        SimplePathFinder.clientNavResult.set(null);
+    }
+
     private static LevelNavData getNavData(Player player) {
         if (player.level() instanceof ServerLevel sl) {
             return LevelNavDataSavedData.loadFromLevel(sl).levelNavData;
