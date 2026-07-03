@@ -52,7 +52,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
             // b+z
             return 3;
         }
-        if (az < bx) {
+        if (ax < bx) {
             // a+x
             return 0;
         }
