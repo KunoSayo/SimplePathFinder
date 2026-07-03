@@ -127,7 +127,7 @@ public class LevelNavData {
 
     public Optional<ILayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
         return Optional.ofNullable(navChunks.get(pos))
-                .flatMap(navChunk -> navChunk.getLayers().filter(navChunk1 -> navChunk1.getLayer() == layer).findAny());
+                .flatMap(navChunk -> navChunk.getLayer(layer));
     }
 
     /**

@@ -1,7 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
-import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.netty.buffer.ByteBuf;
@@ -13,7 +12,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
@@ -61,6 +59,10 @@ public interface INavChunk {
      */
     Optional<ILayeredNavChunk> getLayer(int layer, java.util.function.Supplier<LayeredNavChunk> supplier);
 
+    default Optional<ILayeredNavChunk> getLayer(int layer) {
+        return getLayer(layer, () -> null);
+    }
+
     /**
      * Get navigation layer for a specific block position
      *
@@ -75,12 +77,12 @@ public interface INavChunk {
      * @param target the target block position
      * @return stream of matching layers
      */
-    default Stream<ILayeredNavChunk> getLayers(BlockPos target) {
+    default Stream<ILayeredNavChunk> getEdgeForLayers(BlockPos target) {
         var inner = ChunkInnerPos.get(target);
-        return getLayers().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
+        return getEdgeForLayers().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
     }
 
-    default Stream<ILayeredNavChunk> getLayers() {
+    default Stream<ILayeredNavChunk> getEdgeForLayers() {
         return getLayersCollection().stream();
     }
 
@@ -93,11 +95,11 @@ public interface INavChunk {
      * @param distance the current distance
      * @param consumer consumer for each edge info
      */
-    default void getLayers(BlockPos target, int distance, EdgeConsumer consumer) {
-        getLayers(target.getX(), target.getY(), target.getZ(), distance, consumer);
+    default void getEdgeForLayers(BlockPos target, int distance, EdgeConsumer consumer) {
+        getEdgeForLayers(target.getX(), target.getY(), target.getZ(), distance, consumer);
     }
 
-    void getLayers(int x, int y, int z, int distance, EdgeConsumer consumer);
+    void getEdgeForLayers(int x, int y, int z, int distance, EdgeConsumer consumer);
 
     /**
      * Get the nearest layer within 1 block of the specified Y position

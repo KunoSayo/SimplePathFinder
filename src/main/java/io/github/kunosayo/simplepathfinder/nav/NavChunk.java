@@ -89,13 +89,17 @@ public final class NavChunk implements INavChunk {
         this.chunkPos = chunkPos;
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override
     public Optional<ILayeredNavChunk> getLayer(int layer, Supplier<LayeredNavChunk> supplier) {
-        for (var layeredNavChunk : layers) {
-            if (layeredNavChunk.getLayer() == layer) {
-                return Optional.of(layeredNavChunk);
+        for (int i = 0; i < layers.size(); i++) {
+            var layerChunk = layers.get(i);
+            if (layerChunk.getLayer() == layer) {
+                return Optional.of(layerChunk);
             }
         }
+
+
         if (layers.size() >= NavConfig.NAV_CONFIG.getLeft().maxLayers.get()) {
             return Optional.empty();
         }
@@ -105,6 +109,18 @@ public final class NavChunk implements INavChunk {
         }
         layers.add(supplier.get());
         return Optional.of(layers.getLast());
+    }
+
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override
+    public Optional<ILayeredNavChunk> getLayer(int layer) {
+        for (int i = 0; i < layers.size(); i++) {
+            var layerChunk = layers.get(i);
+            if (layerChunk.getLayer() == layer) {
+                return Optional.of(layerChunk);
+            }
+        }
+        return Optional.empty();
     }
 
     private static boolean isInRange(int a, int l, int r) {
@@ -123,7 +139,8 @@ public final class NavChunk implements INavChunk {
         return this.layers;
     }
 
-    public void getLayers(int x, int y, int z, int distance, EdgeConsumer edgeInfoConsumer) {
+    @Override
+    public void getEdgeForLayers(int x, int y, int z, int distance, EdgeConsumer edgeInfoConsumer) {
         int innerX = ChunkInnerPos.getInnerPos(x);
         int innerZ = ChunkInnerPos.getInnerPos(z);
         //noinspection ForLoopReplaceableByForEach
@@ -132,7 +149,7 @@ public final class NavChunk implements INavChunk {
 
             final int wy = layer.getWalkY(innerX, innerZ);
             final int delta = y - wy;
-            if (-1 <= delta && delta <= 1) {
+            if (Math.abs(delta) <= 1) {
                 edgeInfoConsumer.acceptEdge(distance, x, wy, z, layer, null);
             }
         }

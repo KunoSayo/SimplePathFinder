@@ -15,12 +15,10 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 public class NavPathFinder {
     // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
@@ -107,7 +105,7 @@ public class NavPathFinder {
         if (distance < 0) {
             return;
         }
-        bNavChunk.getLayers(bx, y, bz, distance, edgeInfoConsumer);
+        bNavChunk.getEdgeForLayers(bx, y, bz, distance, edgeInfoConsumer);
     }
 
     /**
