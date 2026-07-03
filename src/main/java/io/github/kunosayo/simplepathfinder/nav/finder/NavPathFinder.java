@@ -236,8 +236,6 @@ public class NavPathFinder {
 
             int y = currentLayer.getWalkY(cx & 15, cz & 15);
             if (!currentLayer.isWalkYValid(y)) continue;
-            BlockPos cpos = new BlockPos(cx, y, cz);
-
             getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, (_, tx, _, tz, layerChunk, type) -> {
                 if (SearchedPos.markVisited(this, visited, layerChunk, tx, tz)) {
                     long nextKey = SearchedPos.toLong(layerChunk.getLayer(), tx, tz);
