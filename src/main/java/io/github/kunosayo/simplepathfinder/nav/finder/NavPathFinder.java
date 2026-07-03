@@ -106,7 +106,7 @@ public class NavPathFinder {
     private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, EdgeConsumer edgeInfoConsumer) {
         // the y of b should be the same as a
 
-        int situation = LayeredNavChunk.getPosSituation(ax, ax, bx, bz);
+        int situation = LayeredNavChunk.getPosSituation(ax, az, bx, bz);
         boolean isZ = (situation & 1) == 1;
         int distance;
         if (situation > 1) {
