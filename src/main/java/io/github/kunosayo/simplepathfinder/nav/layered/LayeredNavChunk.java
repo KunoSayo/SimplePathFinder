@@ -23,7 +23,7 @@ import static io.github.kunosayo.simplepathfinder.util.NavUtil.considerSafeGroun
 /**
  * The nav data in chunks
  */
-public final class LayeredNavChunk implements ILayeredNavChunk {
+public final class LayeredNavChunk extends AbstractLayeredNavChunk {
     public static final StreamCodec<ByteBuf, LayeredNavChunk> STREAM_CODEC = StreamCodec
             .composite(ArrayCodecs.shortArrayCodec(LevelNavData.CHUNK_AREA),
                     layeredNavChunk -> layeredNavChunk.walkY,
@@ -126,9 +126,6 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         distances[getDistanceIdx(x, z, isZ)] = value;
     }
 
-    static int convertToIndex(int x, int z) {
-        return (x << 4) | z;
-    }
 
     static int getDistanceIdx(int sx, int sz, boolean isZ) {
         return (convertToIndex(sx, sz) << 1) | (isZ ? 1 : 0);

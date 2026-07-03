@@ -140,4 +140,6 @@ public interface ILayeredNavChunk {
     default boolean isWalkYValid(int y) {
         return y != INVALID_WALK_Y;
     }
+
+    boolean markVisited(int cacheIndex, int cnt, BlockPos pos);
 }

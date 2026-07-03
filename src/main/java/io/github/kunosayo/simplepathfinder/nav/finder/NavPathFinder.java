@@ -19,11 +19,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 public class NavPathFinder {
     // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
     public static final long HEURISTIC_WEIGHT_PERCENT = 110L;
+    public static final int VISIT_CACHE_SIZE = 3;
+    private static final AtomicBoolean[] USING_CACHE_VISIT;
+    private static final int[] CACHE_COUNT = new int[VISIT_CACHE_SIZE];
+
+    static {
+        USING_CACHE_VISIT = new AtomicBoolean[VISIT_CACHE_SIZE];
+        for (int i = 0; i < VISIT_CACHE_SIZE; i++) {
+            USING_CACHE_VISIT[i] = new AtomicBoolean();
+        }
+    }
 
     private final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
     private final LevelNavData levelNavData;
@@ -31,6 +42,7 @@ public class NavPathFinder {
     private final BlockPos start;
     private final BlockPos end;
     private final ResourceKey<Level> dimension;
+    private int cacheIndex = -1;
 
     public NavPathFinder(LevelNavData levelNavData, BlockPos start, BlockPos end) {
         this.levelNavData = levelNavData;
@@ -221,7 +233,7 @@ public class NavPathFinder {
         LongOpenHashSet visited = new LongOpenHashSet(1024);
 
         queue.add(startKey);
-        visited.add(startKey);
+        SearchedPos.markVisited(this, visited, startLayerOpt.get(), start);
 
         int head = 0;
         while (head < queue.size()) {
@@ -252,7 +264,7 @@ public class NavPathFinder {
 
             getEdge(currentChunk, currentLayer, cpos, null, edgeInfo -> {
                 long nextKey = SearchedPos.toLong(edgeInfo.targetLayeredChunk.getLayer(), edgeInfo.targetPos);
-                if (visited.add(nextKey)) {
+                if (SearchedPos.markVisited(this, visited, edgeInfo.targetLayeredChunk, edgeInfo.targetPos)) {
                     queue.add(nextKey);
                 }
             });
@@ -261,7 +273,7 @@ public class NavPathFinder {
         return false;
     }
 
-    public Optional<NavResult> search() {
+    private Optional<NavResult> _search() {
         if (!checkConnectivity()) {
             return Optional.empty();
         }
@@ -302,6 +314,25 @@ public class NavPathFinder {
         return Optional.empty();
     }
 
+    public Optional<NavResult> search() {
+        this.cacheIndex = -1;
+        for (int i = 0; i < VISIT_CACHE_SIZE; i++) {
+            if (USING_CACHE_VISIT[i].compareAndSet(false, true)) {
+                this.cacheIndex = i;
+                CACHE_COUNT[i] += 1;
+                break;
+            }
+        }
+        try {
+
+            return _search();
+        } finally {
+            if (this.cacheIndex != -1) {
+                USING_CACHE_VISIT[this.cacheIndex].set(false);
+            }
+        }
+    }
+
     public record EdgeInfo(int distance, BlockPos targetPos, INavChunk targetNavChunk,
                            ILayeredNavChunk targetLayeredChunk, NavLinkType linkType) {
         public EdgeInfo(int distance, BlockPos targetPos, INavChunk targetNavChunk,
@@ -311,6 +342,16 @@ public class NavPathFinder {
     }
 
     public record SearchedPos(int layer, BlockPos pos) {
+        /**
+         * @return true if not visited before.
+         */
+        private static boolean markVisited(NavPathFinder finder, LongOpenHashSet visited, ILayeredNavChunk iLayeredNavChunk, BlockPos start) {
+            if (finder.cacheIndex == -1) {
+                return visited.add(toLong(iLayeredNavChunk.getLayer(), start));
+            }
+            return iLayeredNavChunk.markVisited(finder.cacheIndex, NavPathFinder.CACHE_COUNT[finder.cacheIndex], start);
+        }
+
         @Override
         public boolean equals(Object o) {
             if (o == null || getClass() != o.getClass()) return false;
@@ -328,6 +369,7 @@ public class NavPathFinder {
             // 27 bit for x and y
             return (((long) pos.getX() & 0x7FFFFFF) << 27) | (pos.getZ() & 0x7FFFFFF) | ((long) layer << 54);
         }
+
     }
 
     public static class SearchNode implements Comparable<SearchNode> {
