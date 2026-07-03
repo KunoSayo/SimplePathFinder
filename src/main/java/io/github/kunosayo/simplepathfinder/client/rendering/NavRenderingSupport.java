@@ -137,29 +137,43 @@ public class NavRenderingSupport {
                                 }
 
                                 var blockPos = new BlockPos(
-                                    chunkPos.getBlockX(x),
-                                    y,
-                                    chunkPos.getBlockZ(z)
+                                        chunkPos.getBlockX(x),
+                                        y,
+                                        chunkPos.getBlockZ(z)
                                 );
 
-                                if (layer.getDistance(x, z, false) < 0) {
+                                int dis = layer.getDistance(x, z, false);
+                                if (dis < 0) {
                                     filledBox(
-                                        new Vec3(blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5),
-                                        DEBUG_BOX_SIZE,
-                                        0x55ff0101
+                                            new Vec3(blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5),
+                                            DEBUG_BOX_SIZE,
+                                            0x55ff0101
+                                    );
+                                } else {
+                                    filledBox(
+                                            new Vec3(blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5),
+                                            0.8f / (dis + 1),
+                                            0x55ffffff
                                     );
                                 }
-                                if (layer.getDistance(x, z, true) < 0) {
+                                dis = layer.getDistance(x, z, true);
+                                if (dis < 0) {
                                     filledBox(
-                                        new Vec3(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0),
-                                        DEBUG_BOX_SIZE,
-                                        0x55ff0101
+                                            new Vec3(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0),
+                                            DEBUG_BOX_SIZE,
+                                            0x55ff0101
+                                    );
+                                } else {
+                                    filledBox(
+                                            new Vec3(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0),
+                                            0.8f / (dis + 1),
+                                            0x55ffffff
                                     );
                                 }
                                 filledBox(
-                                    blockPos.getCenter(),
-                                    DEBUG_BOX_SIZE,
-                                    layerColor
+                                        blockPos.getCenter(),
+                                        DEBUG_BOX_SIZE,
+                                        layerColor
                                 );
                             }
                         }
@@ -214,10 +228,10 @@ public class NavRenderingSupport {
         List<Vec3> points = extractContinuousPoints(extractedLines);
         if (points.size() >= 2) {
             lineElements.addAll(PathRenderElementFactory.createPathElements(
-                points,
-                extractedLines.getFirst(),
-                extractedLines.getLast(),
-                ClientConfig.CLIENT_CONFIG.getLeft().smoothPath.get()
+                    points,
+                    extractedLines.getFirst(),
+                    extractedLines.getLast(),
+                    ClientConfig.CLIENT_CONFIG.getLeft().smoothPath.get()
             ));
         }
         linesDirty = false;
@@ -266,10 +280,10 @@ public class NavRenderingSupport {
             double startRatio = (double) (index - 1) / lineCount;
             double endRatio = (double) index / lineCount;
             line(
-                path.get(index - 1).getCenter(),
-                path.get(index).getCenter(),
-                colorFromRatio(startRatio, true),
-                colorFromRatio(endRatio, true)
+                    path.get(index - 1).getCenter(),
+                    path.get(index).getCenter(),
+                    colorFromRatio(startRatio, true),
+                    colorFromRatio(endRatio, true)
             );
         }
     }
@@ -283,23 +297,23 @@ public class NavRenderingSupport {
 
     private int colorFromRgb(float red, float green, float blue) {
         return 0x55000000
-            | (Math.clamp((int) (red * 255.0f), 0, 255) << 16)
-            | (Math.clamp((int) (green * 255.0f), 0, 255) << 8)
-            | Math.clamp((int) (blue * 255.0f), 0, 255);
+                | (Math.clamp((int) (red * 255.0f), 0, 255) << 16)
+                | (Math.clamp((int) (green * 255.0f), 0, 255) << 8)
+                | Math.clamp((int) (blue * 255.0f), 0, 255);
     }
 
     private int layerColor(int layer) {
         if (layer >= 0) {
             return colorFromRgb(
-                0.125f + layer * 0.125f,
-                1.0f - layer * 0.125f,
-                0.0f
+                    0.125f + layer * 0.125f,
+                    1.0f - layer * 0.125f,
+                    0.0f
             );
         }
         return colorFromRgb(
-            0.125f - layer * 0.125f,
-            0.0f,
-            1.0f + layer * 0.125f
+                0.125f - layer * 0.125f,
+                0.0f,
+                1.0f + layer * 0.125f
         );
     }
 

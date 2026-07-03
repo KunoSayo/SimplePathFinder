@@ -159,6 +159,7 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         //   #5
         //    6
 
+        int selfDistance = getDistanceResult(level.getBlockState(new BlockPos(sx, sy - 1, sz)));
         mutable.move(0, 1, 0);
         if (!considerSafeCross(level, mutable)) {
             // check 2, blocked, no way!
@@ -187,7 +188,7 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
                 // we cannot go up (blocked)
                 return D_CANNOT_REACH;
             }
-            return packDistanceResult(getDistanceResult(upBaseBlock), sy + 1);
+            return packDistanceResult(Math.max(getDistanceResult(upBaseBlock), selfDistance), sy + 1);
         }
         //   13
         //   .2
@@ -207,7 +208,7 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         var sameBaseBlock = level.getBlockState(sameGroundYPos);
         if (considerSafeGround(level, sameGroundYPos, sameBaseBlock)) {
             // checked 5
-            return packDistanceResult(getDistanceResult(sameBaseBlock), sy);
+            return packDistanceResult(Math.max(getDistanceResult(sameBaseBlock), selfDistance), sy);
         }
         //   13
         //   ..
@@ -226,7 +227,7 @@ public final class LayeredNavChunk implements ILayeredNavChunk {
         var downBase = level.getBlockState(downGroundPos);
         if (considerSafeGround(level, downGroundPos, downBase)) {
             // checked 6
-            return packDistanceResult(getDistanceResult(downBase), sy - 1);
+            return packDistanceResult(Math.max(getDistanceResult(downBase), selfDistance), sy - 1);
         }
 
         return D_CANNOT_REACH;

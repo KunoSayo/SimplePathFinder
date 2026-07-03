@@ -14,6 +14,7 @@ import io.github.kunosayo.simplepathfinder.item.NavigationItem;
 import io.github.kunosayo.simplepathfinder.item.NavigationMode;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
+import io.github.kunosayo.simplepathfinder.network.PathfindingRequestPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -27,6 +28,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.*;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import org.apache.logging.log4j.LogManager;
@@ -84,8 +86,8 @@ public class ClientListener {
     @SubscribeEvent
     public static void registerClientCommands(RegisterClientCommandsEvent event) {
         var dispatcher = event.getDispatcher();
-        CommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf").then(
-                Commands.literal("nav")
+        CommandNode<CommandSourceStack> root = dispatcher.register(Commands.literal("spf")
+                .then(Commands.literal("nav")
                         .then(Commands.literal("clear")
                                 .executes(commandContext -> {
                                     SimplePathFinder.clientNavResult.set(null);
@@ -99,9 +101,21 @@ public class ClientListener {
                                     }
                                     return 0;
                                 }))
-        ));
+                )
+                .then(Commands.literal("navserver")
+                        .then(Commands.argument("target", BlockPosArgument.blockPos())
+                                .executes(context -> {
+                                    var target = BlockPosArgument.getBlockPos(context, "target");
+                                    if (context.getSource().getEntity() instanceof Player player) {
+                                        var packet = new PathfindingRequestPacket(target, "");
+                                        ClientPacketDistributor.sendToServer(packet);
+                                    }
+                                    return 0;
+                                }))
+                ));
 
         dispatcher.register(Commands.literal("nav").redirect(root.getChild("nav")));
+        dispatcher.register(Commands.literal("navserver").redirect(root.getChild("navserver")));
     }
 
     @SubscribeEvent
