@@ -261,11 +261,12 @@ public class NavPathFinder {
     }
 
     private Optional<NavResult> _search() {
+        init();
+
         if (!checkConnectivity()) {
             return Optional.empty();
         }
 
-        init();
 
         while (!searchNodes.isEmpty()) {
             var node = searchNodes.pop();
