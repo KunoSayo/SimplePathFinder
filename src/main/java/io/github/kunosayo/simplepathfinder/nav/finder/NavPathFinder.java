@@ -177,7 +177,7 @@ public class NavPathFinder {
                 thatChunk = thatChunkOpt.get();
             }
 
-            getEdge(navChunk, thatChunk, x, y, tx, tz, y, edgeInfoConsumer);
+            getEdge(navChunk, thatChunk, x, z, tx, tz, y, edgeInfoConsumer);
         }
     }
 
