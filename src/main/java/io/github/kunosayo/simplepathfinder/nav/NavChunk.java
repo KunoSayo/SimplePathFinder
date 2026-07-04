@@ -13,6 +13,7 @@ import net.minecraft.world.level.ChunkPos;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -56,7 +57,7 @@ public final class NavChunk implements INavChunk {
             );
 
 
-    public List<ILayeredNavChunk> layers = new ArrayList<>();
+    public List<ILayeredNavChunk> layers = new CopyOnWriteArrayList<>();
     public ChunkPos chunkPos;
 
     /**
@@ -72,7 +73,7 @@ public final class NavChunk implements INavChunk {
     }
 
     private NavChunk(List<ILayeredNavChunk> layers, Map<ChunkInnerPos, List<NavLink>> navLinks) {
-        this.layers = layers;
+        this.layers = new CopyOnWriteArrayList<>(layers);
         for (ILayeredNavChunk layer : this.layers) {
             layer.setParentChunk(this);
         }
