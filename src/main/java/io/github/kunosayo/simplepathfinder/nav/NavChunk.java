@@ -90,11 +90,9 @@ public final class NavChunk implements INavChunk {
         this.chunkPos = chunkPos;
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override
     public Optional<ILayeredNavChunk> getLayer(int layer, Supplier<LayeredNavChunk> supplier) {
-        for (int i = 0; i < layers.size(); i++) {
-            var layerChunk = layers.get(i);
+        for (ILayeredNavChunk layerChunk : layers) {
             if (layerChunk.getLayer() == layer) {
                 return Optional.of(layerChunk);
             }
@@ -112,11 +110,9 @@ public final class NavChunk implements INavChunk {
         return Optional.of(layers.getLast());
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override
     public Optional<ILayeredNavChunk> getLayer(int layer) {
-        for (int i = 0; i < layers.size(); i++) {
-            var layerChunk = layers.get(i);
+        for (ILayeredNavChunk layerChunk : layers) {
             if (layerChunk.getLayer() == layer) {
                 return Optional.of(layerChunk);
             }
