@@ -144,10 +144,7 @@ public final class NavChunk implements INavChunk {
     public void getEdgeForLayers(int x, int y, int z, int distance, EdgeConsumer edgeInfoConsumer) {
         int innerX = ChunkInnerPos.getInnerPos(x);
         int innerZ = ChunkInnerPos.getInnerPos(z);
-        //noinspection ForLoopReplaceableByForEach
-        for (int i = 0; i < this.layers.size(); i++) {
-            var layer = layers.get(i);
-
+        for (ILayeredNavChunk layer : this.layers) {
             final int wy = layer.getWalkY(innerX, innerZ);
             final int delta = y - wy;
             if (Math.abs(delta) <= 1) {
@@ -174,9 +171,7 @@ public final class NavChunk implements INavChunk {
 
     public int getDistance(int x, int y, int z, boolean isZ) {
         var inner = ChunkInnerPos.getWithModulo(x, z);
-        //noinspection ForLoopReplaceableByForEach
-        for (int i = 0; i < layers.size(); i++) {
-            var layeredNavChunk = layers.get(i);
+        for (ILayeredNavChunk layeredNavChunk : layers) {
             final int delta = (layeredNavChunk.getWalkY(inner.x, inner.z) - y);
             if (-1 <= delta && delta <= 1) {
                 // we checked for the walk y is checked.
