@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 public class NavPathFinder {
     // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
@@ -39,7 +40,7 @@ public class NavPathFinder {
     private final LevelNavData levelNavData;
     private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
     private BlockPos start;
-    private final BlockPos end;
+    private BlockPos end;
     private final ResourceKey<Level> dimension;
     private int cacheIndex = -1;
 
@@ -101,6 +102,20 @@ public class NavPathFinder {
                         searchNodes.push(startNode);
                     }));
         }
+
+        var endChunk = ChunkPos.containing(end);
+        levelNavData.getNavChunk(endChunk, false)
+                .map(navChunk -> navChunk.getLayerNav(end))
+                .flatMap(Stream::findAny)
+                .ifPresentOrElse(_ -> {
+                }, () -> {
+                    end = end.offset(0, 1, 0);
+                    levelNavData.getNavChunk(endChunk, false)
+                            .map(navChunk -> navChunk.getLayerNav(end))
+                            .flatMap(Stream::findAny)
+                            .ifPresentOrElse(_ -> {
+                            }, () -> end = end.offset(0, -2, 0));
+                });
     }
 
     private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, EdgeConsumer edgeInfoConsumer) {
