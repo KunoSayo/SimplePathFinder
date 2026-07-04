@@ -8,6 +8,7 @@ import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
@@ -233,15 +234,14 @@ public class NavPathFinder {
             return true;
         }
 
-        LongArrayList queue = new LongArrayList(1024);
-        LongOpenHashSet visited = new LongOpenHashSet(1024);
+        var queue = new LongArrayFIFOQueue(8192);
+        LongOpenHashSet visited = this.cacheIndex == -1 ? new LongOpenHashSet(1024) : null;
 
-        queue.add(startKey);
+        queue.enqueue(startKey);
         SearchedPos.markVisited(this, visited, startLayerOpt.get(), start);
 
-        int head = 0;
-        while (head < queue.size()) {
-            long currentKey = queue.getLong(head++);
+        while (!queue.isEmpty()) {
+            long currentKey = queue.dequeueLong();
 
             if (currentKey == targetKey) {
                 return true;
@@ -267,7 +267,7 @@ public class NavPathFinder {
             getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, (_, tx, _, tz, layerChunk, type) -> {
                 if (SearchedPos.markVisited(this, visited, layerChunk, tx, tz)) {
                     long nextKey = SearchedPos.toLong(layerChunk.getLayer(), tx, tz);
-                    queue.add(nextKey);
+                    queue.enqueue(nextKey);
                 }
             });
         }
