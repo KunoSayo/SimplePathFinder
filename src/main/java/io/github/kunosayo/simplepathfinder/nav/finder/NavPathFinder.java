@@ -10,6 +10,7 @@ import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
@@ -17,6 +18,7 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +40,7 @@ public class NavPathFinder {
     }
 
     public final HashSet<Object> visitedObjects = new HashSet<>();
+    public final IdentityHashMap<Object, Object> extraFinderData = new IdentityHashMap<>();
     private final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
     private final LevelNavData levelNavData;
     private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);

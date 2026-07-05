@@ -14,12 +14,12 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import static io.github.kunosayo.simplepathfinder.util.NavUtil.considerSafeCross;
@@ -73,6 +73,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
 
     // Store +x+z+x+z..
     int[] distances;
+    int[][] extraVisited = new int[NavPathFinder.VISIT_CACHE_SIZE][256];
     byte layer = 0;
     // Assign in different threads.
     List<NavRectCell> cellList = new ArrayList<>();
@@ -394,6 +395,23 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
                     int y = getWalkY(ix, iz);
                     for (int tx = rect.minX; tx <= rect.maxX; tx++) {
                         for (int tz = rect.minZ; tz <= rect.maxZ; tz++) {
+                            int idx = finder.getCacheIndex();
+                            if (idx != -1) {
+                                int cnt = finder.getCacheVisitCount();
+                                int pointIndex = convertToIndex(tx, tz);
+                                if (this.extraVisited[idx][pointIndex] == cnt) {
+                                    continue;
+                                }
+                                this.extraVisited[idx][pointIndex] = cnt;
+                            } else {
+                                var obj = finder.extraFinderData.computeIfAbsent(this, _ -> new HashSet<ChunkInnerPos>());
+                                if (obj instanceof HashSet<?> s) {
+                                    //noinspection unchecked
+                                    if (!((HashSet<Object>) s).add(ChunkInnerPos.get(ix, iz))) {
+                                        continue;
+                                    }
+                                }
+                            }
                             if (tx == ix && tz == iz) {
                                 continue;
                             }
