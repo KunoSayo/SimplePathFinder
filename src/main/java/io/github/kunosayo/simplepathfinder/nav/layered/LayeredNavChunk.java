@@ -5,6 +5,7 @@ import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.NavLinkType;
 import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.netty.buffer.ByteBuf;
@@ -388,7 +389,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
         for (int i = 0; i < list.size(); i++) {
             var rect = list.get(i);
             if (rect.isInRegion(ix, iz)) {
-                if (rect.markVisited(finder) || true) {
+                if (rect.markVisited(finder)) {
                     int dis = getDistance(ix, iz, false);
                     int y = getWalkY(ix, iz);
                     for (int tx = rect.minX; tx <= rect.maxX; tx++) {
@@ -399,7 +400,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
                             int dx = tx - ix;
                             int dz = tz - iz;
                             int finalDis = (int) (Math.round(Math.sqrt(dx * dx + dz * dz) * dis));
-                            edgeConsumer.acceptEdge(finalDis, dx + node.x, y, dz + node.z, this, null);
+                            edgeConsumer.acceptEdge(finalDis, dx + node.x, y, dz + node.z, this, NavLinkType.NORMAL);
                         }
                     }
                 }

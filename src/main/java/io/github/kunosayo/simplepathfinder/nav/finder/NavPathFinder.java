@@ -94,7 +94,7 @@ public class NavPathFinder {
                 .ifPresent(layeredNavChunks -> layeredNavChunks.forEach(layeredNavChunk -> {
                     long h = getHeuristic(start.getX(), start.getY(), start.getZ());
                     long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null);
+                    SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
                     long startKey = SearchedPos.toLong(layeredNavChunk.getLayer(), start);
                     visitedNodes.put(startKey, startNode);
                     searchNodes.push(startNode);
@@ -106,7 +106,7 @@ public class NavPathFinder {
                     .ifPresent(layeredNavChunks -> layeredNavChunks.forEach(layeredNavChunk -> {
                         long h = getHeuristic(start.getX(), start.getY(), start.getZ());
                         long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                        SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null);
+                        SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
                         long startKey = SearchedPos.toLong(layeredNavChunk.getLayer(), start);
                         visitedNodes.put(startKey, startNode);
                         searchNodes.push(startNode);
@@ -273,7 +273,7 @@ public class NavPathFinder {
 
             int y = currentLayer.getWalkY(cx & 15, cz & 15);
             if (!currentLayer.isWalkYValid(y)) continue;
-            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, (_, tx, _, tz, layerChunk, type) -> {
+            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, (_, tx, _, tz, layerChunk, _) -> {
                 if (SearchedPos.markVisited(this, visited, layerChunk, tx, tz)) {
                     long nextKey = SearchedPos.toLong(layerChunk.getLayer(), tx, tz);
                     queue.enqueue(nextKey);
@@ -312,7 +312,7 @@ public class NavPathFinder {
                 if (existingNode == null) {
                     long h = getHeuristic(tx, ty, tz);
                     long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node);
+                    SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node, type);
                     visitedNodes.put(vKey, targetNode);
                     searchNodes.push(targetNode);
                 } else if (new_g < existingNode.cost) {
@@ -404,10 +404,11 @@ public class NavPathFinder {
         public final int y;
         public final int z;
         public final ILayeredNavChunk layer;
+        public final NavLinkType navLinkType;
         public SearchNode lastNode;
         public int heapIndex = -1;
 
-        public SearchNode(long cost, long priority, long hValue, int x, int y, int z, ILayeredNavChunk layer, SearchNode lastNode) {
+        public SearchNode(long cost, long priority, long hValue, int x, int y, int z, ILayeredNavChunk layer, SearchNode lastNode, NavLinkType navLinkType) {
             this.cost = cost;
             this.priority = priority;
             this.hValue = hValue;
@@ -416,6 +417,7 @@ public class NavPathFinder {
             this.z = z;
             this.layer = layer;
             this.lastNode = lastNode;
+            this.navLinkType = navLinkType;
         }
 
         public BlockPos pos() {
