@@ -71,6 +71,10 @@ public class NavPathFinder {
         return CACHE_COUNT[cacheIndex];
     }
 
+    public BlockPos getEnd() {
+        return this.end;
+    }
+
     private long getHeuristic(int tx, int ty, int tz) {
         long horizontal = Math.abs(tx - end.getX()) + Math.abs(tz - end.getZ());
         long vertical = Math.abs(ty - end.getY());
