@@ -317,8 +317,9 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
                     int curMin = minMaxX;
                     // Check if all cells in the next row (z = maxZ + 1) have same values
                     for (int cx = startX; cx <= minMaxX; cx++) {
-                        if (this.walkY[convertToIndex(cx, maxZ + 1)] != targetWalkY ||
-                                this.distances[getDistanceIdx(cx, maxZ, true)] != targetDistZ) {
+                        if (this.walkY[convertToIndex(cx, maxZ + 1)] != targetWalkY
+                                || this.distances[getDistanceIdx(cx, maxZ, true)] != targetDistZ
+                                || (cx > startX && this.distances[getDistanceIdx(cx - 1, maxZ + 1, false)] != targetDistX)) {
                             curMin = Math.min(minMaxX, cx - 1);
                             break;
                         }
