@@ -417,7 +417,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
                             }
                             int dx = tx - ix;
                             int dz = tz - iz;
-                            int finalDis = (int) (Math.round(Math.sqrt(dx * dx + dz * dz) * dis));
+                            int finalDis = Math.max(Math.abs(dx), Math.abs(dz)) * dis;
                             edgeConsumer.acceptEdge(finalDis, dx + node.x, y, dz + node.z, this, NavLinkType.NORMAL);
                         }
                     }
