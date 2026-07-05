@@ -388,7 +388,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
         for (int i = 0; i < list.size(); i++) {
             var rect = list.get(i);
             if (rect.isInRegion(ix, iz)) {
-                if (rect.markVisited(finder)) {
+                if (rect.markVisited(finder) || true) {
                     int dis = getDistance(ix, iz, false);
                     int y = getWalkY(ix, iz);
                     for (int tx = rect.minX; tx <= rect.maxX; tx++) {
@@ -399,7 +399,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
                             int dx = tx - ix;
                             int dz = tz - iz;
                             int finalDis = (int) (Math.round(Math.sqrt(dx * dx + dz * dz) * dis));
-                            edgeConsumer.acceptEdge(finalDis, tx, y, tz, this, null);
+                            edgeConsumer.acceptEdge(finalDis, dx + node.x, y, dz + node.z, this, null);
                         }
                     }
                 }
