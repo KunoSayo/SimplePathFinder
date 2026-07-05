@@ -5,6 +5,8 @@ import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
+import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -15,7 +17,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static io.github.kunosayo.simplepathfinder.util.NavUtil.considerSafeCross;
 import static io.github.kunosayo.simplepathfinder.util.NavUtil.considerSafeGround;
@@ -69,6 +73,8 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
     // Store +x+z+x+z..
     int[] distances;
     byte layer = 0;
+    // Assign in different threads.
+    List<NavRectCell> cellList = new ArrayList<>();
     public INavChunk parentChunk = null;
 
     @Override
@@ -89,12 +95,14 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
     LayeredNavChunk(short[] walkY, int[] distances) {
         this.walkY = walkY;
         this.distances = distances;
+        updateChunkData();
     }
 
     LayeredNavChunk(short[] walkY, int[] distances, byte layer) {
         this.walkY = walkY;
         this.distances = distances;
         this.layer = layer;
+        updateChunkData();
     }
 
     /**
@@ -242,6 +250,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
             return solver.solve(level, this, trustedCenter);
         } finally {
             solver.unlock();
+            updateChunkData();
         }
     }
 
@@ -275,6 +284,85 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
         return result;
     }
 
+
+    public void updateChunkData() {
+        var list = new ArrayList<NavRectCell>();
+
+        for (int x = 0; x < 15; x++) {
+            for (int z = 0; z < 15; z++) {
+                final int startX = x;
+                final int startZ = z;
+                short targetWalkY = this.walkY[convertToIndex(startX, startZ)];
+                int targetDistX = this.distances[getDistanceIdx(startX, startZ, false)];
+                int targetDistZ = this.distances[getDistanceIdx(startX, startZ, true)];
+
+                if (targetWalkY == INVALID_WALK_Y || targetDistX < 0 || targetDistX != targetDistZ) {
+                    continue;
+                }
+                // Find maximum rectangle with same values
+                int maxX = startX;
+                int maxZ = startZ;
+
+                // First, find max extent in X direction from start row
+                while (maxX + 1 < 16 &&
+                        this.walkY[convertToIndex(maxX + 1, startZ)] == targetWalkY &&
+                        this.distances[getDistanceIdx(maxX, startZ, false)] == targetDistX) {
+                    maxX++;
+                }
+
+                int minMaxX = maxX;
+                while (minMaxX != startX && maxZ + 1 < 16) {
+                    int curMin = minMaxX;
+                    // Check if all cells in the next row (z = maxZ + 1) have same values
+                    for (int cx = startX; cx <= minMaxX; cx++) {
+                        if (this.walkY[convertToIndex(cx, maxZ + 1)] != targetWalkY ||
+                                this.distances[getDistanceIdx(cx, maxZ, true)] != targetDistZ) {
+                            curMin = Math.min(minMaxX, cx - 1);
+                            break;
+                        }
+                    }
+                    if (curMin < startX) {
+                        break;
+                    } else if (curMin != startX) {
+                        minMaxX = curMin;
+                        maxZ++;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Check if this rectangle should be added
+                // Condition: neither edge has length 1 (so width > 1 and height > 1)
+                maxX = minMaxX;
+                int width = maxX - startX + 1;
+                int height = maxZ - startZ + 1;
+
+                if (width > 1 && height > 1) {
+                    // Check if this rectangle is a subset of any existing rectangle
+                    boolean isSubset = false;
+                    for (NavRectCell existing : list) {
+                        if (startX >= existing.minX && maxX <= existing.maxX &&
+                                startZ >= existing.minZ && maxZ <= existing.maxZ) {
+                            isSubset = true;
+                            break;
+                        }
+                    }
+
+                    if (!isSubset) {
+                        var cell = new NavRectCell();
+                        cell.minX = (byte) startX;
+                        cell.minZ = (byte) startZ;
+                        cell.maxX = (byte) maxX;
+                        cell.maxZ = (byte) maxZ;
+                        list.add(cell);
+                    }
+                }
+            }
+        }
+
+        this.cellList = list;
+    }
+
     static void trap() {
         System.out.println("TRAP");
     }
@@ -289,5 +377,33 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
 
     static boolean canReachDistance(long dResult) {
         return dResult >= 0;
+    }
+
+    @Override
+    public void checkExtraPath(NavPathFinder finder, NavPathFinder.SearchNode node, EdgeConsumer edgeConsumer) {
+        int ix = node.x & 15;
+        int iz = node.z & 15;
+        var list = this.cellList;
+        //noinspection ForLoopReplaceableByForEach
+        for (int i = 0; i < list.size(); i++) {
+            var rect = list.get(i);
+            if (rect.isInRegion(ix, iz)) {
+                if (rect.markVisited(finder)) {
+                    int dis = getDistance(ix, iz, false);
+                    int y = getWalkY(ix, iz);
+                    for (int tx = rect.minX; tx <= rect.maxX; tx++) {
+                        for (int tz = rect.minZ; tz <= rect.maxZ; tz++) {
+                            if (tx == ix && tz == iz) {
+                                continue;
+                            }
+                            int dx = tx - ix;
+                            int dz = tz - iz;
+                            int finalDis = (int) (Math.round(Math.sqrt(dx * dx + dz * dz) * dis));
+                            edgeConsumer.acceptEdge(finalDis, tx, y, tz, this, null);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

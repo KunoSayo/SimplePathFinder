@@ -9,7 +9,6 @@ import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -17,6 +16,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,6 +37,7 @@ public class NavPathFinder {
         }
     }
 
+    public final HashSet<Object> visitedObjects = new HashSet<>();
     private final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
     private final LevelNavData levelNavData;
     private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
@@ -57,6 +58,14 @@ public class NavPathFinder {
         this.dimension = dimension;
         this.start = start;
         this.end = end;
+    }
+
+    public int getCacheIndex() {
+        return cacheIndex;
+    }
+
+    public int getCacheVisitCount() {
+        return CACHE_COUNT[cacheIndex];
     }
 
     private long getHeuristic(int tx, int ty, int tz) {
@@ -289,7 +298,7 @@ public class NavPathFinder {
             if (NavUtil.distManhattan(this.end, node.x, node.y, node.z) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            getEdge(node, (distance, tx, ty, tz, layer, type) -> {
+            EdgeConsumer edgeConsumer = (distance, tx, ty, tz, layer, type) -> {
                 long vKey = SearchedPos.toLong(layer.getLayer(), tx, tz);
                 SearchNode existingNode = visitedNodes.get(vKey);
 
@@ -312,7 +321,9 @@ public class NavPathFinder {
                     existingNode.lastNode = node;
                     searchNodes.decreaseKey(existingNode);
                 }
-            });
+            };
+            getEdge(node, edgeConsumer);
+            node.layer.checkExtraPath(this, node, edgeConsumer);
         }
         return Optional.empty();
     }

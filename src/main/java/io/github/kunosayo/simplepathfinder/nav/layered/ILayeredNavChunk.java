@@ -2,6 +2,8 @@ package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
+import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
+import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 
@@ -146,4 +148,6 @@ public interface ILayeredNavChunk {
     }
 
     boolean markVisited(int cacheIndex, int cnt, int tx, int tz);
+
+    default void checkExtraPath(NavPathFinder finder, NavPathFinder.SearchNode node, EdgeConsumer edgeConsumer) {}
 }
