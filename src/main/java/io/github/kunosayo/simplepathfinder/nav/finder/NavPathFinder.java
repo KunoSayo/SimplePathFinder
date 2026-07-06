@@ -27,6 +27,14 @@ public class NavPathFinder implements EdgeConsumer {
     public static final int NULL_POS = Integer.MIN_VALUE + 9;
     private static final AtomicBoolean[] USING_CACHE_VISIT;
     private static final int[] CACHE_COUNT = new int[VISIT_CACHE_SIZE];
+    public static final ArrayList<List<SearchNode>> VISIT_NODE_CACHE = new ArrayList<>();
+
+    static {
+        for (int i = 0; i < VISIT_CACHE_SIZE; i++) {
+            VISIT_NODE_CACHE.add(new ArrayList<>());
+        }
+    }
+
 
     static {
         USING_CACHE_VISIT = new AtomicBoolean[VISIT_CACHE_SIZE];
@@ -38,7 +46,6 @@ public class NavPathFinder implements EdgeConsumer {
     public final HashSet<Object> visitedObjects = new HashSet<>();
     public final IdentityHashMap<Object, Object> extraFinderData = new IdentityHashMap<>();
     public final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
-    public final ArrayList<SearchNode> visitedNodesByArr = new ArrayList<>(1024);
     private final LevelNavData levelNavData;
     private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
     private SearchNode currentSearchingNode = null;
@@ -96,6 +103,9 @@ public class NavPathFinder implements EdgeConsumer {
     }
 
     private void init() {
+        if (this.cacheIndex != -1) {
+            VISIT_NODE_CACHE.get(this.cacheIndex).clear();
+        }
         var startChunk = ChunkPos.containing(start);
         levelNavData.getNavChunk(startChunk, false)
                 .map(navChunk -> navChunk.getLayerNav(start))
@@ -324,6 +334,7 @@ public class NavPathFinder implements EdgeConsumer {
         } finally {
             if (this.cacheIndex != -1) {
                 USING_CACHE_VISIT[this.cacheIndex].set(false);
+                VISIT_NODE_CACHE.get(this.cacheIndex).clear();
             }
         }
     }
