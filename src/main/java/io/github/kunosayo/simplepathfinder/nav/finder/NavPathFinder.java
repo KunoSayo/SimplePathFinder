@@ -76,11 +76,14 @@ public class NavPathFinder {
     }
 
     private long getHeuristic(int tx, int ty, int tz) {
-        long horizontal = Math.abs(tx - end.getX()) + Math.abs(tz - end.getZ());
-        long vertical = Math.abs(ty - end.getY());
+        long dx = Math.abs(tx - end.getX());
+        long dz = Math.abs(tz - end.getZ());
+        long dy = Math.abs(ty - end.getY());
+        long horizontal = 10L * Math.max(dx, dz) + 5L * Math.min(dx, dz);
+        long vertical = 10L * dy;
 
         // TODO: 10L
-        long h = Math.max(horizontal, vertical) * 10L;
+        long h = Math.max(horizontal, vertical);
 
         if (HEURISTIC_WEIGHT_PERCENT == 100L) {
             long dx1 = tx - end.getX();
