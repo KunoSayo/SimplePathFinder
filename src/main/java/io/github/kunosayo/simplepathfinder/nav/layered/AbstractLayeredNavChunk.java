@@ -36,7 +36,7 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
             if (ref == null) {
                 return null;
             }
-            return ref;
+            return ref.get();
         }
         return null;
     }
