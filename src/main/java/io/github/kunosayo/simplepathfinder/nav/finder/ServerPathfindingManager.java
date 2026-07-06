@@ -50,7 +50,7 @@ public class ServerPathfindingManager {
                 MAX_CONCURRENT_EXECUTION,
                 threads,
                 60L, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(),
+                new ArrayBlockingQueue<>(MAX_QUEUED_REQUESTS),
                 r -> {
                     Thread t = new Thread(r, "Pathfinding-Worker");
                     t.setDaemon(true);
@@ -90,9 +90,9 @@ public class ServerPathfindingManager {
         if (!taskQueue.offer(task)) {
             // Failed to add to queue (shouldn't happen with LinkedBlockingQueue, but just in case)
             PacketDistributor.sendToPlayer(player, new PathfindingResultPacket("simple_path_finder.nav.already_pathfinding"));
+            queuePlayer.remove(player.getUUID());
             return false;
         }
-        queuePlayer.remove(player.getUUID());
 
 
         // Try to process the queue
