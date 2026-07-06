@@ -254,7 +254,12 @@ public class NavPathFinder implements EdgeConsumer {
 
         queue.enqueue(startKey);
         SearchedPos.markVisited(this, visited, startLayerOpt.get(), start);
-
+        EdgeConsumer edgeConsumer = (_, tx, _, tz, layerChunk, _) -> {
+            if (SearchedPos.markVisited(this, visited, layerChunk, tx, tz)) {
+                long nextKey = SearchedPos.toLong(layerChunk.getLayer(), tx, tz);
+                queue.enqueue(nextKey);
+            }
+        };
         while (!queue.isEmpty()) {
             long currentKey = queue.dequeueLong();
 
@@ -279,12 +284,7 @@ public class NavPathFinder implements EdgeConsumer {
 
             int y = currentLayer.getWalkY(cx & 15, cz & 15);
             if (!currentLayer.isWalkYValid(y)) continue;
-            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, (_, tx, _, tz, layerChunk, _) -> {
-                if (SearchedPos.markVisited(this, visited, layerChunk, tx, tz)) {
-                    long nextKey = SearchedPos.toLong(layerChunk.getLayer(), tx, tz);
-                    queue.enqueue(nextKey);
-                }
-            });
+            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, edgeConsumer);
         }
 
         return false;
