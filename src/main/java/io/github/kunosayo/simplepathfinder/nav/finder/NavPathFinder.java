@@ -106,32 +106,6 @@ public class NavPathFinder implements EdgeConsumer {
                     layeredNavChunk.putSearchNode(this, startNode);
                     searchNodes.push(startNode);
                 }));
-        if (searchNodes.isEmpty()) {
-            start = new BlockPos(start.getX(), start.getY() + 1, start.getZ());
-            levelNavData.getNavChunk(startChunk, false)
-                    .map(navChunk -> navChunk.getLayerNav(start))
-                    .ifPresent(layeredNavChunks -> layeredNavChunks.forEach(layeredNavChunk -> {
-                        long h = getHeuristic(start.getX(), start.getY(), start.getZ());
-                        long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                        SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
-                        layeredNavChunk.putSearchNode(this, startNode);
-                        searchNodes.push(startNode);
-                    }));
-        }
-
-        var endChunk = ChunkPos.containing(end);
-        levelNavData.getNavChunk(endChunk, false)
-                .map(navChunk -> navChunk.getLayerNav(end))
-                .flatMap(Stream::findAny)
-                .ifPresentOrElse(_ -> {
-                }, () -> {
-                    end = end.offset(0, 1, 0);
-                    levelNavData.getNavChunk(endChunk, false)
-                            .map(navChunk -> navChunk.getLayerNav(end))
-                            .flatMap(Stream::findAny)
-                            .ifPresentOrElse(_ -> {
-                            }, () -> end = end.offset(0, -2, 0));
-                });
     }
 
     private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, EdgeConsumer edgeInfoConsumer) {
@@ -290,14 +264,38 @@ public class NavPathFinder implements EdgeConsumer {
         return false;
     }
 
+    private void adjustStartEnd() {
+        var startChunk = ChunkPos.containing(start);
+        boolean isEmpty = levelNavData.getNavChunk(startChunk, false)
+                .map(navChunk -> navChunk.getLayerNav(start))
+                .isEmpty();
+        if (isEmpty) {
+            start = new BlockPos(start.getX(), start.getY() + 1, start.getZ());
+        }
+
+        var endChunk = ChunkPos.containing(end);
+        levelNavData.getNavChunk(endChunk, false)
+                .map(navChunk -> navChunk.getLayerNav(end))
+                .flatMap(Stream::findAny)
+                .ifPresentOrElse(_ -> {
+                }, () -> {
+                    end = end.offset(0, 1, 0);
+                    levelNavData.getNavChunk(endChunk, false)
+                            .map(navChunk -> navChunk.getLayerNav(end))
+                            .flatMap(Stream::findAny)
+                            .ifPresentOrElse(_ -> {
+                            }, () -> end = end.offset(0, -2, 0));
+                });
+    }
+
 
     private Optional<NavResult> _search() {
-        init();
-
+        adjustStartEnd();
         if (!checkConnectivity()) {
             return Optional.empty();
         }
-        addCacheCount(this.cacheIndex);
+        addCacheCount(this.cacheIndex, 1);
+        init();
 
 
         while (!searchNodes.isEmpty()) {
@@ -318,7 +316,7 @@ public class NavPathFinder implements EdgeConsumer {
         for (int i = 0; i < VISIT_CACHE_SIZE; i++) {
             if (USING_CACHE_VISIT[i].compareAndSet(false, true)) {
                 this.cacheIndex = i;
-                addCacheCount(i);
+                addCacheCount(i, 1);
                 break;
             }
         }
@@ -332,9 +330,9 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    private static void addCacheCount(int i) {
+    private static void addCacheCount(int i, int cnt) {
         if (i >= 0) {
-            CACHE_COUNT[i] += 1;
+            CACHE_COUNT[i] += cnt;
         }
     }
 
