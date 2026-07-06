@@ -145,8 +145,7 @@ public class NavPathFinder implements EdgeConsumer {
 
 
             // Get the nav chunk at destination
-            var destChunkPos = ChunkPos.containing(destPos);
-            var destNavChunkOpt = levelNavData.getNavChunk(destChunkPos, false);
+            var destNavChunkOpt = levelNavData.getNavChunk(destPos.getX() >> 4, destPos.getZ() >> 4, false);
             if (destNavChunkOpt.isEmpty()) {
                 continue;
             }
@@ -175,7 +174,7 @@ public class NavPathFinder implements EdgeConsumer {
             boolean isSame = NavUtil.isSameChunk(x, z, tx, tz);
             var thatChunk = navChunk;
             if (!isSame) {
-                Optional<INavChunk> thatChunkOpt = levelNavData.getNavChunk(NavUtil.containingChunkPos(tx, tz), false);
+                Optional<INavChunk> thatChunkOpt = levelNavData.getNavChunk(tx >> 4, tz >> 4, false);
                 if (thatChunkOpt.isEmpty()) {
                     continue;
                 }
@@ -248,11 +247,10 @@ public class NavPathFinder implements EdgeConsumer {
             if ((cz & 0x4000000) != 0) cz |= 0xF8000000;
             byte clayer = (byte) (currentKey >> 54);
 
-            ChunkPos ccp = new ChunkPos(cx >> 4, cz >> 4);
-            var currentChunkOpt = levelNavData.getNavChunk(ccp, false);
+            var currentChunkOpt = levelNavData.getNavChunk(cx >> 4, cz >> 4, false);
             if (currentChunkOpt.isEmpty()) continue;
             var currentChunk = currentChunkOpt.get();
-            var currentLayerOpt = levelNavData.getNavChunk(ccp, clayer);
+            var currentLayerOpt = levelNavData.getNavChunk(cx >> 4, cz >> 4, clayer);
             if (currentLayerOpt.isEmpty()) continue;
             var currentLayer = currentLayerOpt.get();
 

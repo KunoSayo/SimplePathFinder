@@ -11,6 +11,7 @@ import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.VarInt;
 import net.minecraft.network.chat.Component;
@@ -26,7 +27,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 record CachedData(@Nullable ByteBuf buf, int count) {
@@ -40,7 +40,11 @@ public class LevelNavData {
     public volatile int dirtyCount = 1;
     private final AtomicReference<CachedData> cachedBuf = new AtomicReference<>(new CachedData(null, 0));
     public static final StreamCodec<ByteBuf, LevelNavData> REAL_STREAM_CODEC = StreamCodec.composite(ByteBufCodecs.map(HashMap::new, CHUNK_POS_STREAM_CODEC, INavChunk.TYPED_NAV_CHUNK_CODEC),
-            levelNavData -> levelNavData.navChunks, LevelNavData::new);
+            levelNavData -> {
+                var map = new HashMap<ChunkPos, INavChunk>();
+                levelNavData.navChunks.forEach((aLong, iNavChunk) -> map.put(ChunkPos.unpack(aLong), iNavChunk));
+                return map;
+            }, LevelNavData::new);
 
     // Cached STREAM_CODEC for LevelNavData.
     public static final StreamCodec<ByteBuf, LevelNavData> STREAM_CODEC = StreamCodec.of((byteBuf, levelNavData) -> {
@@ -95,14 +99,17 @@ public class LevelNavData {
 
     public static final int CHUNK_AREA = 16 * 16;
 
-    private ConcurrentHashMap<ChunkPos, INavChunk> navChunks = new ConcurrentHashMap<>();
+    private Long2ObjectOpenHashMap<INavChunk> navChunks = new Long2ObjectOpenHashMap<>(65536, 0.25f);
 
     public LevelNavData() {
 
     }
 
     public LevelNavData(Map<ChunkPos, INavChunk> chunkPosHashMap) {
-        this.navChunks = new ConcurrentHashMap<>(chunkPosHashMap);
+        chunkPosHashMap.forEach((chunkPos, iNavChunk) -> {
+            navChunks.put(chunkPos.pack(), iNavChunk);
+            iNavChunk.setChunkPos(chunkPos);
+        });
     }
 
     static void trap() {
@@ -121,12 +128,47 @@ public class LevelNavData {
     public Optional<INavChunk> getNavChunk(ChunkPos pos, boolean create) {
         // checkBoundedAccess(pos, create);
         // When create is only attempted on the main thread, there's no trouble
-        return !create || (navChunks.size() >= NavConfig.NAV_CONFIG.getLeft().maxNavChunks.get()) ?
-                Optional.ofNullable(navChunks.get(pos)) : Optional.of(navChunks.computeIfAbsent(pos, NavChunk::new));
+
+        var chunk = navChunks.get(pos.pack());
+        if (!create || (navChunks.size() >= NavConfig.NAV_CONFIG.getLeft().maxNavChunks.get())) {
+            return Optional.ofNullable(chunk);
+        }
+        if (chunk == null) {
+            var map = new Long2ObjectOpenHashMap<>(this.navChunks);
+            chunk = new NavChunk(pos);
+            map.put(pos.pack(), chunk);
+            this.navChunks = map;
+        }
+
+        return Optional.of(chunk);
+    }
+
+    public Optional<INavChunk> getNavChunk(int cx, int cz, boolean create) {
+        // checkBoundedAccess(pos, create);
+        // When create is only attempted on the main thread, there's no trouble
+
+        long pos = ChunkPos.pack(cx, cz);
+        var chunk = navChunks.get(pos);
+        if (!create || (navChunks.size() >= NavConfig.NAV_CONFIG.getLeft().maxNavChunks.get())) {
+            return Optional.ofNullable(chunk);
+        }
+        if (chunk == null) {
+            var map = new Long2ObjectOpenHashMap<>(this.navChunks);
+            chunk = new NavChunk(ChunkPos.unpack(pos));
+            map.put(pos, chunk);
+            this.navChunks = map;
+        }
+
+        return Optional.of(chunk);
     }
 
     public Optional<ILayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
-        return Optional.ofNullable(navChunks.get(pos))
+        return Optional.ofNullable(navChunks.get(pos.pack()))
+                .flatMap(navChunk -> navChunk.getLayer(layer));
+    }
+
+    public Optional<ILayeredNavChunk> getNavChunk(int cx, int cz, int layer) {
+        return Optional.ofNullable(navChunks.get(ChunkPos.pack(cx, cz)))
                 .flatMap(navChunk -> navChunk.getLayer(layer));
     }
 
@@ -138,7 +180,7 @@ public class LevelNavData {
      * @return optional containing the nav chunk if it exists
      */
     public Optional<INavChunk> getNavChunkForSync(ChunkPos pos) {
-        return Optional.ofNullable(navChunks.get(pos));
+        return Optional.ofNullable(navChunks.get(pos.pack()));
     }
 
     /**
@@ -149,17 +191,15 @@ public class LevelNavData {
      * @param navChunk the navigation chunk to set, or null to remove
      */
     public void updateNavChunk(ChunkPos pos, @Nullable INavChunk navChunk) {
+        var navChunks = new Long2ObjectOpenHashMap<>(this.navChunks);
         if (navChunk == null) {
-            navChunks.remove(pos);
+            navChunks.remove(pos.pack());
         } else {
-            navChunks.put(pos, navChunk);
+            navChunks.put(pos.pack(), navChunk);
         }
+        this.navChunks = navChunks;
     }
 
-    public LevelNavData(HashMap<ChunkPos, INavChunk> navChunks) {
-        this.navChunks = new ConcurrentHashMap<>(navChunks);
-        navChunks.forEach((chunkPos, navChunk) -> navChunk.setChunkPos(chunkPos));
-    }
 
     private static BlockPos getGroundPos(Level level, BlockPos groundPos) {
         while (groundPos.getY() >= -64 && NavUtil.considerSafeCross(level, groundPos)) {
@@ -207,8 +247,7 @@ public class LevelNavData {
     }
 
     public Optional<NavResult> findNav(BlockPos from, BlockPos to) {
-        var startChunk = ChunkPos.containing(from);
-        var startNavChunk = this.navChunks.get(startChunk);
+        var startNavChunk = this.navChunks.get(ChunkPos.pack(from));
         if (startNavChunk == null) {
             return Optional.empty();
         }
