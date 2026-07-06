@@ -10,6 +10,7 @@ import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import io.github.kunosayo.simplepathfinder.network.SyncSingleChunkPacket;
+import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -30,6 +31,7 @@ import net.neoforged.neoforge.event.level.ChunkWatchEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -167,16 +169,42 @@ public final class SimplePathFinder {
     @SubscribeEvent
     public void onTrackChunk(ChunkWatchEvent.Sent event) {
         if (isServerSidePathfindingEnabled()) {
-            var data = LevelNavDataSavedData.loadFromLevel(event.getLevel());
-            data.levelNavData.getNavChunk(event.getPos(), false).ifPresent(iNavChunk -> {
-                var worldMap = playerGotNav.computeIfAbsent(event.getPlayer().getUUID(), (_) -> new HashMap<>());
-                var set = worldMap.computeIfAbsent(event.getLevel().dimension().identifier(), _ -> new HashSet<>());
-                if (set.add(event.getPos())) {
-                    var packet = new SyncSingleChunkPacket(event.getLevel().dimension().identifier(), event.getPos(), iNavChunk);
-                    PacketDistributor.sendToPlayer(event.getPlayer(), packet);
-                }
-            });
+            var player = event.getPlayer();
+            if (NavUtil.shouldShowNav(player.getMainHandItem())) {
+                var level = event.getLevel();
+                var pos = event.getPos();
+
+
+                trySyncSingleForPlayer(player, level, pos);
+            }
         }
+    }
+
+    @SubscribeEvent
+    public void onServerTick(PlayerTickEvent.Post event) {
+        if (isServerSidePathfindingEnabled()) {
+            if ((event.getEntity().tickCount & 0b111) == 0) {
+                if (event.getEntity() instanceof ServerPlayer sp) {
+                    if (NavUtil.shouldShowNav(event.getEntity().getMainHandItem())) {
+                        trySyncSingleForPlayer(sp, sp.level(), event.getEntity().chunkPosition());
+                    }
+                }
+            }
+
+        }
+    }
+
+    public static void trySyncSingleForPlayer(ServerPlayer player, ServerLevel level, ChunkPos pos) {
+        var data = LevelNavDataSavedData.loadFromLevel(level);
+
+        data.levelNavData.getNavChunk(pos, false).ifPresent(iNavChunk -> {
+            var worldMap = playerGotNav.computeIfAbsent(player.getUUID(), (_) -> new HashMap<>());
+            var set = worldMap.computeIfAbsent(level.dimension().identifier(), _ -> new HashSet<>());
+            if (set.add(pos)) {
+                var packet = new SyncSingleChunkPacket(level.dimension().identifier(), pos, iNavChunk);
+                PacketDistributor.sendToPlayer(player, packet);
+            }
+        });
     }
 
 

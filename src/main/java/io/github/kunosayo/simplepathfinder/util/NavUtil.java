@@ -1,8 +1,10 @@
 package io.github.kunosayo.simplepathfinder.util;
 
+import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -46,6 +48,14 @@ public class NavUtil {
         int xd = Math.abs(pos.getX() - x);
         int yd = Math.abs(pos.getY() - y);
         int zd = Math.abs(pos.getZ() - z);
-        return (int)(xd + yd + zd);
+        return (int) (xd + yd + zd);
+    }
+
+    public static boolean shouldShowNav(ItemStack item) {
+        if (item == null) {
+            return false;
+        }
+        return item.is(ModItems.DEBUG_NAV) || item.is(ModItems.NAVIGATION);
+
     }
 }
