@@ -401,93 +401,54 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
                     if ((endChunkX == curChunkX && endChunkZ == curChunkZ) || (rect.maxZ == rect.minZ || rect.maxX == rect.minX)) {
                         for (int tx = rect.minX; tx <= rect.maxX; tx++) {
                             for (int tz = rect.minZ; tz <= rect.maxZ; tz++) {
-                                int idx = finder.getCacheIndex();
-                                if (idx != -1) {
-                                    int cnt = finder.getCacheVisitCount();
-                                    int pointIndex = convertToIndex(tx, tz);
-                                    if (this.extraVisited[idx][pointIndex] == cnt) {
-                                        continue;
-                                    }
-                                    this.extraVisited[idx][pointIndex] = cnt;
-                                } else {
-                                    var obj = finder.extraFinderData.computeIfAbsent(this, _ -> new HashSet<ChunkInnerPos>());
-                                    if (obj instanceof HashSet<?> s) {
-                                        //noinspection unchecked
-                                        if (!((HashSet<Object>) s).add(ChunkInnerPos.get(ix, iz))) {
-                                            continue;
-                                        }
-                                    }
-                                }
-                                if (tx == ix && tz == iz) {
-                                    continue;
-                                }
-                                int dx = tx - ix;
-                                int dz = tz - iz;
-                                int finalDis = Math.max(Math.abs(dx), Math.abs(dz)) * dis;
-                                edgeConsumer.acceptEdge(finalDis, dx + node.x, y, dz + node.z, this, NavLinkType.NORMAL);
+                                checkExtraPoint(finder, node, edgeConsumer, tx, tz, ix, iz, dis, y);
                             }
                         }
                     } else {
                         for (int tx = rect.minX; tx <= rect.maxX; tx++) {
                             for (int tz = rect.minZ; tz <= rect.maxZ; tz += rect.maxZ - rect.minZ) {
-                                int idx = finder.getCacheIndex();
-                                if (idx != -1) {
-                                    int cnt = finder.getCacheVisitCount();
-                                    int pointIndex = convertToIndex(tx, tz);
-                                    if (this.extraVisited[idx][pointIndex] == cnt) {
-                                        continue;
-                                    }
-                                    this.extraVisited[idx][pointIndex] = cnt;
-                                } else {
-                                    var obj = finder.extraFinderData.computeIfAbsent(this, _ -> new HashSet<ChunkInnerPos>());
-                                    if (obj instanceof HashSet<?> s) {
-                                        //noinspection unchecked
-                                        if (!((HashSet<Object>) s).add(ChunkInnerPos.get(ix, iz))) {
-                                            continue;
-                                        }
-                                    }
-                                }
-                                if (tx == ix && tz == iz) {
-                                    continue;
-                                }
-                                int dx = tx - ix;
-                                int dz = tz - iz;
-                                int finalDis = Math.max(Math.abs(dx), Math.abs(dz)) * dis;
-                                edgeConsumer.acceptEdge(finalDis, dx + node.x, y, dz + node.z, this, NavLinkType.NORMAL);
+                                checkExtraPoint(finder, node, edgeConsumer, tx, tz, ix, iz, dis, y);
                             }
                         }
 
                         for (int tx = rect.minX; tx <= rect.maxX; tx += rect.maxX - rect.minX) {
                             for (int tz = rect.minZ; tz <= rect.maxZ; tz++) {
-                                int idx = finder.getCacheIndex();
-                                if (idx != -1) {
-                                    int cnt = finder.getCacheVisitCount();
-                                    int pointIndex = convertToIndex(tx, tz);
-                                    if (this.extraVisited[idx][pointIndex] == cnt) {
-                                        continue;
-                                    }
-                                    this.extraVisited[idx][pointIndex] = cnt;
-                                } else {
-                                    var obj = finder.extraFinderData.computeIfAbsent(this, _ -> new HashSet<ChunkInnerPos>());
-                                    if (obj instanceof HashSet<?> s) {
-                                        //noinspection unchecked
-                                        if (!((HashSet<Object>) s).add(ChunkInnerPos.get(ix, iz))) {
-                                            continue;
-                                        }
-                                    }
-                                }
-                                if (tx == ix && tz == iz) {
-                                    continue;
-                                }
-                                int dx = tx - ix;
-                                int dz = tz - iz;
-                                int finalDis = Math.max(Math.abs(dx), Math.abs(dz)) * dis;
-                                edgeConsumer.acceptEdge(finalDis, dx + node.x, y, dz + node.z, this, NavLinkType.NORMAL);
+                                checkExtraPoint(finder, node, edgeConsumer, tx, tz, ix, iz, dis, y);
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    private void checkExtraPoint(NavPathFinder finder, NavPathFinder.SearchNode node, EdgeConsumer edgeConsumer, int tx, int tz, int ix, int iz, int dis, int y) {
+        int idx = finder.getCacheIndex();
+        if (idx != -1) {
+            int cnt = finder.getCacheVisitCount();
+            int pointIndex = convertToIndex(tx, tz);
+            if (this.extraVisited[idx][pointIndex] == cnt) {
+                return;
+            }
+            this.extraVisited[idx][pointIndex] = cnt;
+        } else {
+            var obj = finder.extraFinderData.computeIfAbsent(this, _ -> new HashSet<ChunkInnerPos>());
+            if (obj instanceof HashSet<?> s) {
+                //noinspection unchecked
+                if (!((HashSet<Object>) s).add(ChunkInnerPos.get(ix, iz))) {
+                    return;
+                }
+            }
+        }
+        if (tx == ix && tz == iz) {
+            return;
+        }
+        int dx = tx - ix;
+        int dz = tz - iz;
+        if (Math.abs(dx) + Math.abs(dz) <= 1) {
+            return;
+        }
+        int finalDis = Math.max(Math.abs(dx), Math.abs(dz)) * dis;
+        edgeConsumer.acceptEdge(finalDis, dx + node.x, y, dz + node.z, this, NavLinkType.NORMAL);
     }
 }
