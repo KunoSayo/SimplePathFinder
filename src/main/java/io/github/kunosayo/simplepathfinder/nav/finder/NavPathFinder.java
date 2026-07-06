@@ -10,7 +10,6 @@ import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
@@ -24,10 +23,10 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-public class NavPathFinder {
+public class NavPathFinder implements EdgeConsumer {
     // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
     public static final long HEURISTIC_WEIGHT_PERCENT = 110L;
-    public static final int VISIT_CACHE_SIZE = 3;
+    public static final int VISIT_CACHE_SIZE = 2;
     public static final int NULL_POS = Integer.MIN_VALUE + 9;
     private static final AtomicBoolean[] USING_CACHE_VISIT;
     private static final int[] CACHE_COUNT = new int[VISIT_CACHE_SIZE];
@@ -41,9 +40,10 @@ public class NavPathFinder {
 
     public final HashSet<Object> visitedObjects = new HashSet<>();
     public final IdentityHashMap<Object, Object> extraFinderData = new IdentityHashMap<>();
-    private final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
+    public final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
     private final LevelNavData levelNavData;
     private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
+    private SearchNode currentSearchingNode = null;
     private BlockPos start;
     private BlockPos end;
     private final ResourceKey<Level> dimension;
@@ -294,46 +294,25 @@ public class NavPathFinder {
         return false;
     }
 
+
     private Optional<NavResult> _search() {
         init();
 
         if (!checkConnectivity()) {
             return Optional.empty();
         }
+        addCacheCount(this.cacheIndex);
 
 
         while (!searchNodes.isEmpty()) {
             var node = searchNodes.pop();
+            currentSearchingNode = node;
 
             if (NavUtil.distManhattan(this.end, node.x, node.y, node.z) <= 1) {
                 return Optional.of(new NavResult(node, this.end));
             }
-            EdgeConsumer edgeConsumer = (distance, tx, ty, tz, layer, type) -> {
-                long vKey = SearchedPos.toLong(layer.getLayer(), tx, tz);
-                SearchNode existingNode = visitedNodes.get(vKey);
-
-                if (existingNode != null && existingNode.heapIndex == -2) {
-                    return;
-                }
-
-                long extraCost = node.getExtraCost(tx, ty, tz);
-                long new_g = extraCost + distance + node.cost;
-
-                if (existingNode == null) {
-                    long h = getHeuristic(tx, ty, tz);
-                    long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node, type);
-                    visitedNodes.put(vKey, targetNode);
-                    searchNodes.push(targetNode);
-                } else if (new_g < existingNode.cost) {
-                    existingNode.cost = new_g;
-                    existingNode.priority = new_g + (existingNode.hValue * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    existingNode.lastNode = node;
-                    searchNodes.decreaseKey(existingNode);
-                }
-            };
-            getEdge(node, edgeConsumer);
-            node.layer.checkExtraPath(this, node, edgeConsumer);
+            getEdge(node, this);
+            node.layer.checkExtraPath(this, node, this);
         }
         return Optional.empty();
     }
@@ -343,7 +322,7 @@ public class NavPathFinder {
         for (int i = 0; i < VISIT_CACHE_SIZE; i++) {
             if (USING_CACHE_VISIT[i].compareAndSet(false, true)) {
                 this.cacheIndex = i;
-                CACHE_COUNT[i] += 1;
+                addCacheCount(i);
                 break;
             }
         }
@@ -354,6 +333,38 @@ public class NavPathFinder {
             if (this.cacheIndex != -1) {
                 USING_CACHE_VISIT[this.cacheIndex].set(false);
             }
+        }
+    }
+
+    private static void addCacheCount(int i) {
+        if (i >= 0) {
+            CACHE_COUNT[i] += 1;
+        }
+    }
+
+    @Override
+    public void acceptEdge(int distance, int tx, int ty, int tz, ILayeredNavChunk layer, NavLinkType type) {
+        var node = currentSearchingNode;
+        SearchNode existingNode = layer.getSearchNode(this, tx, tz);
+
+        if (existingNode != null && existingNode.heapIndex == -2) {
+            return;
+        }
+
+        long extraCost = node.getExtraCost(tx, ty, tz);
+        long new_g = extraCost + distance + node.cost;
+
+        if (existingNode == null) {
+            long h = getHeuristic(tx, ty, tz);
+            long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
+            SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node, type);
+            layer.putSearchNode(this, targetNode);
+            searchNodes.push(targetNode);
+        } else if (new_g < existingNode.cost) {
+            existingNode.cost = new_g;
+            existingNode.priority = new_g + (existingNode.hValue * HEURISTIC_WEIGHT_PERCENT) / 100L;
+            existingNode.lastNode = node;
+            searchNodes.decreaseKey(existingNode);
         }
     }
 

@@ -8,7 +8,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.lang.ref.WeakReference;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,6 +38,7 @@ public class ServerPathfindingManager {
      * Queue for pending pathfinding requests with their submission time
      */
     private static final ConcurrentLinkedQueue<PathfindingTask> taskQueue;
+    private static final Map<UUID, Boolean> queuePlayer = new ConcurrentHashMap<>();
 
     private static final AtomicInteger executingCount = new AtomicInteger(0);
 
@@ -76,18 +79,21 @@ public class ServerPathfindingManager {
             return false;
         }
 
-        if (taskQueue.stream().anyMatch(pathfindingTask -> pathfindingTask.player().equals(player.getUUID()))) {
+        if (queuePlayer.containsKey(player.getUUID())) {
             PacketDistributor.sendToPlayer(player, new PathfindingResultPacket("simple_path_finder.nav.already_pathfinding"));
             return false;
         }
 
         // Create and add task to queue
         PathfindingTask task = new PathfindingTask(new WeakReference<>(player.level().getServer()), player.getUUID(), targetPos, targetDesc, config, System.currentTimeMillis());
+        queuePlayer.put(player.getUUID(), Boolean.TRUE);
         if (!taskQueue.offer(task)) {
             // Failed to add to queue (shouldn't happen with LinkedBlockingQueue, but just in case)
             PacketDistributor.sendToPlayer(player, new PathfindingResultPacket("simple_path_finder.nav.already_pathfinding"));
             return false;
         }
+        queuePlayer.remove(player.getUUID());
+
 
         // Try to process the queue
         tryProcessQueue();
@@ -107,6 +113,7 @@ public class ServerPathfindingManager {
                         task.run();
                     } finally {
                         executingCount.decrementAndGet();
+                        queuePlayer.remove(task.player());
                     }
                     tryProcessQueue();
                 });

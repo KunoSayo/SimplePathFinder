@@ -150,4 +150,14 @@ public interface ILayeredNavChunk {
     boolean markVisited(int cacheIndex, int cnt, int tx, int tz);
 
     default void checkExtraPath(NavPathFinder finder, NavPathFinder.SearchNode node, EdgeConsumer edgeConsumer) {}
+
+    default NavPathFinder.SearchNode getSearchNode(NavPathFinder finder, int tx, int tz) {
+        long vKey = NavPathFinder.SearchedPos.toLong(getLayer(), tx, tz);
+        return finder.visitedNodes.get(vKey);
+    }
+
+    default void putSearchNode(NavPathFinder finder, NavPathFinder.SearchNode node) {
+        long vKey = NavPathFinder.SearchedPos.toLong(getLayer(), node.x, node.z);
+        finder.visitedNodes.put(vKey, node);
+    }
 }
