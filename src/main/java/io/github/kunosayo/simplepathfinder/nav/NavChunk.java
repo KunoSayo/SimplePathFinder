@@ -165,8 +165,7 @@ public final class NavChunk implements INavChunk {
     public Optional<ILayeredNavChunk> getNearestLayer(int bx, int y, int bz) {
         var pos = ChunkInnerPos.getWithModulo(bx, bz);
         return layers.stream().filter(layeredNavChunk -> Math.abs(y - layeredNavChunk.getWalkY(pos.x, pos.z)) <= 1)
-                .findAny()
-                .map(layeredNavChunk -> (ILayeredNavChunk) layeredNavChunk);
+                .findAny();
     }
 
     public OptionalInt getNearestWalkY(int bx, int y, int bz) {
