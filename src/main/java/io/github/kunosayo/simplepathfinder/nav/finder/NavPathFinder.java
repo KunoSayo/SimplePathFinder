@@ -275,7 +275,7 @@ public class NavPathFinder implements EdgeConsumer {
     private void adjustStartEnd() {
         var startChunk = ChunkPos.containing(start);
         boolean isEmpty = levelNavData.getNavChunk(startChunk, false)
-                .map(navChunk -> navChunk.getLayerNav(start))
+                .flatMap(navChunk -> navChunk.getLayerNav(start).findAny())
                 .isEmpty();
         if (isEmpty) {
             start = new BlockPos(start.getX(), start.getY() + 1, start.getZ());
