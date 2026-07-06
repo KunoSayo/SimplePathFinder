@@ -2,9 +2,11 @@ package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 
+import java.lang.ref.WeakReference;
+
 public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
     private final int[][] visitedCache = new int[NavPathFinder.VISIT_CACHE_SIZE][256];
-    private final NavPathFinder.SearchNode[][] visitedSearchNode = new NavPathFinder.SearchNode[NavPathFinder.VISIT_CACHE_SIZE][256];
+    private final WeakReference<NavPathFinder.SearchNode>[][] visitedSearchNode = new WeakReference[NavPathFinder.VISIT_CACHE_SIZE][256];
 
 
     @Override
@@ -30,7 +32,11 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
         int cnt = finder.getCacheVisitCount();
         final int pointIdx = convertToIndex(tx & 15, tz & 15);
         if (visitedCache[idx][pointIdx] == cnt) {
-            return visitedSearchNode[idx][pointIdx];
+            var ref = visitedSearchNode[idx][pointIdx];
+            if (ref == null) {
+                return null;
+            }
+            return ref;
         }
         return null;
     }
@@ -44,6 +50,6 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
         }
         final int pointIdx = convertToIndex(node.x & 15, node.z & 15);
         visitedCache[idx][pointIdx] = finder.getCacheVisitCount();
-        visitedSearchNode[idx][pointIdx] = node;
+        visitedSearchNode[idx][pointIdx] = new WeakReference<>(node);
     }
 }
