@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public final class NavChunk implements INavChunk {
     private static final StreamCodec<ByteBuf, ILayeredNavChunk> TYPED_LAYERED_NAV_CHUNK_CODEC = StreamCodec.of((buffer, value) -> {
         if (value instanceof LayeredNavChunk layeredNavChunk) {
@@ -57,7 +58,7 @@ public final class NavChunk implements INavChunk {
             );
 
 
-    public List<ILayeredNavChunk> layers = new CopyOnWriteArrayList<>();
+    private List<ILayeredNavChunk> layers = new ArrayList<>();
     public ChunkPos chunkPos;
 
     /**
@@ -73,8 +74,10 @@ public final class NavChunk implements INavChunk {
     }
 
     private NavChunk(List<ILayeredNavChunk> layers, Map<ChunkInnerPos, List<NavLink>> navLinks) {
-        this.layers = new CopyOnWriteArrayList<>(layers);
-        for (ILayeredNavChunk layer : this.layers) {
+        this.layers = new ArrayList<>(layers);
+        List<ILayeredNavChunk> iLayeredNavChunks = this.layers;
+        for (int i = 0; i < iLayeredNavChunks.size(); i++) {
+            ILayeredNavChunk layer = iLayeredNavChunks.get(i);
             layer.setParentChunk(this);
         }
         this.navLinks.putAll(navLinks);
@@ -92,7 +95,9 @@ public final class NavChunk implements INavChunk {
 
     @Override
     public Optional<ILayeredNavChunk> getLayer(int layer, Supplier<LayeredNavChunk> supplier) {
-        for (ILayeredNavChunk layerChunk : layers) {
+        var layers = this.layers;
+        for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
+            ILayeredNavChunk layerChunk = layers.get(i);
             if (layerChunk.getLayer() == layer) {
                 return Optional.of(layerChunk);
             }
@@ -106,13 +111,17 @@ public final class NavChunk implements INavChunk {
         if (result == null) {
             return Optional.empty();
         }
+
         layers.add(supplier.get());
+        this.layers = layers;
         return Optional.of(layers.getLast());
     }
 
     @Override
     public Optional<ILayeredNavChunk> getLayer(int layer) {
-        for (ILayeredNavChunk layerChunk : layers) {
+        var layers = this.layers;
+        for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
+            ILayeredNavChunk layerChunk = layers.get(i);
             if (layerChunk.getLayer() == layer) {
                 return Optional.of(layerChunk);
             }
@@ -140,7 +149,9 @@ public final class NavChunk implements INavChunk {
     public void getEdgeForLayers(int x, int y, int z, int distance, EdgeConsumer edgeInfoConsumer) {
         int innerX = ChunkInnerPos.getInnerPos(x);
         int innerZ = ChunkInnerPos.getInnerPos(z);
-        for (ILayeredNavChunk layer : this.layers) {
+        List<ILayeredNavChunk> iLayeredNavChunks = this.layers;
+        for (int i = 0, iLayeredNavChunksSize = iLayeredNavChunks.size(); i < iLayeredNavChunksSize; i++) {
+            ILayeredNavChunk layer = iLayeredNavChunks.get(i);
             final int wy = layer.getWalkY(innerX, innerZ);
             final int delta = y - wy;
             if (Math.abs(delta) <= 1) {
@@ -167,7 +178,9 @@ public final class NavChunk implements INavChunk {
 
     public int getDistance(int x, int y, int z, boolean isZ) {
         var inner = ChunkInnerPos.getWithModulo(x, z);
-        for (ILayeredNavChunk layeredNavChunk : layers) {
+        var layers = this.layers;
+        for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
+            ILayeredNavChunk layeredNavChunk = layers.get(i);
             final int delta = (layeredNavChunk.getWalkY(inner.x, inner.z) - y);
             if (-1 <= delta && delta <= 1) {
                 // we checked for the walk y is checked.
@@ -180,7 +193,9 @@ public final class NavChunk implements INavChunk {
     @Override
     public void removeNavChunk(ILayeredNavChunk layeredNavChunk) {
         if (layeredNavChunk instanceof LayeredNavChunk) {
-            this.layers.remove(layeredNavChunk);
+            var layers = new ArrayList<>(this.layers);
+            layers.remove(layeredNavChunk);
+            this.layers = layers;
         }
     }
 
@@ -201,7 +216,7 @@ public final class NavChunk implements INavChunk {
 
     @Override
     public void addNavLink(ChunkInnerPos from, NavLink link) {
-        navLinks.computeIfAbsent(from, k -> new ArrayList<>()).add(link);
+        navLinks.computeIfAbsent(from, _ -> new ArrayList<>()).add(link);
     }
 
     @Override

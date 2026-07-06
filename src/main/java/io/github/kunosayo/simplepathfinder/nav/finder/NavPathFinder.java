@@ -16,10 +16,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -41,6 +38,7 @@ public class NavPathFinder implements EdgeConsumer {
     public final HashSet<Object> visitedObjects = new HashSet<>();
     public final IdentityHashMap<Object, Object> extraFinderData = new IdentityHashMap<>();
     public final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
+    public final ArrayList<SearchNode> visitedNodesByArr = new ArrayList<>(1024);
     private final LevelNavData levelNavData;
     private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
     private SearchNode currentSearchingNode = null;
@@ -105,8 +103,7 @@ public class NavPathFinder implements EdgeConsumer {
                     long h = getHeuristic(start.getX(), start.getY(), start.getZ());
                     long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
                     SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
-                    long startKey = SearchedPos.toLong(layeredNavChunk.getLayer(), start);
-                    visitedNodes.put(startKey, startNode);
+                    layeredNavChunk.putSearchNode(this, startNode);
                     searchNodes.push(startNode);
                 }));
         if (visitedNodes.isEmpty()) {
@@ -117,8 +114,7 @@ public class NavPathFinder implements EdgeConsumer {
                         long h = getHeuristic(start.getX(), start.getY(), start.getZ());
                         long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
                         SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
-                        long startKey = SearchedPos.toLong(layeredNavChunk.getLayer(), start);
-                        visitedNodes.put(startKey, startNode);
+                        layeredNavChunk.putSearchNode(this, startNode);
                         searchNodes.push(startNode);
                     }));
         }

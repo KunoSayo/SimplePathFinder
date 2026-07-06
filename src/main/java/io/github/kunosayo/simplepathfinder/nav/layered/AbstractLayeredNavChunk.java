@@ -6,7 +6,7 @@ import java.lang.ref.WeakReference;
 
 public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
     private final int[][] visitedCache = new int[NavPathFinder.VISIT_CACHE_SIZE][256];
-    private final WeakReference<NavPathFinder.SearchNode>[][] visitedSearchNode = new WeakReference[NavPathFinder.VISIT_CACHE_SIZE][256];
+    private final int[][] visitedSearchNode = new int[NavPathFinder.VISIT_CACHE_SIZE][256];
 
 
     @Override
@@ -32,11 +32,7 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
         int cnt = finder.getCacheVisitCount();
         final int pointIdx = convertToIndex(tx & 15, tz & 15);
         if (visitedCache[idx][pointIdx] == cnt) {
-            var ref = visitedSearchNode[idx][pointIdx];
-            if (ref == null) {
-                return null;
-            }
-            return ref.get();
+            return finder.visitedNodesByArr.get(visitedSearchNode[idx][pointIdx]);
         }
         return null;
     }
@@ -50,6 +46,8 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
         }
         final int pointIdx = convertToIndex(node.x & 15, node.z & 15);
         visitedCache[idx][pointIdx] = finder.getCacheVisitCount();
-        visitedSearchNode[idx][pointIdx] = new WeakReference<>(node);
+        int len = finder.visitedNodesByArr.size();
+        finder.visitedNodesByArr.add(node);
+        visitedSearchNode[idx][pointIdx] = len;
     }
 }
