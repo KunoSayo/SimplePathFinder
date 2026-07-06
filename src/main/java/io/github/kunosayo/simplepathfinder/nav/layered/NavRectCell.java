@@ -1,10 +1,8 @@
 package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.nav.finder.CachedVisitObject;
-import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 
 public class NavRectCell extends CachedVisitObject {
-    int[] visited = new int[NavPathFinder.VISIT_CACHE_SIZE];
     byte minX;
     byte minZ;
     byte maxX;
