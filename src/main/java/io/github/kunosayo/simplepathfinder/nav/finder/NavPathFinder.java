@@ -106,7 +106,7 @@ public class NavPathFinder implements EdgeConsumer {
                     layeredNavChunk.putSearchNode(this, startNode);
                     searchNodes.push(startNode);
                 }));
-        if (visitedNodes.isEmpty()) {
+        if (searchNodes.isEmpty()) {
             start = new BlockPos(start.getX(), start.getY() + 1, start.getZ());
             levelNavData.getNavChunk(startChunk, false)
                     .map(navChunk -> navChunk.getLayerNav(start))
