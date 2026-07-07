@@ -117,16 +117,14 @@ public class NavPathFinder implements EdgeConsumer {
                 }));
     }
 
-    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, int lastDistance, EdgeConsumer edgeInfoConsumer) {
-        // the y of b should be the same as a
-        int distance = getDistance(navChunk, bNavChunk, ax, az, bx, bz, y);
-        if (distance < 0) {
+    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, int currentDistance, int lastDistance, EdgeConsumer edgeInfoConsumer) {
+        if (currentDistance < 0) {
             return;
         }
-        if (distance > lastDistance) {
-            distance += (distance - lastDistance) * 20;
+        if (currentDistance > lastDistance) {
+            currentDistance += (currentDistance - lastDistance) * 20;
         }
-        bNavChunk.getEdgeForLayers(bx, y, bz, distance, edgeInfoConsumer);
+        bNavChunk.getEdgeForLayers(bx, y, bz, currentDistance, edgeInfoConsumer);
     }
 
     private int getDistance(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y) {
@@ -193,7 +191,8 @@ public class NavPathFinder implements EdgeConsumer {
                 thatChunk = thatChunkOpt.get();
             }
 
-            getEdge(navChunk, thatChunk, x, z, tx, tz, y, lastDistance, edgeInfoConsumer);
+            int distance = getDistance(navChunk, thatChunk, x, z, tx, tz, y);
+            getEdge(navChunk, thatChunk, x, z, tx, tz, y, distance, lastDistance, edgeInfoConsumer);
 
             for (int j = 1; j >= -1; j -= 2) {
                 //反转 xz，并乘+-1，获取共轭向量
@@ -209,8 +208,8 @@ public class NavPathFinder implements EdgeConsumer {
                     }
                     diagChunk = thatChunkOpt.get();
                 }
-
-                getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, lastDistance, edgeInfoConsumer);
+                int distance2 = getDistance(thatChunk, diagChunk, tx, tz, diagX, diagZ, y);
+                getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, (int) ((distance2 + distance) * 0.7), lastDistance, edgeInfoConsumer);
             }
         }
     }
