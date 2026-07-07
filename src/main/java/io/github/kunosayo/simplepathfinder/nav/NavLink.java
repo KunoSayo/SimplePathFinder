@@ -1,8 +1,8 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.codec.StreamCodec;
 
@@ -11,27 +11,44 @@ import net.minecraft.network.codec.StreamCodec;
  * Links allow the pathfinder to connect positions that may not be directly adjacent,
  * such as teleporters, vehicles, or other travel methods.
  */
-public record NavLink(GlobalPos dest, NavLinkType type) {
-    /**
-     * Codec for serialization
-     */
-    public static final Codec<NavLink> CODEC = RecordCodecBuilder.create(
-            instance -> instance.group(
-                    GlobalPos.CODEC.fieldOf("dest").forGetter(NavLink::dest),
-                    NavLinkType.CODEC.fieldOf("type").forGetter(NavLink::type)
-            ).apply(instance, NavLink::new)
-    );
+public record NavLink(BlockPos dest, NavLinkType type) {
 
+    private static final StreamCodec<ByteBuf, NavLink> STREAM_CODEC_V1 = StreamCodec.composite(
+            GlobalPos.STREAM_CODEC,
+            _ -> {
+                throw new UnsupportedOperationException();
+            },
+            NavLinkType.STREAM_CODEC,
+            NavLink::type,
+            (d, p) -> {
+                if (d.dimension().identifier().getPath().trim().isEmpty()) {
+                    throw new UnsupportedOperationException();
+                }
+                return new NavLink(d.pos(), p);
+            }
+
+    );
     /**
      * Stream codec for network serialization
      */
-    public static final StreamCodec<ByteBuf, NavLink> STREAM_CODEC = StreamCodec.composite(
-            GlobalPos.STREAM_CODEC,
+    private static final StreamCodec<ByteBuf, NavLink> CURRENT_STREAM_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC,
             NavLink::dest,
             NavLinkType.STREAM_CODEC,
             NavLink::type,
             NavLink::new
     );
+
+    public static final StreamCodec<ByteBuf, NavLink> STREAM_CODEC = StreamCodec.of(CURRENT_STREAM_CODEC, byteBuf -> {
+        int reader = byteBuf.readerIndex();
+        try {
+            return STREAM_CODEC_V1.decode(byteBuf);
+        } catch (Throwable t) {
+            SimplePathFinder.LOGGER.warn(t);
+        }
+        byteBuf.readerIndex(reader);
+        return CURRENT_STREAM_CODEC.decode(byteBuf);
+    });
 
     public NavLink {
     }
@@ -40,27 +57,27 @@ public record NavLink(GlobalPos dest, NavLinkType type) {
      * Create a normal walking link
      */
     public static NavLink normal(GlobalPos dest) {
-        return new NavLink(dest, NavLinkType.NORMAL);
+        return new NavLink(dest.pos(), NavLinkType.NORMAL);
     }
 
     /**
      * Create a teleport link
      */
     public static NavLink teleport(GlobalPos dest) {
-        return new NavLink(dest, NavLinkType.TELEPORT);
+        return new NavLink(dest.pos(), NavLinkType.TELEPORT);
     }
 
     /**
      * Create a vehicle link
      */
     public static NavLink vehicle(GlobalPos dest) {
-        return new NavLink(dest, NavLinkType.VEHICLE);
+        return new NavLink(dest.pos(), NavLinkType.VEHICLE);
     }
 
     /**
      * Create a link in the current dimension
      */
     public static NavLink of(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos, NavLinkType type) {
-        return new NavLink(GlobalPos.of(level.dimension(), pos), type);
+        return new NavLink(pos, type);
     }
 }

@@ -1,4 +1,5 @@
 {
+  "block.simple_path_finder.navigation_barrier": "导航屏障",
   "block.simple_path_finder.path_finder_block": "路径查找方块",
   "block.simple_path_finder.path_finder_block.already_has_data": "方块已有数据，无法写入",
   "block.simple_path_finder.path_finder_block.empty_locator": "定位器为空，无法写入",
@@ -21,6 +22,9 @@
   "gui.simple_path_finder.navigation.block_distance_config": "方块距离配置",
   "gui.simple_path_finder.navigation.cancel": "取消",
   "gui.simple_path_finder.navigation.layer": "层级值:",
+  "gui.simple_path_finder.navigation.link_type.normal": "普通",
+  "gui.simple_path_finder.navigation.link_type.teleport": "传送",
+  "gui.simple_path_finder.navigation.link_type.vehicle": "载具",
   "gui.simple_path_finder.navigation.mode.add_link": "添加链接",
   "gui.simple_path_finder.navigation.mode.add_nav": "添加导航",
   "gui.simple_path_finder.navigation.mode.default": "默认",

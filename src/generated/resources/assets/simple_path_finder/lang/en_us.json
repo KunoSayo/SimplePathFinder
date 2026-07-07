@@ -1,4 +1,5 @@
 {
+  "block.simple_path_finder.navigation_barrier": "Navigation Barrier",
   "block.simple_path_finder.path_finder_block": "Path Finder Block",
   "block.simple_path_finder.path_finder_block.already_has_data": "Block already has data, cannot write",
   "block.simple_path_finder.path_finder_block.empty_locator": "Locator is empty, cannot write",
@@ -21,6 +22,9 @@
   "gui.simple_path_finder.navigation.block_distance_config": "Block Distance Config",
   "gui.simple_path_finder.navigation.cancel": "Cancel",
   "gui.simple_path_finder.navigation.layer": "Layer:",
+  "gui.simple_path_finder.navigation.link_type.normal": "Normal",
+  "gui.simple_path_finder.navigation.link_type.teleport": "Teleport",
+  "gui.simple_path_finder.navigation.link_type.vehicle": "Vehicle",
   "gui.simple_path_finder.navigation.mode.add_link": "Add Link",
   "gui.simple_path_finder.navigation.mode.add_nav": "Add Nav",
   "gui.simple_path_finder.navigation.mode.default": "Default",

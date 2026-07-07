@@ -155,18 +155,11 @@ public class NavPathFinder implements EdgeConsumer {
      * Get edges from navigation links at the current position.
      * This allows the pathfinder to consider teleports, vehicles, and other travel methods.
      */
-    private void getNavLinkEdges(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int z, EdgeConsumer edgeInfoConsumer) {
-        var chunkInnerPos = ChunkInnerPos.getWithModulo(x, z);
+    private void getNavLinkEdges(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int y, int z, EdgeConsumer edgeInfoConsumer) {
 
         // Get all nav links from this position
-        for (var navLink : navChunk.getNavLinks(chunkInnerPos)) {
-            var dest = navLink.dest();
-            var destPos = dest.pos();
-
-            // Skip if destination is in wrong dimension
-            if (dimension != null && !dest.dimension().equals(dimension)) {
-                continue;
-            }
+        for (var navLink : navChunk.getNavLinks(x, y, z)) {
+            var destPos = navLink.dest();
 
 
             // Get the nav chunk at destination
@@ -187,7 +180,7 @@ public class NavPathFinder implements EdgeConsumer {
 
     private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int ly, int lz, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
-        getNavLinkEdges(navChunk, layeredNavChunk, x, z, edgeInfoConsumer);
+        getNavLinkEdges(navChunk, layeredNavChunk, x, y, z, edgeInfoConsumer);
 
         // Then, get normal walking edges
         for (int i = 0; i < 4; i++) {

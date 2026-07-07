@@ -25,6 +25,7 @@ public class LevelNavDataSavedData extends SavedData {
                         SAVE_CODEC.encode(buffer, data.levelNavData);
                         var bytes = new byte[buffer.writerIndex()];
                         buffer.readBytes(bytes);
+                        buffer.release();
                         return ByteBuffer.wrap(bytes);
                     })
             ).apply(instance, byteBuffer -> {

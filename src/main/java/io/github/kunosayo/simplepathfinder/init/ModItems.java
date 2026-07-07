@@ -24,5 +24,6 @@ public class ModItems {
     ));
 
     public static DeferredItem<BlockItem> PATH_FINDER_BLOCK = ITEMS.registerSimpleBlockItem(ModBlocks.PATH_FINDER_BLOCK);
+    public static DeferredItem<BlockItem> NAVIGATION_BARRIER_BLOCK = ITEMS.registerSimpleBlockItem(ModBlocks.NAVIGATION_BARRIER_BLOCK);
 
 }

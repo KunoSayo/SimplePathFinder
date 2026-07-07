@@ -164,6 +164,7 @@ public class ItemModelGen extends ModelProvider {
         var bottomTexture = new Material(modLoc("block/path_finder_block_bottom"));
         var activeSideTexture = new Material(modLoc("block/path_finder_block"));
         var inactiveSideTexture = new Material(modLoc("block/path_finder_block_inactive"));
+        var blueNav = new Material(modLoc("block/navigation_barrier"));
 
         // 创建激活模型（有数据时）
         var activeTextureMapping = new TextureMapping()
@@ -204,10 +205,19 @@ public class ItemModelGen extends ModelProvider {
                         inactiveVariant
                 )));
 
+        blockModels.blockStateOutput.accept(BlockModelGenerators
+                .createSimpleBlock(ModBlocks.NAVIGATION_BARRIER_BLOCK.get(),
+                        BlockModelGenerators.plainVariant(ModelTemplates.CUBE_ALL
+                                .create(ModBlocks.NAVIGATION_BARRIER_BLOCK.get(), new TextureMapping()
+                                                .put(TextureSlot.ALL, blueNav)
+                                                .copySlot(TextureSlot.ALL, TextureSlot.PARTICLE),
+                                        blockModels.modelOutput))));
+
         // 生成物品模型 - 使用方块模型作为父模型（3D方块外观）
         // 方块物品应该显示为3D方块，而不是平面贴图
         var itemModelIdentifier = modLoc("block/path_finder_block_active");
         itemModels.itemModelOutput.accept(block.asItem(), ItemModelUtils.plainModel(itemModelIdentifier));
+        itemModels.itemModelOutput.accept(ModBlocks.NAVIGATION_BARRIER_BLOCK.asItem(), ItemModelUtils.plainModel(modLoc("block/navigation_barrier")));
     }
 
     private Identifier modLoc(String path) {

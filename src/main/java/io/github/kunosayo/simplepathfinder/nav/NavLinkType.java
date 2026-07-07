@@ -67,7 +67,12 @@ public enum NavLinkType {
     /**
      * Stream codec for network serialization
      */
-    public static final StreamCodec<ByteBuf, NavLinkType> STREAM_CODEC = ByteBufCodecs.idMapper(BY_ID, NavLinkType::getId);
+    public static final StreamCodec<ByteBuf, NavLinkType> STREAM_CODEC = ByteBufCodecs.idMapper(value -> {
+        if (value < 0 || value > 2) {
+            throw new UnsupportedOperationException();
+        }
+        return BY_ID.apply(value);
+    }, NavLinkType::getId);
 
     /**
      * Get NavLinkType from ID
