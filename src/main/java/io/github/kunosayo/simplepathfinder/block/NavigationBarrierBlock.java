@@ -40,8 +40,11 @@ public class NavigationBarrierBlock extends TransparentBlock {
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         // Check if any player is holding the barrier block item
         for (var player : level.players()) {
+            if (!player.isLocalPlayer()) {
+                return;
+            }
             if (player.getMainHandItem().is(ModItems.NAVIGATION_BARRIER_BLOCK.get()) ||
-                player.getOffhandItem().is(ModItems.NAVIGATION_BARRIER_BLOCK.get())) {
+                    player.getOffhandItem().is(ModItems.NAVIGATION_BARRIER_BLOCK.get())) {
 
                 // Spawn particle at the center of the block
                 double x = pos.getX() + 0.5;
