@@ -165,7 +165,7 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int ly, int lz, EdgeConsumer edgeInfoConsumer) {
+    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int ly, int lz, boolean skipDiag, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
         getNavLinkEdges(navChunk, layeredNavChunk, x, y, z, edgeInfoConsumer);
         Optional<INavChunk> navChunk1 = levelNavData.getNavChunk(lx >> 4, lz >> 4, false);
@@ -194,23 +194,24 @@ public class NavPathFinder implements EdgeConsumer {
             int distance = getDistance(navChunk, thatChunk, x, z, tx, tz, y);
             getEdge(navChunk, thatChunk, x, z, tx, tz, y, distance, lastDistance, edgeInfoConsumer);
 
-            for (int j = 1; j >= -1; j -= 2) {
-                //反转 xz，并乘+-1，获取共轭向量
-                int diagX = tx + LayeredNavChunk.SEARCH_DZ[i] * j;
-                int diagZ = tz + LayeredNavChunk.SEARCH_DX[i] * j;
+            if (!skipDiag)
+                for (int j = 1; j >= -1; j -= 2) {
+                    //反转 xz，并乘+-1，获取共轭向量
+                    int diagX = tx + LayeredNavChunk.SEARCH_DZ[i] * j;
+                    int diagZ = tz + LayeredNavChunk.SEARCH_DX[i] * j;
 
-                boolean isSameDiag = NavUtil.isSameChunk(tx, tz, diagX, diagZ);
-                var diagChunk = thatChunk;
-                if (!isSameDiag) {
-                    Optional<INavChunk> thatChunkOpt = levelNavData.getNavChunk(diagX >> 4, diagZ >> 4, false);
-                    if (thatChunkOpt.isEmpty()) {
-                        continue;
+                    boolean isSameDiag = NavUtil.isSameChunk(tx, tz, diagX, diagZ);
+                    var diagChunk = thatChunk;
+                    if (!isSameDiag) {
+                        Optional<INavChunk> thatChunkOpt = levelNavData.getNavChunk(diagX >> 4, diagZ >> 4, false);
+                        if (thatChunkOpt.isEmpty()) {
+                            continue;
+                        }
+                        diagChunk = thatChunkOpt.get();
                     }
-                    diagChunk = thatChunkOpt.get();
+                    int distance2 = getDistance(thatChunk, diagChunk, tx, tz, diagX, diagZ, y);
+                    getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, (int) ((distance2 + distance) * 0.7), lastDistance, edgeInfoConsumer);
                 }
-                int distance2 = getDistance(thatChunk, diagChunk, tx, tz, diagX, diagZ, y);
-                getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, (int) ((distance2 + distance) * 0.7), lastDistance, edgeInfoConsumer);
-            }
         }
     }
 
@@ -218,7 +219,7 @@ public class NavPathFinder implements EdgeConsumer {
         getEdge(node.layer.getParentChunk(), node.layer, node.x, node.y, node.z,
                 node.lastNode != null ? node.lastNode.x : Integer.MIN_VALUE + 9,
                 node.lastNode != null ? node.lastNode.y : Integer.MIN_VALUE + 9,
-                node.lastNode != null ? node.lastNode.z : Integer.MIN_VALUE + 9, edgeInfoConsumer);
+                node.lastNode != null ? node.lastNode.z : Integer.MIN_VALUE + 9, false, edgeInfoConsumer);
     }
 
     private boolean checkConnectivity() {
@@ -285,7 +286,7 @@ public class NavPathFinder implements EdgeConsumer {
 
             int y = currentLayer.getWalkY(cx & 15, cz & 15);
             if (!currentLayer.isWalkYValid(y)) continue;
-            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, edgeConsumer);
+            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, true, edgeConsumer);
         }
 
         return false;
