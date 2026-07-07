@@ -52,7 +52,7 @@ public class NavigationBarrierBlock extends TransparentBlock {
                 double z = pos.getZ() + 0.5;
 
                 var particleOption = new BlockParticleOption(ParticleTypes.BLOCK_MARKER, state);
-                level.addParticle(particleOption, x, y, z, 0.0, 0.0, 0.0);
+                level.addParticle(particleOption, true, true, x, y, z, 0.0, 0.0, 0.0);
                 break;
             }
         }
