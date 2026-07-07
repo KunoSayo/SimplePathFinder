@@ -118,6 +118,7 @@ public class LangGen {
 
         // 方块名称
         addBlock(ModBlocks.PATH_FINDER_BLOCK.get(), "路径查找方块", "Path Finder Block");
+        addBlock(ModBlocks.NAVIGATION_BARRIER_BLOCK.get(), "导航屏障", "Navigation Barrier");
 
         // 导航模式
         add("item.navigation_mode.default", "默认显示", "Default Display");

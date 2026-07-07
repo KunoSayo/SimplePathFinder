@@ -7,13 +7,12 @@ import io.github.kunosayo.simplepathfinder.client.event.NavigationRenderTriggerE
 import io.github.kunosayo.simplepathfinder.config.ClientConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
+import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.NavLink;
 import io.github.kunosayo.simplepathfinder.nav.finder.ModNavResult;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
-import io.github.kunosayo.simplepathfinder.nav.INavChunk;
-import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
-import io.github.kunosayo.simplepathfinder.nav.NavLink;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -215,24 +214,24 @@ public class NavRenderingSupport {
             }
 
 
-                Vec3 fromVec = new Vec3(
-                        chunkPos.getBlockX(fromPos.x) + 0.5,
-                        fromPos.y + 0.5,
-                        chunkPos.getBlockZ(fromPos.z) + 0.5
+            Vec3 fromVec = new Vec3(
+                    chunkPos.getBlockX(fromPos.x) + 0.5,
+                    fromPos.y + 0.5,
+                    chunkPos.getBlockZ(fromPos.z) + 0.5
+            );
+
+            // Draw an arrow for each link
+            for (NavLink link : links) {
+                var dest = link.dest();
+                // Only render links in the same dimension
+
+                Vec3 toVec = new Vec3(
+                        dest.getX() + 0.5,
+                        dest.getY() + 0.5,
+                        dest.getZ() + 0.5
                 );
-
-                // Draw an arrow for each link
-                for (NavLink link : links) {
-                    var dest = link.dest();
-                    // Only render links in the same dimension
-
-                    Vec3 toVec = new Vec3(
-                            dest.getX() + 0.5,
-                            dest.getY() + 0.5,
-                            dest.getZ() + 0.5
-                    );
-                    elements.add(new Arrow(fromVec, toVec, yellowColor, blueColor));
-                }
+                elements.add(new Arrow(fromVec, toVec, yellowColor, blueColor));
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.util;
 
+import io.github.kunosayo.simplepathfinder.block.NavigationBarrierBlock;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -15,6 +16,10 @@ public class NavUtil {
     }
 
     public static boolean isNoCollision(Level level, BlockPos pos, BlockState state) {
+        var block = state.getBlock();
+        if (block instanceof NavigationBarrierBlock) {
+            return false;
+        }
         return state.getCollisionShape(level, pos).isEmpty();
     }
 

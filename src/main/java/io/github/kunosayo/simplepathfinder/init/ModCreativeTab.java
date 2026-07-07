@@ -22,5 +22,6 @@ public class ModCreativeTab {
                 output.accept(ModItems.DEBUG_NAV);
                 // 方块
                 output.accept(new ItemStack(ModBlocks.PATH_FINDER_BLOCK.get(), 1));
+                output.accept(new ItemStack(ModBlocks.NAVIGATION_BARRIER_BLOCK.get(), 1));
             }).build());
 }
