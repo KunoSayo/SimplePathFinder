@@ -1,7 +1,6 @@
 package io.github.kunosayo.simplepathfinder.item;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
-import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.client.gui.NavigationScreen;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
@@ -10,7 +9,6 @@ import io.github.kunosayo.simplepathfinder.init.ModAttachments;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPosWithY;
-import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.network.UpdateItemPropertiesPacket;
 import net.minecraft.core.BlockPos;
@@ -50,7 +48,13 @@ public class NavigationItem extends Item {
     }
 
     @Override
-    public boolean canDestroyBlock(ItemStack itemStack, BlockState state, Level level, BlockPos pos, LivingEntity user) {
+    public boolean canDestroyBlock(@NonNull ItemStack itemStack, @NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull LivingEntity user) {
+        if (user instanceof ServerPlayer sp) {
+            var mode = getNavigationMode(itemStack);
+            if (mode == NavigationMode.ADD_LINK) {
+                handleRemoveNavLink(sp.level(), sp, itemStack, pos.above());
+            }
+        }
         return false;
     }
 
@@ -416,6 +420,40 @@ public class NavigationItem extends Item {
 
             return true;
         }
+    }
+
+
+    /**
+     * 处理添加导航链接逻辑
+     */
+    private void handleRemoveNavLink(ServerLevel level, ServerPlayer player, ItemStack stack, BlockPos clickedPos) {
+
+        // 第二步：创建从起始位置到当前位置的链接
+        var startChunkPos = ChunkPos.containing(clickedPos);
+        var data = LevelNavDataSavedData.loadFromLevel(level);
+
+        // 获取起始位置的导航区块
+        var navChunkOpt = data.levelNavData.getNavChunk(startChunkPos, false);
+        if (navChunkOpt.isEmpty()) {
+            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.link.no_start_nav"));
+            clearLinkCreationData(stack);
+            return;
+        }
+
+        var navChunk = navChunkOpt.get();
+        var chunkInnerPos = new ChunkInnerPosWithY((short) clickedPos.getY(), (byte) (clickedPos.getX() & 15), (byte) (clickedPos.getZ() & 15));
+
+        // 添加链接到导航区块
+        if (navChunk.removeNavLinks(chunkInnerPos)) {
+
+            // 清除起始位置数据
+            clearLinkCreationData(stack);
+
+            // 标记数据为脏并同步单个区块
+            data.setDirty();
+            SimplePathFinder.syncSingleChunk(level, startChunkPos);
+        }
+
     }
 
     /**

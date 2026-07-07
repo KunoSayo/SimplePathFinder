@@ -249,10 +249,14 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
-    public void removeNavLinks(ChunkInnerPosWithY pos) {
-        var map = new Int2ObjectOpenHashMap<>(this.navLinks);
-        map.remove(pos.pack());
-        this.navLinks = map;
+    public boolean removeNavLinks(ChunkInnerPosWithY pos) {
+        if (this.navLinks.containsKey(pos.pack())) {
+            var map = new Int2ObjectOpenHashMap<>(this.navLinks);
+            map.remove(pos.pack());
+            this.navLinks = map;
+            return true;
+        }
+        return false;
     }
 
     @Override

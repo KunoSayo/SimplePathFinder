@@ -179,7 +179,7 @@ public interface INavChunk {
      *
      * @param pos the position to remove links from
      */
-    void removeNavLinks(ChunkInnerPosWithY pos);
+    boolean removeNavLinks(ChunkInnerPosWithY pos);
 
     /**
      * Clear all navigation links
