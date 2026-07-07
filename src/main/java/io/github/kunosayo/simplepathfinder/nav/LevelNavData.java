@@ -17,6 +17,7 @@ import net.minecraft.network.VarInt;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -208,7 +209,7 @@ public class LevelNavData {
         return groundPos;
     }
 
-    public boolean buildForPlayer(Player player, byte layer) {
+    public boolean buildForPlayer(ServerPlayer player, byte layer) {
         var level = player.level();
         var groundPos = player.blockPosition();
 
@@ -237,7 +238,12 @@ public class LevelNavData {
                 }
                 chunk.setParentChunk(navChunk);
                 chunk.setLayer(layer);
-                chunk.parse(level, finalGroundPos.offset(0, 1, 0));
+
+                // Get player-specific block distance configuration
+                var distanceAttachment = player.getData(io.github.kunosayo.simplepathfinder.init.ModAttachments.PLAYER_BLOCK_DISTANCE.get());
+                var distanceData = distanceAttachment != null ? distanceAttachment.getData() : null;
+
+                chunk.parse(level, finalGroundPos.offset(0, 1, 0), distanceData);
                 player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.success"));
                 return true;
             }
@@ -300,7 +306,8 @@ public class LevelNavData {
         byte result = 0;
         if (pos != null) {
             final var groundPos = getGroundPos(level, pos);
-            result = layered.parse(level, groundPos.offset(0, 1, 0));
+            // Batch building uses null (global config)
+            result = layered.parse(level, groundPos.offset(0, 1, 0), null);
         }
         if (!chunk.isAnyValid()) {
             navChunk.removeNavChunk(chunk);
@@ -337,7 +344,13 @@ public class LevelNavData {
     }
 
     public boolean removeNavChunk(ChunkPos pos) {
-        return this.navChunks.remove(pos) != null;
+        if (this.navChunks.containsKey(pos.pack())) {
+            var navChunks = new Long2ObjectOpenHashMap<>(this.navChunks);
+            navChunks.remove(pos.pack());
+            this.navChunks = navChunks;
+            return true;
+        }
+        return false;
     }
 
     public boolean removeNavChunk(Player player) {

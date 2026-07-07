@@ -2,6 +2,7 @@ package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.codec.ArrayCodecs;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
+import io.github.kunosayo.simplepathfinder.data.PlayerBlockDistanceData;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
@@ -10,12 +11,15 @@ import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -146,23 +150,29 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
     }
 
 
-    private static int getDistanceResult(BlockState standBlock) {
-        var fluid = standBlock.getFluidState();
-        if (!fluid.isEmpty()) {
-            if (fluid.getType().isSame(Fluids.WATER) || fluid.getType().isSame(Fluids.FLOWING_WATER)) {
-                return 127;
-            } else if (fluid.getType().isSame(Fluids.LAVA) || fluid.getType().isSame(Fluids.FLOWING_LAVA)) {
-                return 12737;
-            }
-            return 30;
+    /**
+     * Get the distance cost for a block.
+     * Uses player-specific configuration if provided, otherwise falls back to global config.
+     *
+     * @param block        the block to get distance for
+     * @param distanceData the player-specific distance configuration, null to use global config
+     * @return the distance cost for this block
+     */
+    private static int getDistanceResult(Block block, @Nullable PlayerBlockDistanceData distanceData) {
+        // Try player-specific config first
+        if (distanceData != null) {
+            return distanceData.getDistance(block);
         }
-        return standBlock.typeHolder().unwrapKey()
-                .map(ResourceKey::identifier)
-                .map(NavConfig.NAV_CONFIG.getLeft().blockDistanceMap::get)
-                .orElse(NavConfig.NAV_CONFIG.getLeft().defaultBlockDistance.getDefault());
+
+        // Fallback to global config (uses block IDs only)
+        Identifier blockId = BuiltInRegistries.BLOCK.getKey(block);
+        return NavConfig.NAV_CONFIG.getLeft().blockDistanceMap.getOrDefault(
+                blockId,
+                NavConfig.NAV_CONFIG.getLeft().defaultBlockDistance.getDefault());
     }
 
-    static long getDistance(Level level, int sx, int sy, int sz, int tx, int tz) {
+    static long getDistance(Level level, int sx, int sy, int sz, int tx, int tz,
+                            @Nullable PlayerBlockDistanceData distanceData) {
         final var mutable = new BlockPos.MutableBlockPos(tx, sy, tz);
         //   13
         //   .2
@@ -170,7 +180,10 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
         //   #5
         //    6
 
-        int selfDistance = getDistanceResult(level.getBlockState(new BlockPos(sx, sy - 1, sz)));
+        // Get self distance with fluid handling
+        BlockState selfState = level.getBlockState(new BlockPos(sx, sy - 1, sz));
+        int selfDistance = getDistanceWithFluid(selfState, distanceData);
+
         mutable.move(0, 1, 0);
         if (!considerSafeCross(level, mutable)) {
             // check 2, blocked, no way!
@@ -199,7 +212,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
                 // we cannot go up (blocked)
                 return D_CANNOT_REACH;
             }
-            return packDistanceResult(Math.max(getDistanceResult(upBaseBlock), selfDistance), sy + 1);
+            return packDistanceResult(Math.max(getDistanceWithFluid(upBaseBlock, distanceData), selfDistance), sy + 1);
         }
         //   13
         //   .2
@@ -219,7 +232,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
         var sameBaseBlock = level.getBlockState(sameGroundYPos);
         if (considerSafeGround(level, sameGroundYPos, sameBaseBlock)) {
             // checked 5
-            return packDistanceResult(Math.max(getDistanceResult(sameBaseBlock), selfDistance), sy);
+            return packDistanceResult(Math.max(getDistanceWithFluid(sameBaseBlock, distanceData), selfDistance), sy);
         }
         //   13
         //   ..
@@ -238,18 +251,35 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
         var downBase = level.getBlockState(downGroundPos);
         if (considerSafeGround(level, downGroundPos, downBase)) {
             // checked 6
-            return packDistanceResult(Math.max(getDistanceResult(downBase), selfDistance), sy - 1);
+            return packDistanceResult(Math.max(getDistanceWithFluid(downBase, distanceData), selfDistance), sy - 1);
         }
 
         return D_CANNOT_REACH;
 
     }
 
+    /**
+     * Get distance for a block state, handling fluids specially.
+     */
+    private static int getDistanceWithFluid(BlockState state, @Nullable PlayerBlockDistanceData distanceData) {
+        var fluid = state.getFluidState();
+        if (!fluid.isEmpty()) {
+            if (fluid.getType().isSame(Fluids.WATER) || fluid.getType().isSame(Fluids.FLOWING_WATER)) {
+                return 127;
+            } else if (fluid.getType().isSame(Fluids.LAVA) || fluid.getType().isSame(Fluids.FLOWING_LAVA)) {
+                return 12737;
+            }
+            return 30;
+        }
+        Block block = state.getBlock();
+        return getDistanceResult(block, distanceData);
+    }
+
     @Override
-    public byte parse(Level level, BlockPos trustedCenter) {
+    public byte parse(Level level, BlockPos trustedCenter, @Nullable PlayerBlockDistanceData distanceData) {
         final var solver = Solver.acquire();
         try {
-            return solver.solve(level, this, trustedCenter);
+            return solver.solve(level, this, trustedCenter, distanceData);
         } finally {
             solver.unlock();
             updateChunkData();

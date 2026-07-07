@@ -20,8 +20,8 @@ public class NavigationService {
     /**
      * 执行导航到指定位置
      *
-     * @param targetPos  目标位置
-     * @param config     通知配置
+     * @param targetPos 目标位置
+     * @param config    通知配置
      */
     public static void navigateToPosition(BlockPos targetPos, NavNotificationConfig config) {
         Minecraft mc = Minecraft.getInstance();
@@ -97,7 +97,7 @@ public class NavigationService {
      * 执行导航（使用定位器数据）
      *
      * @param locatorData 定位器数据
-     * @param config       通知配置
+     * @param config      通知配置
      */
     public static void navigate(LocatorData locatorData, NavNotificationConfig config) {
         Minecraft mc = Minecraft.getInstance();

@@ -1,11 +1,13 @@
 package io.github.kunosayo.simplepathfinder.nav.layered;
 
+import io.github.kunosayo.simplepathfinder.data.PlayerBlockDistanceData;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface for layered navigation chunk functionality
@@ -129,9 +131,10 @@ public interface ILayeredNavChunk {
      *
      * @param level         the level to parse
      * @param trustedCenter the trusted center position
+     * @param distanceData  the player-specific block distance configuration, null to use global config
      * @return A marker noting the directions neighbors are ready
      */
-    byte parse(Level level, BlockPos trustedCenter);
+    byte parse(Level level, BlockPos trustedCenter, @Nullable PlayerBlockDistanceData distanceData);
 
     /**
      * Check if walk Y coordinate is valid
@@ -149,7 +152,8 @@ public interface ILayeredNavChunk {
 
     boolean markVisited(int cacheIndex, int cnt, int tx, int tz);
 
-    default void checkExtraPath(NavPathFinder finder, NavPathFinder.SearchNode node, EdgeConsumer edgeConsumer) {}
+    default void checkExtraPath(NavPathFinder finder, NavPathFinder.SearchNode node, EdgeConsumer edgeConsumer) {
+    }
 
     default NavPathFinder.SearchNode getSearchNode(NavPathFinder finder, int tx, int tz) {
         long vKey = NavPathFinder.SearchedPos.toLong(getLayer(), tx, tz);

@@ -25,6 +25,10 @@ public class ModListener implements IModBusEvent {
         registrar.playToClient(PathfindingResultPacket.NETWORK_TYPE, PathfindingResultPacket.STREAM_CODEC, PathfindingResultPacket::clientHandler);
         registrar.playToServer(PathfindingRequestPacket.NETWORK_TYPE, PathfindingRequestPacket.STREAM_CODEC, PathfindingRequestPacket::serverHandler);
         registrar.playToServer(UpdateItemPropertiesPacket.NETWORK_TYPE, UpdateItemPropertiesPacket.STREAM_CODEC, UpdateItemPropertiesPacket::serverHandler);
+        // Player-specific block distance config packet (bidirectional)
+        registrar.playBidirectional(SyncBlockDistanceConfigPacket.NETWORK_TYPE, SyncBlockDistanceConfigPacket.STREAM_CODEC,
+                SyncBlockDistanceConfigPacket::serverHandler,
+                SyncBlockDistanceConfigPacket::clientHandler);
     }
 
 

@@ -23,7 +23,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -91,7 +90,22 @@ public final class SimplePathFinder {
             if (!isServerSidePathfindingEnabled()) {
                 syncPlayerFullNav(sp);
             }
+
+            // Sync player's block distance configuration
+            syncPlayerBlockDistanceData(sp);
         }
+    }
+
+    /**
+     * Sync player's block distance configuration from server to client.
+     * This allows the client GUI to display the actual configuration.
+     *
+     * @param player the server player to sync
+     */
+    public static void syncPlayerBlockDistanceData(ServerPlayer player) {
+        var attachment = player.getData(io.github.kunosayo.simplepathfinder.init.ModAttachments.PLAYER_BLOCK_DISTANCE.get());
+        var data = attachment.getData();
+        PacketDistributor.sendToPlayer(player, new io.github.kunosayo.simplepathfinder.network.SyncBlockDistanceConfigPacket(data));
     }
 
     @SubscribeEvent
