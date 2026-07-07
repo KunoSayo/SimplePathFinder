@@ -17,6 +17,7 @@ public class NavRectCell extends CachedVisitObject {
         return maxX - minX + 1;
 
     }
+
     public int getZLen() {
         return maxZ - minZ + 1;
     }

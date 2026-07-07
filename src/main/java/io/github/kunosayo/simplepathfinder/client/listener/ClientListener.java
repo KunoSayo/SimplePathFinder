@@ -4,6 +4,7 @@ import com.mojang.brigadier.tree.CommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
 import io.github.kunosayo.simplepathfinder.client.event.NavigationRenderTriggerEvent;
+import io.github.kunosayo.simplepathfinder.client.gui.BlockDistanceConfigScreen;
 import io.github.kunosayo.simplepathfinder.client.property.LocatorModelProperty;
 import io.github.kunosayo.simplepathfinder.client.property.NavBrushModelProperty;
 import io.github.kunosayo.simplepathfinder.client.property.NavigationModelProperty;
@@ -226,6 +227,25 @@ public class ClientListener {
     @SubscribeEvent
     public static void onRegisterConditionalItemModelProperty(RegisterConditionalItemModelPropertyEvent event) {
         NavBrushModelProperty.register(event);
+    }
+
+    /**
+     * Handle keyboard input for Tab autocomplete in BlockDistanceConfigScreen.
+     */
+    @SubscribeEvent
+    public static void onScreenKeyPress(ScreenEvent.KeyPressed.Pre event) {
+        var minecraft = Minecraft.getInstance();
+        var screen = minecraft.screen;
+
+        // Only handle if BlockDistanceConfigScreen is open
+        if (!(screen instanceof BlockDistanceConfigScreen configScreen)) {
+            return;
+        }
+
+        // Tab key is 258 in GLFW
+        if (event.getKeyCode() == 258) {
+            event.setCanceled(configScreen.handleKeyPress(event.getKeyCode(), event.getScanCode(), event.getModifiers()));
+        }
     }
 
 }

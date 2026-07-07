@@ -47,8 +47,8 @@ public final class SimplePathFinderCommand {
                                         .then(Commands.literal("current")
                                                 .executes(SimplePathFinderCommand::buildAtZero))
 
-                                                .then(Commands.argument("layer", LAYER_ARG)
-                                                        .executes(SimplePathFinderCommand::buildAtLayer))
+                                        .then(Commands.argument("layer", LAYER_ARG)
+                                                .executes(SimplePathFinderCommand::buildAtLayer))
                                 ))));
         dispatcher.register(Commands.literal("simple_path_finder").redirect(root));
     }

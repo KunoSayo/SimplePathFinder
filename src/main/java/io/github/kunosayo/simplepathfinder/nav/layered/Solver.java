@@ -1,12 +1,14 @@
 package io.github.kunosayo.simplepathfinder.nav.layered;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.data.PlayerBlockDistanceData;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 
 import static io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk.*;
 
@@ -38,7 +40,7 @@ class Solver {
         return (visited[idx >>> 6] & (1L << (idx & 63))) != 0;
     }
 
-    byte once(LongList queue, Level levelIn, LayeredNavChunk chunkIn, int cx, int cz, int x, int y, int z) {
+    byte once(LongList queue, Level levelIn, LayeredNavChunk chunkIn, int cx, int cz, int x, int y, int z, @Nullable PlayerBlockDistanceData distanceData) {
         // the x, z in [0, 15]
         // the y is real world
 
@@ -57,7 +59,8 @@ class Solver {
                     y,
                     SectionPos.sectionToBlockCoord(cz, z),
                     SectionPos.sectionToBlockCoord(cx, tx),
-                    SectionPos.sectionToBlockCoord(cz, tz)
+                    SectionPos.sectionToBlockCoord(cz, tz),
+                    distanceData
             );
             final int distance = unpackDistance(dResult);
             markDistance(chunkIn, x, z, tx, tz, distance);
@@ -86,13 +89,13 @@ class Solver {
         return res;
     }
 
-    byte doWork(Level levelIn, LayeredNavChunk chunkIn, int cx, int cz) {
+    byte doWork(Level levelIn, LayeredNavChunk chunkIn, int cx, int cz, @Nullable PlayerBlockDistanceData distanceData) {
         LongList working = q2, toWork = q1;
         byte res = 0;
         do {
-            for (int i = 0; i < working.size(); i++ ) {
+            for (int i = 0; i < working.size(); i++) {
                 var pos = working.getLong(i);
-                res |= once(toWork, levelIn, chunkIn, cx, cz, BlockPos.getX(pos), BlockPos.getY(pos), BlockPos.getZ(pos));
+                res |= once(toWork, levelIn, chunkIn, cx, cz, BlockPos.getX(pos), BlockPos.getY(pos), BlockPos.getZ(pos), distanceData);
             }
             working.clear();
             LongList buffer = working;
@@ -106,7 +109,8 @@ class Solver {
     byte solve(
             final Level levelIn,
             final LayeredNavChunk chunkIn,
-            final BlockPos trustedCenter
+            final BlockPos trustedCenter,
+            @Nullable PlayerBlockDistanceData distanceData
     ) {
         final int x = trustedCenter.getX();
         final int z = trustedCenter.getZ();
@@ -119,7 +123,7 @@ class Solver {
         markVisited(idx);
         // in fact, we run bfs
         q2.addLast(BlockPos.asLong(startX, trustedCenter.getY(), startZ));
-        return doWork(levelIn, chunkIn, cx, cz);
+        return doWork(levelIn, chunkIn, cx, cz, distanceData);
     }
 
     private static final int VISITED_SIZE = Math.ceilDiv(LevelNavData.CHUNK_AREA, 64);

@@ -36,11 +36,11 @@ public final class PathCurveSmoother {
     }
 
     private static void simplifySection(
-        List<Vec3> points,
-        int startIndex,
-        int endIndex,
-        double toleranceSqr,
-        boolean[] keep
+            List<Vec3> points,
+            int startIndex,
+            int endIndex,
+            double toleranceSqr,
+            boolean[] keep
     ) {
         if (endIndex <= startIndex + 1) {
             return;

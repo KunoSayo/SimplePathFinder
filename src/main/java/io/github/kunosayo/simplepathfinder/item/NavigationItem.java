@@ -6,6 +6,7 @@ import io.github.kunosayo.simplepathfinder.client.gui.NavigationScreen;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
+import io.github.kunosayo.simplepathfinder.init.ModAttachments;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
@@ -309,7 +310,12 @@ public class NavigationItem extends Item {
         final var chunk = (LayeredNavChunk) optionalLayered.get();
         chunk.setParentChunk(navChunk);
         chunk.setLayer(layer);
-        chunk.parse(level, clickedPos);
+
+        // Get player-specific block distance configuration
+        var distanceAttachment = player.getData(ModAttachments.PLAYER_BLOCK_DISTANCE.get());
+        var distanceData = distanceAttachment.getData();
+
+        chunk.parse(level, clickedPos, distanceData);
         player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_created", layer, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()));
 
         // 标记数据为脏并同步单个区块

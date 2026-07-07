@@ -1,8 +1,11 @@
 package io.github.kunosayo.simplepathfinder.client.gui;
 
 import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
+import io.github.kunosayo.simplepathfinder.data.PlayerBlockDistanceData;
+import io.github.kunosayo.simplepathfinder.init.ModAttachments;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
 import io.github.kunosayo.simplepathfinder.item.NavigationMode;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -23,6 +26,7 @@ public class NavigationScreen extends Screen {
     private Button modeAddNavButton;
     private Button modeRemoveNavButton;
     private Button modeAddLinkButton;
+    private Button blockDistanceConfigButton;
     private EditBox layerEditBox;
     private Button saveButton;
     private Button cancelButton;
@@ -110,12 +114,18 @@ public class NavigationScreen extends Screen {
         saveButton = this.addRenderableWidget(Button.builder(
                 Component.translatable("gui.simple_path_finder.navigation.save"),
                 btn -> saveAndClose()
-        ).bounds(leftPos + 40, buttonY, 50, 20).build());
+        ).bounds(leftPos + 10, buttonY, 50, 20).build());
+
+        // Block distance config button
+        blockDistanceConfigButton = this.addRenderableWidget(Button.builder(
+                Component.translatable("gui.simple_path_finder.navigation.block_distance_config"),
+                btn -> openBlockDistanceConfig()
+        ).bounds(leftPos + 70, buttonY, 110, 20).build());
 
         cancelButton = this.addRenderableWidget(Button.builder(
                 Component.translatable("gui.simple_path_finder.navigation.cancel"),
                 btn -> this.onClose()
-        ).bounds(leftPos + 100, buttonY, 50, 20).build());
+        ).bounds(leftPos + 10, buttonY + 25, 170, 20).build());
 
         updateButtonStates();
     }
@@ -178,6 +188,19 @@ public class NavigationScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false; // Don't pause the game
+    }
+
+    /**
+     * Open the block distance configuration screen.
+     */
+    private void openBlockDistanceConfig() {
+        // Use the synced player block distance data from the server
+        var player = Minecraft.getInstance().player;
+        if (player == null) {
+            return;
+        }
+        PlayerBlockDistanceData data = player.getData(ModAttachments.PLAYER_BLOCK_DISTANCE).getData();
+        Minecraft.getInstance().setScreen(new BlockDistanceConfigScreen(data));
     }
 
     /**

@@ -1,11 +1,10 @@
 package io.github.kunosayo.simplepathfinder.nav.finder;
 
-import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
+import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.network.PathfindingResultPacket;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -17,7 +16,8 @@ import java.util.UUID;
  * Represents a pathfinding task.
  */
 public record PathfindingTask(WeakReference<MinecraftServer> server, UUID player, BlockPos targetPos,
-                              String targetDesc, NavNotificationConfig config, long submissionTime) implements Runnable {
+                              String targetDesc, NavNotificationConfig config,
+                              long submissionTime) implements Runnable {
     @Override
     public void run() {
         var task = this;
