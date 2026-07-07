@@ -11,6 +11,9 @@ import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.finder.ModNavResult;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
+import io.github.kunosayo.simplepathfinder.nav.INavChunk;
+import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
+import io.github.kunosayo.simplepathfinder.nav.NavLink;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -178,8 +181,58 @@ public class NavRenderingSupport {
                             }
                         }
                     }
+                    // Render nav links for this chunk
+                    prepareNavLinks(navChunk, chunkPos, level);
                 });
             }
+        }
+    }
+
+    /**
+     * Prepare nav link rendering for the given chunk
+     * Draws arrows from yellow (source) to blue (destination)
+     *
+     * @param navChunk the navigation chunk containing the links
+     * @param chunkPos the chunk position
+     * @param level    the level for dimension checking
+     */
+    private void prepareNavLinks(INavChunk navChunk, ChunkPos chunkPos, net.minecraft.world.level.Level level) {
+        var allNavLinks = navChunk.getAllNavLinks();
+        if (allNavLinks.isEmpty()) {
+            return;
+        }
+
+        // Colors: yellow (start) to blue (end)
+        int yellowColor = 0x55FFFF00;  // ARGB: alpha=0x55, RGB=255,255,0
+        int blueColor = 0x550000FF;    // ARGB: alpha=0x55, RGB=0,0,255
+
+        for (var entry : allNavLinks.entrySet()) {
+            var fromPos = entry.getKey();
+            List<NavLink> links = entry.getValue();
+
+            if (links.isEmpty()) {
+                continue;
+            }
+
+
+                Vec3 fromVec = new Vec3(
+                        chunkPos.getBlockX(fromPos.x) + 0.5,
+                        fromPos.y,
+                        chunkPos.getBlockZ(fromPos.z) + 0.5
+                );
+
+                // Draw an arrow for each link
+                for (NavLink link : links) {
+                    var dest = link.dest();
+                    // Only render links in the same dimension
+
+                    Vec3 toVec = new Vec3(
+                            dest.getX() + 0.5,
+                            dest.getY() + 0.5,
+                            dest.getZ() + 0.5
+                    );
+                    elements.add(new Arrow(fromVec, toVec, yellowColor, blueColor));
+                }
         }
     }
 

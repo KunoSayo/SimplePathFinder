@@ -145,13 +145,7 @@ public class NavPathFinder implements EdgeConsumer {
 
         // Get all nav links from this position
         for (var navLink : navChunk.getNavLinks(chunkInnerPos)) {
-            var dest = navLink.dest();
-            var destPos = dest.pos();
-
-            // Skip if destination is in wrong dimension
-            if (dimension != null && !dest.dimension().equals(dimension)) {
-                continue;
-            }
+            var destPos = navLink.dest();
 
 
             // Get the nav chunk at destination

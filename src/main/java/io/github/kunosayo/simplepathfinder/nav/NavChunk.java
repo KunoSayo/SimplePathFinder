@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
+import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
@@ -35,15 +36,35 @@ public final class NavChunk implements INavChunk {
         throw new IllegalArgumentException("Not supported nav chunk");
     });
 
-    /**
-     * Stream codec for nav links map
-     * Uses composite with map codec for serialization
-     */
-    private static final StreamCodec<ByteBuf, Map<ChunkInnerPos, List<NavLink>>> NAV_LINKS_MAP_CODEC = ByteBufCodecs.map(
+    private static final StreamCodec<ByteBuf, Map<ChunkInnerPos, List<NavLink>>> NAV_LINKS_MAP_OLD_CODEC = ByteBufCodecs.map(
             HashMap::new,
             ChunkInnerPos.STREAM_CODEC,
             ByteBufCodecs.<ByteBuf, NavLink>list().apply(NavLink.STREAM_CODEC)
     );
+
+
+    private static final StreamCodec<ByteBuf, Map<ChunkInnerPosWithY, List<NavLink>>> NAV_LINKS_MAP_NEW_CODEC = ByteBufCodecs.map(
+            HashMap::new,
+            ChunkInnerPosWithY.STREAM_CODEC,
+            ByteBufCodecs.<ByteBuf, NavLink>list().apply(NavLink.STREAM_CODEC)
+    );
+
+    private static final StreamCodec<ByteBuf, Map<ChunkInnerPosWithY, List<NavLink>>> NAV_LINKS_MAP_CODEC = StreamCodec.of(NAV_LINKS_MAP_NEW_CODEC, byteBuf -> {
+        int idx = byteBuf.readerIndex();
+        try {
+            var result = NAV_LINKS_MAP_OLD_CODEC.decode(byteBuf);
+            result.forEach((chunkInnerPos, _) -> {
+                if (chunkInnerPos.x < 0 || chunkInnerPos.z < 0 || chunkInnerPos.x >= 16 || chunkInnerPos.z >= 16) {
+                    throw new UnsupportedOperationException();
+                }
+            });
+            return new ConcurrentHashMap<>();
+        } catch (Throwable t) {
+            SimplePathFinder.LOGGER.warn(t);
+        }
+        byteBuf.readerIndex(idx);
+        return NAV_LINKS_MAP_NEW_CODEC.decode(byteBuf);
+    });
 
     public static final StreamCodec<ByteBuf, NavChunk> STREAM_CODEC = StreamCodec
             .composite(
@@ -63,14 +84,14 @@ public final class NavChunk implements INavChunk {
      * Key: ChunkInnerPos (source position within chunk)
      * Value: List of NavLink (destinations from this position)
      */
-    private final Map<ChunkInnerPos, List<NavLink>> navLinks = new ConcurrentHashMap<>();
+    private final Map<ChunkInnerPosWithY, List<NavLink>> navLinks = new ConcurrentHashMap<>();
 
 
     public NavChunk(ChunkPos pos) {
         this.chunkPos = pos;
     }
 
-    private NavChunk(List<ILayeredNavChunk> layers, Map<ChunkInnerPos, List<NavLink>> navLinks) {
+    private NavChunk(List<ILayeredNavChunk> layers, Map<ChunkInnerPosWithY, List<NavLink>> navLinks) {
         this.layers = new ArrayList<>(layers);
         List<ILayeredNavChunk> iLayeredNavChunks = this.layers;
         for (int i = 0; i < iLayeredNavChunks.size(); i++) {
@@ -206,17 +227,17 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
-    public Map<ChunkInnerPos, List<NavLink>> getAllNavLinks() {
-        return new HashMap<>(navLinks);
+    public Map<ChunkInnerPosWithY, List<NavLink>> getAllNavLinks() {
+        return navLinks;
     }
 
     @Override
-    public void addNavLink(ChunkInnerPos from, NavLink link) {
+    public void addNavLink(ChunkInnerPosWithY from, NavLink link) {
         navLinks.computeIfAbsent(from, _ -> new ArrayList<>()).add(link);
     }
 
     @Override
-    public void removeNavLinks(ChunkInnerPos pos) {
+    public void removeNavLinks(ChunkInnerPosWithY pos) {
         navLinks.remove(pos);
     }
 

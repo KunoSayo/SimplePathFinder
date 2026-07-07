@@ -9,6 +9,7 @@ import io.github.kunosayo.simplepathfinder.data.NavigationModeData;
 import io.github.kunosayo.simplepathfinder.init.ModAttachments;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
+import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPosWithY;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.network.UpdateItemPropertiesPacket;
@@ -391,7 +392,7 @@ public class NavigationItem extends Item {
             }
 
             var navChunk = navChunkOpt.get();
-            var chunkInnerPos = ChunkInnerPos.get(startPos.pos());
+            var chunkInnerPos = new ChunkInnerPosWithY((short) startPos.pos().getY(), (byte) (startPos.pos().getX() & 15), (byte) (startPos.pos().getZ() & 15));
 
             // 创建链接
             var destPos = GlobalPos.of(level.dimension(), clickedPos);

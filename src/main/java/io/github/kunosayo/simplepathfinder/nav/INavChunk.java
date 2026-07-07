@@ -161,7 +161,7 @@ public interface INavChunk {
      *
      * @return map of position to navigation links
      */
-    Map<ChunkInnerPos, List<NavLink>> getAllNavLinks();
+    Map<ChunkInnerPosWithY, List<NavLink>> getAllNavLinks();
 
     /**
      * Add a navigation link
@@ -169,14 +169,14 @@ public interface INavChunk {
      * @param from the starting position
      * @param link the navigation link
      */
-    void addNavLink(ChunkInnerPos from, NavLink link);
+    void addNavLink(ChunkInnerPosWithY from, NavLink link);
 
     /**
      * Remove all navigation links from a specific position
      *
      * @param pos the position to remove links from
      */
-    void removeNavLinks(ChunkInnerPos pos);
+    void removeNavLinks(ChunkInnerPosWithY pos);
 
     /**
      * Clear all navigation links
