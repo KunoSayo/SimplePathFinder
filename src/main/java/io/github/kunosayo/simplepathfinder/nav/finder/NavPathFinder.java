@@ -1,6 +1,5 @@
 package io.github.kunosayo.simplepathfinder.nav.finder;
 
-import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavLinkType;
@@ -118,27 +117,17 @@ public class NavPathFinder implements EdgeConsumer {
                 }));
     }
 
-    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, EdgeConsumer edgeInfoConsumer) {
+    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, int lastDistance, EdgeConsumer edgeInfoConsumer) {
         // the y of b should be the same as a
         int distance = getDistance(navChunk, bNavChunk, ax, az, bx, bz, y);
         if (distance < 0) {
             return;
         }
+        if (distance > lastDistance) {
+            distance += (distance - lastDistance) * 20;
+        }
         bNavChunk.getEdgeForLayers(bx, y, bz, distance, edgeInfoConsumer);
     }
-
-    private void getEdgeThrough(INavChunk navChunk, INavChunk mNavChunk, INavChunk bNavChunk, int ax, int az, int mx, int mz, int bx, int bz, int y, EdgeConsumer edgeInfoConsumer) {
-        // the y of b should be the same as a
-        int distance = getDistance(navChunk, mNavChunk, ax, az, mx, mz, y);
-        if (distance < 0) {
-            return;
-        }
-        int distance2 = getDistance(mNavChunk, bNavChunk, mx, mz, bx, bz, y);
-        if (distance2 < 0)
-            return;
-        bNavChunk.getEdgeForLayers(bx, y, bz, (int) ((distance + distance2) * 0.7), edgeInfoConsumer);
-    }
-
 
     private int getDistance(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y) {
         int situation = LayeredNavChunk.getPosSituation(ax, az, bx, bz);
@@ -181,6 +170,11 @@ public class NavPathFinder implements EdgeConsumer {
     private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int ly, int lz, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
         getNavLinkEdges(navChunk, layeredNavChunk, x, y, z, edgeInfoConsumer);
+        Optional<INavChunk> navChunk1 = levelNavData.getNavChunk(lx >> 4, lz >> 4, false);
+        int lastDistance = 0;
+        if (navChunk1.isPresent()) {
+            lastDistance = getDistance(navChunk1.get(), navChunk, lx, lz, x, z, y);
+        }
 
         // Then, get normal walking edges
         for (int i = 0; i < 4; i++) {
@@ -199,7 +193,7 @@ public class NavPathFinder implements EdgeConsumer {
                 thatChunk = thatChunkOpt.get();
             }
 
-            getEdge(navChunk, thatChunk, x, z, tx, tz, y, edgeInfoConsumer);
+            getEdge(navChunk, thatChunk, x, z, tx, tz, y, lastDistance, edgeInfoConsumer);
 
             for (int j = 1; j >= -1; j -= 2) {
                 //反转 xz，并乘+-1，获取共轭向量
@@ -216,7 +210,7 @@ public class NavPathFinder implements EdgeConsumer {
                     diagChunk = thatChunkOpt.get();
                 }
 
-                getEdgeThrough(navChunk, thatChunk, diagChunk, x, z, tx, tz, diagX, diagZ, y, edgeInfoConsumer);
+                getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, lastDistance, edgeInfoConsumer);
             }
         }
     }
@@ -520,12 +514,10 @@ public class NavPathFinder implements EdgeConsumer {
             if (lastNode == null) {
                 return 0;
             }
-            int a = 10;
+            int a = 30;
             int px = x;
-            int py = y;
             int pz = z;
             int lx = lastNode.x;
-            int ly = lastNode.y;
             int lz = lastNode.z;
             int cy = y != ny ? a : 0;
 
@@ -537,7 +529,7 @@ public class NavPathFinder implements EdgeConsumer {
             if ((ddx == 0 && (ddz == -1 || ddz == 1)) || (ddz == 0 && (ddx == -1 || ddx == 1))) {
                 return cy + a;
             }
-            return cy + 4 * a;
+            return cy + 2 * a;
         }
     }
 
