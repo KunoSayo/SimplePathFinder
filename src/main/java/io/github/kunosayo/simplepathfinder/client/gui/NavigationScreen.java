@@ -5,6 +5,7 @@ import io.github.kunosayo.simplepathfinder.data.PlayerBlockDistanceData;
 import io.github.kunosayo.simplepathfinder.init.ModAttachments;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
 import io.github.kunosayo.simplepathfinder.item.NavigationMode;
+import io.github.kunosayo.simplepathfinder.nav.NavLinkType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -31,9 +32,15 @@ public class NavigationScreen extends Screen {
     private Button saveButton;
     private Button cancelButton;
 
+    // Link type buttons (shown only in ADD_LINK mode)
+    private Button linkTypeNormalButton;
+    private Button linkTypeTeleportButton;
+    private Button linkTypeVehicleButton;
+
     // Current settings
     private NavigationMode currentMode;
     private int currentLayer;
+    private NavLinkType currentLinkType;
 
     // Item reference
     private final ItemStack navStack;
@@ -53,6 +60,9 @@ public class NavigationScreen extends Screen {
             this.currentMode = NavigationMode.DEFAULT;
             this.currentLayer = 0;
         }
+
+        // Get current link type
+        this.currentLinkType = NavigationItem.getLinkType(navStack);
     }
 
     @Override
@@ -60,7 +70,7 @@ public class NavigationScreen extends Screen {
         super.init();
 
         int leftPos = this.width / 2 - 90; // Center horizontally (180 width)
-        int topPos = this.height / 2 - 70; // Center vertically (140 height)
+        int topPos = this.height / 2 - 90; // Center vertically (160 height)
 
         // Mode buttons (top row)
         int buttonY = topPos + 10;
@@ -87,8 +97,25 @@ public class NavigationScreen extends Screen {
                 btn -> setMode(NavigationMode.ADD_LINK)
         ).bounds(leftPos + 90, buttonY, 80, 20).build());
 
-        // Layer input (third row)
+        // Link type buttons (third row) - only visible in ADD_LINK mode
         buttonY = topPos + 70;
+        linkTypeNormalButton = this.addRenderableWidget(Button.builder(
+                Component.translatable("gui.simple_path_finder.navigation.link_type.normal"),
+                btn -> setLinkType(NavLinkType.NORMAL)
+        ).bounds(leftPos + 10, buttonY, 50, 20).build());
+
+        linkTypeTeleportButton = this.addRenderableWidget(Button.builder(
+                Component.translatable("gui.simple_path_finder.navigation.link_type.teleport"),
+                btn -> setLinkType(NavLinkType.TELEPORT)
+        ).bounds(leftPos + 65, buttonY, 50, 20).build());
+
+        linkTypeVehicleButton = this.addRenderableWidget(Button.builder(
+                Component.translatable("gui.simple_path_finder.navigation.link_type.vehicle"),
+                btn -> setLinkType(NavLinkType.VEHICLE)
+        ).bounds(leftPos + 120, buttonY, 50, 20).build());
+
+        // Layer input (fourth row)
+        buttonY = topPos + 100;
         layerEditBox = new EditBox(
                 this.font,
                 leftPos + 65,
@@ -110,7 +137,7 @@ public class NavigationScreen extends Screen {
         this.addRenderableWidget(layerEditBox);
 
         // Save and Cancel buttons
-        buttonY = topPos + 100;
+        buttonY = topPos + 130;
         saveButton = this.addRenderableWidget(Button.builder(
                 Component.translatable("gui.simple_path_finder.navigation.save"),
                 btn -> saveAndClose()
@@ -135,12 +162,27 @@ public class NavigationScreen extends Screen {
         updateButtonStates();
     }
 
+    private void setLinkType(NavLinkType type) {
+        this.currentLinkType = type;
+        updateButtonStates();
+    }
+
     private void updateButtonStates() {
         // Update mode button states
         modeDefaultButton.active = currentMode != NavigationMode.DEFAULT;
         modeAddNavButton.active = currentMode != NavigationMode.ADD_NAV;
         modeRemoveNavButton.active = currentMode != NavigationMode.REMOVE_NAV;
         modeAddLinkButton.active = currentMode != NavigationMode.ADD_LINK;
+
+        // Update link type button visibility and states
+        boolean isAddLinkMode = currentMode == NavigationMode.ADD_LINK;
+        linkTypeNormalButton.visible = isAddLinkMode;
+        linkTypeTeleportButton.visible = isAddLinkMode;
+        linkTypeVehicleButton.visible = isAddLinkMode;
+
+        linkTypeNormalButton.active = currentLinkType != NavLinkType.NORMAL;
+        linkTypeTeleportButton.active = currentLinkType != NavLinkType.TELEPORT;
+        linkTypeVehicleButton.active = currentLinkType != NavLinkType.VEHICLE;
     }
 
     private void saveAndClose() {
@@ -168,6 +210,8 @@ public class NavigationScreen extends Screen {
 
         // Update item data and sync with server
         NavigationItem.setNavigationModeDataSync(currentStack, hand, currentMode, (byte) currentLayer);
+        // Update link type
+        NavigationItem.setLinkType(currentStack, currentLinkType);
 
         this.onClose();
     }

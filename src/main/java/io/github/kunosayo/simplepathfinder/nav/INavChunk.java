@@ -154,7 +154,10 @@ public interface INavChunk {
      * @param pos the chunk inner position
      * @return list of navigation links from this position
      */
-    List<NavLink> getNavLinks(ChunkInnerPos pos);
+    default List<NavLink> getNavLinks(ChunkInnerPosWithY pos){
+        return getNavLinks(pos.x, pos.y, pos.z);
+    }
+    List<NavLink> getNavLinks(int x, int y, int z);
 
     /**
      * Get all navigation links in this chunk

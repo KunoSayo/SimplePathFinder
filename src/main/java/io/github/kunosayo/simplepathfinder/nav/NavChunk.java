@@ -6,6 +6,7 @@ import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.netty.buffer.ByteBuf;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -71,7 +72,13 @@ public final class NavChunk implements INavChunk {
                     ByteBufCodecs.<ByteBuf, ILayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
                     navChunk -> navChunk.layers,
                     NAV_LINKS_MAP_CODEC,
-                    navChunk -> navChunk.navLinks,
+                    navChunk -> {
+                        var map = new HashMap<ChunkInnerPosWithY, List<NavLink>>(navChunk.navLinks.size());
+                        navChunk.navLinks.forEach((integer, navLinks1) -> {
+                            map.put(ChunkInnerPosWithY.unpack(integer), navLinks1);
+                        });
+                        return map;
+                    },
                     NavChunk::new
             );
 
@@ -79,12 +86,7 @@ public final class NavChunk implements INavChunk {
     private List<ILayeredNavChunk> layers = new ArrayList<>();
     public ChunkPos chunkPos;
 
-    /**
-     * Navigation links map - stores links from positions to other positions
-     * Key: ChunkInnerPos (source position within chunk)
-     * Value: List of NavLink (destinations from this position)
-     */
-    private final Map<ChunkInnerPosWithY, List<NavLink>> navLinks = new ConcurrentHashMap<>();
+    private Int2ObjectOpenHashMap<List<NavLink>> navLinks = new Int2ObjectOpenHashMap<>();
 
 
     public NavChunk(ChunkPos pos) {
@@ -98,7 +100,10 @@ public final class NavChunk implements INavChunk {
             ILayeredNavChunk layer = iLayeredNavChunks.get(i);
             layer.setParentChunk(this);
         }
-        this.navLinks.putAll(navLinks);
+        this.navLinks.ensureCapacity(navLinks.size());
+        navLinks.forEach((chunkInnerPosWithY, navLinks1) -> {
+            this.navLinks.put(chunkInnerPosWithY.pack(), navLinks1);
+        });
     }
 
     @Override
@@ -222,27 +227,36 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
-    public List<NavLink> getNavLinks(ChunkInnerPos pos) {
-        return navLinks.getOrDefault(pos, Collections.emptyList());
+    public List<NavLink> getNavLinks(int x, int y, int z) {
+        return navLinks.getOrDefault(ChunkInnerPosWithY.pack(x, y, z), Collections.emptyList());
     }
 
     @Override
     public Map<ChunkInnerPosWithY, List<NavLink>> getAllNavLinks() {
-        return navLinks;
+        var map = new HashMap<ChunkInnerPosWithY, List<NavLink>>(this.navLinks.size());
+        this.navLinks.forEach((integer, navLinks1) -> map.put(ChunkInnerPosWithY.unpack(integer), navLinks1));
+        return map;
     }
 
     @Override
     public void addNavLink(ChunkInnerPosWithY from, NavLink link) {
-        navLinks.computeIfAbsent(from, _ -> new ArrayList<>()).add(link);
+        var map = new Int2ObjectOpenHashMap<>(this.navLinks);
+        // CoW list.
+        var list = new ArrayList<>(map.computeIfAbsent(from.pack(), _ -> new ArrayList<>()));
+        list.add(link);
+        map.put(from.pack(), list);
+        this.navLinks = map;
     }
 
     @Override
     public void removeNavLinks(ChunkInnerPosWithY pos) {
-        navLinks.remove(pos);
+        var map = new Int2ObjectOpenHashMap<>(this.navLinks);
+        map.remove(pos.pack());
+        this.navLinks = map;
     }
 
     @Override
     public void clearNavLinks() {
-        navLinks.clear();
+        navLinks = new Int2ObjectOpenHashMap<>();
     }
 }

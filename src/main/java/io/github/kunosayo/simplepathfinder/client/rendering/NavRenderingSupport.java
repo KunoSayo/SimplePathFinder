@@ -217,7 +217,7 @@ public class NavRenderingSupport {
 
                 Vec3 fromVec = new Vec3(
                         chunkPos.getBlockX(fromPos.x) + 0.5,
-                        fromPos.y,
+                        fromPos.y + 0.5,
                         chunkPos.getBlockZ(fromPos.z) + 0.5
                 );
 

@@ -23,6 +23,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -31,6 +32,7 @@ import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.NonNull;
 
 import java.util.function.Consumer;
@@ -39,6 +41,25 @@ public class NavigationItem extends Item {
     public NavigationItem(Identifier id) {
         var key = ResourceKey.create(Registries.ITEM, id);
         super(new Properties().setId(key).stacksTo(1));
+    }
+
+    @Override
+    public float getDestroySpeed(@NonNull ItemStack stack, net.minecraft.world.level.block.state.BlockState state) {
+        // Prevent block breaking in all game modes by returning 0 destroy speed
+        return 0;
+    }
+
+    @Override
+    public boolean canDestroyBlock(ItemStack itemStack, BlockState state, Level level, BlockPos pos, LivingEntity user) {
+        return false;
+    }
+
+    @Override
+    public boolean isFoil(@NonNull ItemStack stack) {
+        // Show enchantment glint when in ADD_LINK mode and second point is selected
+        var linkData = getLinkCreationData(stack);
+        var mode = getNavigationMode(stack);
+        return mode == NavigationMode.ADD_LINK && linkData != null;
     }
 
     @Override
@@ -168,6 +189,11 @@ public class NavigationItem extends Item {
         NavigationModeData newData = new NavigationModeData(mode, currentLayer);
         // 设置数据组件
         stack.set(ModDataComponents.NAV_MODE_COMPONENT.get(), newData);
+
+        // 切换到添加链接模式时，清除已有的链接数据
+        if (mode == NavigationMode.ADD_LINK) {
+            clearLinkCreationData(stack);
+        }
     }
 
     /**
@@ -223,37 +249,6 @@ public class NavigationItem extends Item {
             return true;
         }
         return player.isCreative();
-    }
-
-    /**
-     * 处理客户端的寻路触发
-     */
-    private void handleClientPathfinding(BlockPos targetPos) {
-        var mc = net.minecraft.client.Minecraft.getInstance();
-        var player = mc.player;
-        if (player == null) {
-            return;
-        }
-
-        // 获取导航数据
-        LevelNavData navData = ClientNavDataManager.getNavDataForPlayer();
-        if (navData == null) {
-            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.no_data"));
-            return;
-        }
-
-        // 异步执行寻路
-        net.minecraft.util.Util.backgroundExecutor().execute(() -> {
-            long startTime = System.currentTimeMillis();
-            navData.findNav(player.blockPosition(), targetPos).ifPresent(navResult -> {
-                SimplePathFinder.clientNavResult.set(navResult);
-                mc.execute(() -> {
-                    player.sendSystemMessage(Component.translatable("simple_path_finder.nav.success"));
-                });
-            });
-            long endTime = System.currentTimeMillis();
-            SimplePathFinder.LOGGER.info("Client pathfinding completed in {}ms", endTime - startTime);
-        });
     }
 
     private boolean handleNavigationItem(Level level, ServerPlayer player, ItemStack stack, BlockPos clickedPos) {
@@ -394,9 +389,16 @@ public class NavigationItem extends Item {
             var navChunk = navChunkOpt.get();
             var chunkInnerPos = new ChunkInnerPosWithY((short) startPos.pos().getY(), (byte) (startPos.pos().getX() & 15), (byte) (startPos.pos().getZ() & 15));
 
+            // 获取选中的链接类型
+            var linkType = getLinkType(stack);
+
             // 创建链接
             var destPos = GlobalPos.of(level.dimension(), clickedPos);
-            var link = io.github.kunosayo.simplepathfinder.nav.NavLink.normal(destPos);
+            var link = switch (linkType) {
+                case TELEPORT -> io.github.kunosayo.simplepathfinder.nav.NavLink.teleport(destPos);
+                case VEHICLE -> io.github.kunosayo.simplepathfinder.nav.NavLink.vehicle(destPos);
+                default -> io.github.kunosayo.simplepathfinder.nav.NavLink.normal(destPos);
+            };
 
             // 添加链接到导航区块
             navChunk.addNavLink(chunkInnerPos, link);
@@ -435,6 +437,21 @@ public class NavigationItem extends Item {
      */
     public static void clearLinkCreationData(ItemStack stack) {
         stack.remove(ModDataComponents.LINK_CREATION_COMPONENT.get());
+    }
+
+    /**
+     * 获取链接类型
+     */
+    public static io.github.kunosayo.simplepathfinder.nav.NavLinkType getLinkType(ItemStack stack) {
+        var type = stack.get(ModDataComponents.LINK_TYPE_COMPONENT.get());
+        return type != null ? type : io.github.kunosayo.simplepathfinder.nav.NavLinkType.NORMAL;
+    }
+
+    /**
+     * 设置链接类型
+     */
+    public static void setLinkType(ItemStack stack, io.github.kunosayo.simplepathfinder.nav.NavLinkType type) {
+        stack.set(ModDataComponents.LINK_TYPE_COMPONENT.get(), type);
     }
 
     /**

@@ -195,6 +195,9 @@ public class LangGen {
         add("gui.simple_path_finder.navigation.mode.add_nav", "添加导航", "Add Nav");
         add("gui.simple_path_finder.navigation.mode.remove_nav", "移除导航", "Remove Nav");
         add("gui.simple_path_finder.navigation.mode.add_link", "添加链接", "Add Link");
+        add("gui.simple_path_finder.navigation.link_type.normal", "普通", "Normal");
+        add("gui.simple_path_finder.navigation.link_type.teleport", "传送", "Teleport");
+        add("gui.simple_path_finder.navigation.link_type.vehicle", "载具", "Vehicle");
         add("gui.simple_path_finder.navigation.layer", "层级值:", "Layer:");
         add("gui.simple_path_finder.navigation.save", "保存", "Save");
         add("gui.simple_path_finder.navigation.cancel", "取消", "Cancel");
