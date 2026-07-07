@@ -1,7 +1,7 @@
 package io.github.kunosayo.simplepathfinder.block;
 
 
-import io.github.kunosayo.simplepathfinder.init.ModBlocks;
+import io.github.kunosayo.simplepathfinder.client.ClientWrapperUtil;
 import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -37,11 +37,9 @@ public class NavigationBarrierBlock extends TransparentBlock {
     }
 
     @Override
-    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        // Check if any player is holding the barrier block item
-        for (var player : level.players()) {
-            if (player.getMainHandItem().is(ModItems.NAVIGATION_BARRIER_BLOCK.get()) ||
-                player.getOffhandItem().is(ModItems.NAVIGATION_BARRIER_BLOCK.get())) {
+    public void animateTick(@NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+        if (level.isClientSide()) {
+            if (ClientWrapperUtil.isClientPlayerHoldingNavBarrier()) {
 
                 // Spawn particle at the center of the block
                 double x = pos.getX() + 0.5;
@@ -49,8 +47,8 @@ public class NavigationBarrierBlock extends TransparentBlock {
                 double z = pos.getZ() + 0.5;
 
                 var particleOption = new BlockParticleOption(ParticleTypes.BLOCK_MARKER, state);
-                level.addParticle(particleOption, x, y, z, 0.0, 0.0, 0.0);
-                break;
+                level.addParticle(particleOption, true, true, x, y, z, 0.0, 0.0, 0.0);
+
             }
         }
     }
