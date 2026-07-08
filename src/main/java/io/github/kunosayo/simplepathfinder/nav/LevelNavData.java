@@ -7,6 +7,7 @@ import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
+import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import io.netty.buffer.ByteBuf;
@@ -253,12 +254,17 @@ public class LevelNavData {
     }
 
     public Optional<NavResult> findNav(BlockPos from, BlockPos to) {
+        return findNav(from, to, PathfindingContext.DUMMY);
+    }
+
+    public Optional<NavResult> findNav(BlockPos from, BlockPos to, PathfindingContext ctx) {
         var startNavChunk = this.navChunks.get(ChunkPos.pack(from));
         if (startNavChunk == null) {
+            ctx.markCompleted();
             return Optional.empty();
         }
 
-        var finder = new NavPathFinder(this, from, to);
+        var finder = new NavPathFinder(this, from, to, ctx);
 
         return finder.search();
     }

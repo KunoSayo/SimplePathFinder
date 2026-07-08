@@ -1,6 +1,8 @@
 package io.github.kunosayo.simplepathfinder.nav.finder;
 
 import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
+import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
+import io.github.kunosayo.simplepathfinder.nav.progress.ServerProgressManager;
 import io.github.kunosayo.simplepathfinder.network.PathfindingResultPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -41,6 +43,8 @@ public class ServerPathfindingManager {
     private static final Map<UUID, Boolean> queuePlayer = new ConcurrentHashMap<>();
 
     private static final AtomicInteger executingCount = new AtomicInteger(0);
+
+    private static final ServerProgressManager PROGRESS_MANAGER = new ServerProgressManager();
 
 
     static {
@@ -145,13 +149,14 @@ public class ServerPathfindingManager {
         }
     }
 
-    /**
-     * Helper method to send pathfinding result to player with default config.
-     */
-    public static void sendPathfindingResult(ServerPlayer player, BlockPos targetPos, String targetDesc,
-                                             Optional<NavResult> result) {
-        sendPathfindingResult(player, targetPos, targetDesc, result, NavNotificationConfig.all());
+    public static void startProgress(PathfindingContext ctx) {
+        PROGRESS_MANAGER.start(ctx);
     }
 
-
+    public static PathfindingContext getProgressContext(UUID playerId) {
+        return PROGRESS_MANAGER.get(playerId);
+    }
+    public static void removeProgressContext(UUID playerId) {
+        PROGRESS_MANAGER.remove(playerId);
+    }
 }

@@ -5,6 +5,7 @@ import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavLinkType;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
+import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
@@ -52,19 +53,22 @@ public class NavPathFinder implements EdgeConsumer {
     private BlockPos end;
     private final ResourceKey<Level> dimension;
     private int cacheIndex = -1;
+    private final PathfindingContext ctx;
 
-    public NavPathFinder(LevelNavData levelNavData, BlockPos start, BlockPos end) {
-        this.levelNavData = levelNavData;
-        this.start = start;
-        this.end = end;
-        this.dimension = null; // Dimension will be set from level context
-    }
-
-    public NavPathFinder(LevelNavData levelNavData, ResourceKey<Level> dimension, BlockPos start, BlockPos end) {
+    public NavPathFinder(LevelNavData levelNavData, ResourceKey<Level> dimension, BlockPos start, BlockPos end, PathfindingContext ctx) {
         this.levelNavData = levelNavData;
         this.dimension = dimension;
         this.start = start;
         this.end = end;
+        this.ctx = ctx;
+    }
+
+    public NavPathFinder(LevelNavData levelNavData, BlockPos start, BlockPos end, PathfindingContext ctx) {
+        this.levelNavData = levelNavData;
+        this.start = start;
+        this.end = end;
+        this.dimension = null;
+        this.ctx = ctx;
     }
 
     public int getCacheIndex() {
@@ -110,6 +114,7 @@ public class NavPathFinder implements EdgeConsumer {
                 .map(navChunk -> navChunk.getLayerNav(start))
                 .ifPresent(layeredNavChunks -> layeredNavChunks.forEach(layeredNavChunk -> {
                     long h = getHeuristic(start.getX(), start.getY(), start.getZ());
+                    ctx.setInitialH(h);
                     long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
                     SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
                     layeredNavChunk.putSearchNode(this, startNode);
@@ -322,6 +327,7 @@ public class NavPathFinder implements EdgeConsumer {
     private Optional<NavResult> _search() {
         adjustStartEnd();
         if (!checkConnectivity()) {
+            ctx.markCompleted();
             return Optional.empty();
         }
         addCacheCount(this.cacheIndex, 1);
@@ -331,13 +337,16 @@ public class NavPathFinder implements EdgeConsumer {
         while (!searchNodes.isEmpty()) {
             var node = searchNodes.pop();
             currentSearchingNode = node;
+            ctx.onNodePopped(node.hValue);
 
             if (NavUtil.distManhattan(this.end, node.x, node.y, node.z) <= 1) {
+                ctx.markCompleted();
                 return Optional.of(new NavResult(node, this.end));
             }
             getEdge(node, this);
 //            node.layer.checkExtraPath(this, node, this);
         }
+        ctx.markCompleted();
         return Optional.empty();
     }
 

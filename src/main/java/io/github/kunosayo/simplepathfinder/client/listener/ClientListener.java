@@ -14,13 +14,16 @@ import io.github.kunosayo.simplepathfinder.init.ModItems;
 import io.github.kunosayo.simplepathfinder.item.NavigationItem;
 import io.github.kunosayo.simplepathfinder.item.NavigationMode;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
+import io.github.kunosayo.simplepathfinder.nav.NavigationManager;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
+import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import io.github.kunosayo.simplepathfinder.network.PathfindingRequestPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Util;
 import net.minecraft.world.InteractionHand;
@@ -32,6 +35,7 @@ import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -92,7 +96,9 @@ public class ClientListener {
         BlockPos start = player.blockPosition();
 
         // Run pathfinding asynchronously on the background executor to avoid blocking the main thread
-        Util.backgroundExecutor().execute(() -> data.findNav(start, target).ifPresent(navResult -> {
+        var ctx = new PathfindingContext(null);
+        NavigationManager.startProgress(ctx);
+        Util.backgroundExecutor().execute(() -> data.findNav(start, target, ctx).ifPresent(navResult -> {
             SimplePathFinder.clientNavResult.set(navResult);
         }));
     }
@@ -210,6 +216,34 @@ public class ClientListener {
                 doNav(player, clientNavResult.getNavTarget());
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event) {
+        if (!event.getLevel().isClientSide()) {
+            return;
+        }
+        var ctx = NavigationManager.getCurrentContext();
+        if (ctx != null) {
+            var mc = Minecraft.getInstance();
+            if (ctx.isCompleted()) {
+                if (mc.player != null) {
+                    mc.gui.setOverlayMessage(Component.translatable("simple_path_finder.nav.done"), false);
+                }
+                NavigationManager.clearCurrentContext();
+            } else {
+                if (mc.player != null) {
+                    mc.gui.setOverlayMessage(createProgressBar(ctx.getProgress()), false);
+                }
+            }
+        }
+    }
+
+    private static Component createProgressBar(int percent) {
+        int filled = percent / 10;
+        String bar = "[" + "=".repeat(Math.max(0, filled - 1)) + ">"
+                + " ".repeat(Math.max(0, 9 - filled)) + "]";
+        return Component.translatable("simple_path_finder.nav.progress", bar, percent);
     }
 
     /**

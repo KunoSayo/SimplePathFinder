@@ -2,6 +2,8 @@ package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
+import io.github.kunosayo.simplepathfinder.nav.progress.ClientProgressManager;
+import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -29,6 +31,8 @@ public class NavigationManager {
      * 当前寻路任务的目标位置（用于任务取消判断）
      */
     private static volatile BlockPos currentTaskTargetPos;
+
+    private static final ClientProgressManager PROGRESS_MANAGER = new ClientProgressManager();
 
     /**
      * 请求执行导航
@@ -104,6 +108,18 @@ public class NavigationManager {
                 target.getX(), target.getY(), target.getZ());
     }
 
+    public static void startProgress(PathfindingContext ctx) {
+        PROGRESS_MANAGER.start(ctx);
+    }
+
+    public static PathfindingContext getCurrentContext() {
+        return PROGRESS_MANAGER.getCurrent();
+    }
+
+    public static void clearCurrentContext() {
+        PROGRESS_MANAGER.clear();
+    }
+
     /**
      * 异步执行寻路计算
      *
@@ -129,7 +145,9 @@ public class NavigationManager {
         // 在后台线程执行寻路
         Util.backgroundExecutor().execute(() -> {
             try {
-                navData.findNav(startPos, targetPos).ifPresentOrElse(
+                var ctx = new PathfindingContext(null);
+                startProgress(ctx);
+                navData.findNav(startPos, targetPos, ctx).ifPresentOrElse(
                         navResult -> {
                             // 寻路成功
                             SimplePathFinder.clientNavResult.set(navResult);
