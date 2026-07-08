@@ -318,82 +318,85 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
 
 
     public void updateChunkData() {
-        var list = new ArrayList<NavRectCell>();
+        // we won't use rect cell.
 
-        for (int x = 0; x < 15; x++) {
-            for (int z = 0; z < 15; z++) {
-                final int startX = x;
-                final int startZ = z;
-                short targetWalkY = this.walkY[convertToIndex(startX, startZ)];
-                int targetDistX = this.distances[getDistanceIdx(startX, startZ, false)];
-                int targetDistZ = this.distances[getDistanceIdx(startX, startZ, true)];
 
-                if (targetWalkY == INVALID_WALK_Y || targetDistX < 0 || targetDistX != targetDistZ) {
-                    continue;
-                }
-                // Find maximum rectangle with same values
-                int maxX = startX;
-                int maxZ = startZ;
-
-                // First, find max extent in X direction from start row
-                while (maxX + 1 < 16 &&
-                        this.walkY[convertToIndex(maxX + 1, startZ)] == targetWalkY &&
-                        this.distances[getDistanceIdx(maxX, startZ, false)] == targetDistX) {
-                    maxX++;
-                }
-
-                int minMaxX = maxX;
-                while (minMaxX != startX && maxZ + 1 < 16) {
-                    int curMin = minMaxX;
-                    // Check if all cells in the next row (z = maxZ + 1) have same values
-                    for (int cx = startX; cx <= minMaxX; cx++) {
-                        if (this.walkY[convertToIndex(cx, maxZ + 1)] != targetWalkY
-                                || this.distances[getDistanceIdx(cx, maxZ, true)] != targetDistZ
-                                || (cx > startX && this.distances[getDistanceIdx(cx - 1, maxZ + 1, false)] != targetDistX)) {
-                            curMin = Math.min(minMaxX, cx - 1);
-                            break;
-                        }
-                    }
-                    if (curMin < startX) {
-                        break;
-                    } else if (curMin != startX) {
-                        minMaxX = curMin;
-                        maxZ++;
-                    } else {
-                        break;
-                    }
-                }
-
-                // Check if this rectangle should be added
-                // Condition: neither edge has length 1 (so width > 1 and height > 1)
-                maxX = minMaxX;
-                int width = maxX - startX + 1;
-                int height = maxZ - startZ + 1;
-
-                if (width > 1 && height > 1) {
-                    // Check if this rectangle is a subset of any existing rectangle
-                    boolean isSubset = false;
-                    for (NavRectCell existing : list) {
-                        if (startX >= existing.minX && maxX <= existing.maxX &&
-                                startZ >= existing.minZ && maxZ <= existing.maxZ) {
-                            isSubset = true;
-                            break;
-                        }
-                    }
-
-                    if (!isSubset) {
-                        var cell = new NavRectCell();
-                        cell.minX = (byte) startX;
-                        cell.minZ = (byte) startZ;
-                        cell.maxX = (byte) maxX;
-                        cell.maxZ = (byte) maxZ;
-                        list.add(cell);
-                    }
-                }
-            }
-        }
-
-        this.cellList = list;
+//        var list = new ArrayList<NavRectCell>();
+//
+//        for (int x = 0; x < 15; x++) {
+//            for (int z = 0; z < 15; z++) {
+//                final int startX = x;
+//                final int startZ = z;
+//                short targetWalkY = this.walkY[convertToIndex(startX, startZ)];
+//                int targetDistX = this.distances[getDistanceIdx(startX, startZ, false)];
+//                int targetDistZ = this.distances[getDistanceIdx(startX, startZ, true)];
+//
+//                if (targetWalkY == INVALID_WALK_Y || targetDistX < 0 || targetDistX != targetDistZ) {
+//                    continue;
+//                }
+//                // Find maximum rectangle with same values
+//                int maxX = startX;
+//                int maxZ = startZ;
+//
+//                // First, find max extent in X direction from start row
+//                while (maxX + 1 < 16 &&
+//                        this.walkY[convertToIndex(maxX + 1, startZ)] == targetWalkY &&
+//                        this.distances[getDistanceIdx(maxX, startZ, false)] == targetDistX) {
+//                    maxX++;
+//                }
+//
+//                int minMaxX = maxX;
+//                while (minMaxX != startX && maxZ + 1 < 16) {
+//                    int curMin = minMaxX;
+//                    // Check if all cells in the next row (z = maxZ + 1) have same values
+//                    for (int cx = startX; cx <= minMaxX; cx++) {
+//                        if (this.walkY[convertToIndex(cx, maxZ + 1)] != targetWalkY
+//                                || this.distances[getDistanceIdx(cx, maxZ, true)] != targetDistZ
+//                                || (cx > startX && this.distances[getDistanceIdx(cx - 1, maxZ + 1, false)] != targetDistX)) {
+//                            curMin = Math.min(minMaxX, cx - 1);
+//                            break;
+//                        }
+//                    }
+//                    if (curMin < startX) {
+//                        break;
+//                    } else if (curMin != startX) {
+//                        minMaxX = curMin;
+//                        maxZ++;
+//                    } else {
+//                        break;
+//                    }
+//                }
+//
+//                // Check if this rectangle should be added
+//                // Condition: neither edge has length 1 (so width > 1 and height > 1)
+//                maxX = minMaxX;
+//                int width = maxX - startX + 1;
+//                int height = maxZ - startZ + 1;
+//
+//                if (width > 1 && height > 1) {
+//                    // Check if this rectangle is a subset of any existing rectangle
+//                    boolean isSubset = false;
+//                    for (NavRectCell existing : list) {
+//                        if (startX >= existing.minX && maxX <= existing.maxX &&
+//                                startZ >= existing.minZ && maxZ <= existing.maxZ) {
+//                            isSubset = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    if (!isSubset) {
+//                        var cell = new NavRectCell();
+//                        cell.minX = (byte) startX;
+//                        cell.minZ = (byte) startZ;
+//                        cell.maxX = (byte) maxX;
+//                        cell.maxZ = (byte) maxZ;
+//                        list.add(cell);
+//                    }
+//                }
+//            }
+//        }
+//
+//        this.cellList = list;
     }
 
     static void trap() {

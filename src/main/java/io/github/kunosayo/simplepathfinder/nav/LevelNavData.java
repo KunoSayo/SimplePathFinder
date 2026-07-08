@@ -164,6 +164,12 @@ public class LevelNavData {
         return Optional.of(chunk);
     }
 
+    public @Nullable INavChunk readNavChunk(int cx, int cz) {
+        // checkBoundedAccess(pos, create);
+        // When create is only attempted on the main thread, there's no trouble
+        return navChunks.get(ChunkPos.pack(cx, cz));
+    }
+
     public Optional<ILayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
         return Optional.ofNullable(navChunks.get(pos.pack()))
                 .flatMap(navChunk -> navChunk.getLayer(layer));
