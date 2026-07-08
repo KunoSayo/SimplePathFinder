@@ -1,6 +1,5 @@
 package io.github.kunosayo.simplepathfinder.nav.finder;
 
-import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavLinkType;
@@ -118,22 +117,25 @@ public class NavPathFinder implements EdgeConsumer {
                 }));
     }
 
-    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, EdgeConsumer edgeInfoConsumer) {
-        // the y of b should be the same as a
-
-        int situation = LayeredNavChunk.getPosSituation(ax, az, bx, bz);
-        boolean isZ = (situation & 1) == 1;
-        int distance;
-        if (situation > 1) {
-            distance = bNavChunk.getDistance(bx, y, bz, isZ);
-        } else {
-            distance = navChunk.getDistance(ax, y, az, isZ);
-        }
-
-        if (distance < 0) {
+    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, int currentDistance, int lastDistance, EdgeConsumer edgeInfoConsumer) {
+        if (currentDistance < 0) {
             return;
         }
-        bNavChunk.getEdgeForLayers(bx, y, bz, distance, edgeInfoConsumer);
+        if (currentDistance > lastDistance) {
+            currentDistance += (currentDistance - lastDistance) * 20;
+        }
+        bNavChunk.getEdgeForLayers(bx, y, bz, currentDistance, edgeInfoConsumer);
+    }
+
+    private int getDistance(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y) {
+        int situation = LayeredNavChunk.getPosSituation(ax, az, bx, bz);
+        boolean isZ = (situation & 1) == 1;
+        if (situation > 1) {
+            return bNavChunk.getDistance(bx, y, bz, isZ);
+        } else {
+            return navChunk.getDistance(ax, y, az, isZ);
+        }
+
     }
 
     /**
@@ -163,9 +165,14 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int ly, int lz, EdgeConsumer edgeInfoConsumer) {
+    private void getEdge(INavChunk navChunk, ILayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int ly, int lz, boolean skipDiag, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
         getNavLinkEdges(navChunk, layeredNavChunk, x, y, z, edgeInfoConsumer);
+        Optional<INavChunk> navChunk1 = levelNavData.getNavChunk(lx >> 4, lz >> 4, false);
+        int lastDistance = 0;
+        if (navChunk1.isPresent()) {
+            lastDistance = getDistance(navChunk1.get(), navChunk, lx, lz, x, z, y);
+        }
 
         // Then, get normal walking edges
         for (int i = 0; i < 4; i++) {
@@ -184,7 +191,29 @@ public class NavPathFinder implements EdgeConsumer {
                 thatChunk = thatChunkOpt.get();
             }
 
-            getEdge(navChunk, thatChunk, x, z, tx, tz, y, edgeInfoConsumer);
+            int distance = getDistance(navChunk, thatChunk, x, z, tx, tz, y);
+            if (distance < 0) continue;
+            getEdge(navChunk, thatChunk, x, z, tx, tz, y, distance, lastDistance, edgeInfoConsumer);
+
+            if (!skipDiag)
+                for (int j = 1; j >= -1; j -= 2) {
+                    //反转 xz，并乘+-1，获取共轭向量
+                    int diagX = tx + LayeredNavChunk.SEARCH_DZ[i] * j;
+                    int diagZ = tz + LayeredNavChunk.SEARCH_DX[i] * j;
+
+                    boolean isSameDiag = NavUtil.isSameChunk(tx, tz, diagX, diagZ);
+                    var diagChunk = thatChunk;
+                    if (!isSameDiag) {
+                        Optional<INavChunk> thatChunkOpt = levelNavData.getNavChunk(diagX >> 4, diagZ >> 4, false);
+                        if (thatChunkOpt.isEmpty()) {
+                            continue;
+                        }
+                        diagChunk = thatChunkOpt.get();
+                    }
+                    int distance2 = getDistance(thatChunk, diagChunk, tx, tz, diagX, diagZ, y);
+                    if (distance2 < 0) continue;
+                    getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, (int) ((distance2 + distance) * 0.5), lastDistance, edgeInfoConsumer);
+                }
         }
     }
 
@@ -192,7 +221,7 @@ public class NavPathFinder implements EdgeConsumer {
         getEdge(node.layer.getParentChunk(), node.layer, node.x, node.y, node.z,
                 node.lastNode != null ? node.lastNode.x : Integer.MIN_VALUE + 9,
                 node.lastNode != null ? node.lastNode.y : Integer.MIN_VALUE + 9,
-                node.lastNode != null ? node.lastNode.z : Integer.MIN_VALUE + 9, edgeInfoConsumer);
+                node.lastNode != null ? node.lastNode.z : Integer.MIN_VALUE + 9, false, edgeInfoConsumer);
     }
 
     private boolean checkConnectivity() {
@@ -259,7 +288,7 @@ public class NavPathFinder implements EdgeConsumer {
 
             int y = currentLayer.getWalkY(cx & 15, cz & 15);
             if (!currentLayer.isWalkYValid(y)) continue;
-            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, edgeConsumer);
+            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, true, edgeConsumer);
         }
 
         return false;
@@ -307,7 +336,7 @@ public class NavPathFinder implements EdgeConsumer {
                 return Optional.of(new NavResult(node, this.end));
             }
             getEdge(node, this);
-            node.layer.checkExtraPath(this, node, this);
+//            node.layer.checkExtraPath(this, node, this);
         }
         return Optional.empty();
     }
@@ -487,18 +516,22 @@ public class NavPathFinder implements EdgeConsumer {
             if (lastNode == null) {
                 return 0;
             }
+            int a = 30;
             int px = x;
-            int py = y;
             int pz = z;
             int lx = lastNode.x;
-            int ly = lastNode.y;
             int lz = lastNode.z;
-            if (nx - px == px - lx
-                    && ny - py == py - ly
-                    && nz - pz == pz - lz) {
-                return 0;
+            int cy = y != ny ? a : 0;
+
+            int ddx = (px - lx) - (nx - px);
+            int ddz = (pz - lz) - (nz - pz);
+            if (ddx == 0 && ddz == 0) {
+                return cy;
             }
-            return 37;
+            if ((ddx == 0 && (ddz == -1 || ddz == 1)) || (ddz == 0 && (ddx == -1 || ddx == 1))) {
+                return cy + a;
+            }
+            return cy + 2 * a;
         }
     }
 
