@@ -212,7 +212,7 @@ public class NavPathFinder implements EdgeConsumer {
                     }
                     int distance2 = getDistance(thatChunk, diagChunk, tx, tz, diagX, diagZ, y);
                     if (distance2 < 0) continue;
-                    getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, (int) ((distance2 + distance) * 0.7), lastDistance, edgeInfoConsumer);
+                    getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, (int) ((distance2 + distance) * 0.5), lastDistance, edgeInfoConsumer);
                 }
         }
     }
