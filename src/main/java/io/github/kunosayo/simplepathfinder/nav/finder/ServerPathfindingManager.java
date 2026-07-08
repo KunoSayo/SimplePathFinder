@@ -2,7 +2,6 @@ package io.github.kunosayo.simplepathfinder.nav.finder;
 
 import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
-import io.github.kunosayo.simplepathfinder.nav.progress.ServerProgressManager;
 import io.github.kunosayo.simplepathfinder.network.PathfindingResultPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -44,7 +43,7 @@ public class ServerPathfindingManager {
 
     private static final AtomicInteger executingCount = new AtomicInteger(0);
 
-    private static final ServerProgressManager PROGRESS_MANAGER = new ServerProgressManager();
+    private static final ConcurrentHashMap<UUID, PathfindingContext> activeCtxs = new ConcurrentHashMap<>();
 
 
     static {
@@ -150,13 +149,17 @@ public class ServerPathfindingManager {
     }
 
     public static void startProgress(PathfindingContext ctx) {
-        PROGRESS_MANAGER.start(ctx);
+        if (ctx != PathfindingContext.DUMMY) {
+            if (ctx.getPlayerId() != null) {
+                activeCtxs.put(ctx.getPlayerId(), ctx);
+            }
+        }
     }
 
     public static PathfindingContext getProgressContext(UUID playerId) {
-        return PROGRESS_MANAGER.get(playerId);
+        return activeCtxs.get(playerId);
     }
     public static void removeProgressContext(UUID playerId) {
-        PROGRESS_MANAGER.remove(playerId);
+        activeCtxs.remove(playerId);
     }
 }

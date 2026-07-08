@@ -2,7 +2,6 @@ package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.client.ClientNavDataManager;
-import io.github.kunosayo.simplepathfinder.nav.progress.ClientProgressManager;
 import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -32,7 +31,7 @@ public class NavigationManager {
      */
     private static volatile BlockPos currentTaskTargetPos;
 
-    private static final ClientProgressManager PROGRESS_MANAGER = new ClientProgressManager();
+    private static volatile PathfindingContext currentCtx;
 
     /**
      * 请求执行导航
@@ -109,15 +108,15 @@ public class NavigationManager {
     }
 
     public static void startProgress(PathfindingContext ctx) {
-        PROGRESS_MANAGER.start(ctx);
+        currentCtx = ctx;
     }
 
     public static PathfindingContext getCurrentContext() {
-        return PROGRESS_MANAGER.getCurrent();
+        return currentCtx;
     }
 
     public static void clearCurrentContext() {
-        PROGRESS_MANAGER.clear();
+        currentCtx = null;
     }
 
     /**
