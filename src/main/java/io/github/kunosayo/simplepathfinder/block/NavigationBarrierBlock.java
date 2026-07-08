@@ -7,12 +7,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.TransparentBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -33,7 +35,7 @@ public class NavigationBarrierBlock extends TransparentBlock {
     }
 
     protected @NonNull VoxelShape getShape(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, CollisionContext context) {
-        return context.isHoldingItem(ModItems.NAVIGATION_BARRIER_BLOCK.get()) ? Shapes.block() : Shapes.empty();
+        return (context.isHoldingItem(ModItems.NAVIGATION_BARRIER_BLOCK.get()) || context.isHoldingItem(ModItems.NAVIGATION.get())) ? Shapes.block() : Shapes.empty();
     }
 
     @Override
@@ -51,6 +53,16 @@ public class NavigationBarrierBlock extends TransparentBlock {
 
             }
         }
+    }
+
+    @Override
+    protected boolean canBeReplaced(@NonNull BlockState state, @NonNull BlockPlaceContext context) {
+        return !context.replacingClickedOnBlock();
+    }
+
+    @Override
+    protected boolean canBeReplaced(@NonNull BlockState state, @NonNull Fluid fluid) {
+        return true;
     }
 }
 
