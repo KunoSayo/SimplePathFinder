@@ -120,7 +120,9 @@ public final class PathCurveSmoother {
     private static boolean isSameDirection(Vec3 start, Vec3 middle, Vec3 end) {
         Vec3 first = middle.subtract(start);
         Vec3 second = end.subtract(middle);
-        if (first.lengthSqr() == 0.0 || second.lengthSqr() == 0.0) {
+        double fl = first.lengthSqr();
+        double sl = second.lengthSqr();
+        if (fl == 0.0 || sl == 0.0 || (fl + sl) >= 16384.0) {
             return false;
         }
         return first.dot(second) > 0.0 && first.cross(second).lengthSqr() < 1.0E-12;
