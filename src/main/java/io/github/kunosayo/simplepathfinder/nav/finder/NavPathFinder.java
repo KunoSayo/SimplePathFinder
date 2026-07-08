@@ -192,6 +192,7 @@ public class NavPathFinder implements EdgeConsumer {
             }
 
             int distance = getDistance(navChunk, thatChunk, x, z, tx, tz, y);
+            if (distance < 0) continue;
             getEdge(navChunk, thatChunk, x, z, tx, tz, y, distance, lastDistance, edgeInfoConsumer);
 
             if (!skipDiag)
