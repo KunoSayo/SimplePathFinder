@@ -3,6 +3,7 @@ package io.github.kunosayo.simplepathfinder.nav.finder;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
+import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import io.github.kunosayo.simplepathfinder.network.PathfindingResultPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -41,8 +42,10 @@ public record PathfindingTask(WeakReference<MinecraftServer> server, UUID player
             var level = player.level();
             var data = LevelNavDataSavedData.loadFromLevel(level);
 
-            // Execute pathfinding (no timeout - let it run as long as needed)
-            Optional<NavResult> result = data.levelNavData.findNav(startPos, targetPos);
+            // Execute pathfinding with progress tracking
+            var ctx = new PathfindingContext(player.getUUID());
+            ServerPathfindingManager.startProgress(ctx);
+            Optional<NavResult> result = data.levelNavData.findNav(startPos, targetPos, ctx);
 
             ServerPathfindingManager.sendPathfindingResult(player, targetPos, targetDesc, result, task.config);
 

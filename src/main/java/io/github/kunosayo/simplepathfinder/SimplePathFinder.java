@@ -7,11 +7,13 @@ import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.init.*;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
+import io.github.kunosayo.simplepathfinder.nav.finder.ServerPathfindingManager;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import io.github.kunosayo.simplepathfinder.network.SyncSingleChunkPacket;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -205,7 +207,25 @@ public final class SimplePathFinder {
                 }
             }
 
+            if (event.getEntity() instanceof ServerPlayer sp) {
+                var ctx = ServerPathfindingManager.getProgressContext(sp.getUUID());
+                if (ctx != null) {
+                    if (ctx.isCompleted()) {
+                        ServerPathfindingManager.removeProgressContext(sp.getUUID());
+                        sp.sendSystemMessage(Component.translatable("simple_path_finder.nav.done"), true);
+                    }else{
+                        sp.sendSystemMessage(createProgressBar(ctx.getProgress()), true);
+                    }
+                }
+            }
         }
+    }
+
+    private static Component createProgressBar(int percent) {
+        int filled = percent / 10;
+        String bar = "[" + "=".repeat(Math.max(0, filled - 1)) + ">"
+                + " ".repeat(Math.max(0, 9 - filled)) + "]";
+        return Component.translatable("simple_path_finder.nav.progress", bar, percent);
     }
 
     public static void trySyncSingleForPlayer(ServerPlayer player, ServerLevel level, ChunkPos pos) {
