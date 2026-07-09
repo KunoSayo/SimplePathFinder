@@ -7,8 +7,10 @@ import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.nav.NavigationService;
 import io.github.kunosayo.simplepathfinder.network.PathfindingRequestPacket;
 import io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket;
+import net.minecraft.advancements.criterion.BlockPredicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -18,6 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.AdventureModePredicate;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -29,6 +32,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -38,7 +43,8 @@ import java.util.function.Consumer;
 public class LocatorItem extends Item {
     public LocatorItem(Identifier id) {
         var key = ResourceKey.create(Registries.ITEM, id);
-        super(new Properties().setId(key).stacksTo(1));
+        super(new Properties().setId(key).stacksTo(1)
+                .component(DataComponents.CAN_PLACE_ON, new AdventureModePredicate(List.of(BlockPredicate.Builder.block().build()))));
     }
 
     @Override
@@ -56,7 +62,7 @@ public class LocatorItem extends Item {
                     player.sendSystemMessage(Component.translatable("item.simple_path_finder.locator.bound.player",
                             player.getName()));
                 }
-                return InteractionResult.SUCCESS_SERVER;
+                return InteractionResult.SUCCESS;
             }
             return super.use(level, player, hand);
         }
@@ -81,7 +87,7 @@ public class LocatorItem extends Item {
                     sendNavigationPacket((ServerLevel) level, (ServerPlayer) player, data);
                 }
             }
-            return InteractionResult.SUCCESS_SERVER;
+            return InteractionResult.SUCCESS;
         }
 
         return super.use(level, player, hand);
@@ -105,7 +111,7 @@ public class LocatorItem extends Item {
                     player.sendSystemMessage(Component.translatable("item.simple_path_finder.locator.bound.player",
                             player.getName()));
                 }
-                return InteractionResult.SUCCESS_SERVER;
+                return InteractionResult.SUCCESS;
             }
         }
         return super.onItemUseFirst(stack, context);
