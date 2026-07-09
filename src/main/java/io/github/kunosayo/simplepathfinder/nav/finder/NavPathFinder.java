@@ -371,8 +371,8 @@ public class NavPathFinder implements EdgeConsumer {
             return _search();
         } finally {
             if (this.cacheIndex != -1) {
-                USING_CACHE_VISIT[this.cacheIndex].set(false);
                 VISIT_NODE_CACHE.get(this.cacheIndex).clear();
+                USING_CACHE_VISIT[this.cacheIndex].set(false);
             }
         }
     }
