@@ -229,8 +229,7 @@ public class LangGen {
         add("simple_path_finder.nav.chunk_not_found", "此位置未找到导航区块", "Navigation chunk not found at this position");
         add("simple_path_finder.nav.no_layer_at_pos", "此位置未找到导航层级", "No navigation layer found at this position");
         add("simple_path_finder.nav.no_data", "没有可用的导航数据", "No navigation data available");
-        add("simple_path_finder.nav.success", "开始寻路", "Starting pathfinding");
-        add("simple_path_finder.nav.starting", "开始寻路至 %s, %s, %s", "Starting pathfinding to %s, %s, %s");
+        add("simple_path_finder.nav.starting", "开始寻路至 %s, %s, %s (抵达时或执行/nav clear取消)", "Starting pathfinding to %s, %s, %s. (Arrive or run \"/nav clear\" to cancel");
         add("simple_path_finder.nav.to_player", "开始寻路至玩家： %s", "Starting pathfinding to player: %s");
 
         // 导航链接系统消息

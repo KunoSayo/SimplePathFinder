@@ -72,10 +72,8 @@
   "simple_path_finder.nav.no_data": "No navigation data available",
   "simple_path_finder.nav.no_layer_at_pos": "No navigation layer found at this position",
   "simple_path_finder.nav.no_path": "Cannot find valid path",
-  "simple_path_finder.nav.progress": "Pathfinding... %s %d%%",
   "simple_path_finder.nav.no_target_in_block": "No target in navigation block",
-  "simple_path_finder.nav.starting": "Starting pathfinding to %s, %s, %s",
-  "simple_path_finder.nav.success": "Starting pathfinding",
+  "simple_path_finder.nav.starting": "Starting pathfinding to %s, %s, %s. (Arrive or run \"/nav clear\" to cancel",
   "simple_path_finder.nav.to_player": "Starting pathfinding to player: %s",
   "simple_path_finder.nav.wrong_dimension": "Target is in different dimension",
   "simple_path_finder.nav_brush.creative_required": "Creative mode required to use navigation brush",
@@ -97,6 +95,5 @@
   "tooltip.navigation.current_layer": "Layer: %s",
   "tooltip.navigation.current_mode": "Current Mode:",
   "tooltip.navigation.open_settings": "Shift+Right-click to open settings",
-  "tooltip.navigation.switch_mode": "Hold Shift + Scroll to switch mode",
-  "simple_path_finder.nav.done": "Pathfinding Done!"
+  "tooltip.navigation.switch_mode": "Hold Shift + Scroll to switch mode"
 }
