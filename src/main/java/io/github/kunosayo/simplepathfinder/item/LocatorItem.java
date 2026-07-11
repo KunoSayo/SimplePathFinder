@@ -34,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -45,6 +46,9 @@ public class LocatorItem extends Item {
     public LocatorItem(Identifier id) {
         var key = ResourceKey.create(Registries.ITEM, id);
         super(new Properties().setId(key).stacksTo(1)
+                .component(DataComponents.TOOLTIP_DISPLAY, new TooltipDisplay(false, new LinkedHashSet<>() {{
+                    add(DataComponents.CAN_PLACE_ON);
+                }}))
                 .component(DataComponents.CAN_PLACE_ON, new AdventureModePredicate(List.of(BlockPredicate.Builder.block().build()))));
     }
 
