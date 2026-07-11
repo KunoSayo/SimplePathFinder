@@ -208,9 +208,9 @@ public class LocatorItem extends Item {
                     .withStyle(style -> style.withColor(0x00FFFF)));
             var pos = data.getGlobalPos();
             // 使用 dimension().toString() 获取维度字符串表示
-            builder.accept(Component.literal("%s: %s".formatted(
-                    pos.dimension(),
-                    pos.pos()
+            builder.accept(Component.literal("%s %d %d %d".formatted(
+                    pos.dimension().identifier(),
+                    pos.pos().getX(), pos.pos().getY(), pos.pos().getZ()
             )).withStyle(style -> style.withColor(0x7F7F7F)));
         }
 
