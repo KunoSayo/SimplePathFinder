@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "simple_path_finder",
+  "ingredients": [
+    "simple_path_finder:locator"
+  ],
+  "result": {
+    "id": "simple_path_finder:locator"
+  }
+}

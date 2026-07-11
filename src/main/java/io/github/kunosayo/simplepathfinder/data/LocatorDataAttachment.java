@@ -8,6 +8,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.common.util.ValueIOSerializable;
 import org.jspecify.annotations.NonNull;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -56,7 +57,7 @@ public class LocatorDataAttachment implements ValueIOSerializable {
     /**
      * 获取定位器数据（如果存在）
      */
-    public LocatorData getLocatorData() {
+    public @Nullable LocatorData getLocatorData() {
         return data.orElse(null);
     }
 

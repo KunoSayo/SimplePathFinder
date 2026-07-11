@@ -84,6 +84,7 @@
   "simple_path_finder.nav_brush.no_layer_at_pos": "No navigation layer at this position",
   "simple_path_finder.nav_brush.no_nav_data": "No navigation data at this position",
   "simple_path_finder.remove.current.success": "Successfully removed navigation in current chunk",
+  "tooltip.locator.bound.from_block": "Locator imported block data successfully",
   "tooltip.locator.bound.player": "Bound to Player",
   "tooltip.locator.bound.pos": "Bound to Position",
   "tooltip.locator.unbound": "Unbound",

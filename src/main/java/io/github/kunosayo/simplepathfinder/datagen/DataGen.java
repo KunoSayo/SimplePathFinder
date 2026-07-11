@@ -23,6 +23,9 @@ public class DataGen implements IModBusEvent {
         event.getGenerator().addProvider(true, bilingualProvider.getChineseProvider());
 
         event.getGenerator().addProvider(true, new ItemModelGen(event.getGenerator().getPackOutput()));
+
+        event.getGenerator().addProvider(true, new ModRecipeProvider.Runner(event.getGenerator().getPackOutput(), event.getLookupProvider()));
+
     }
 
     @SubscribeEvent

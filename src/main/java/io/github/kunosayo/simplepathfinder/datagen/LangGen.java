@@ -140,6 +140,7 @@ public class LangGen {
         // 定位器提示
         add("tooltip.locator.bound.player", "已绑定到玩家", "Bound to Player");
         add("tooltip.locator.bound.pos", "已绑定到位置", "Bound to Position");
+        add("tooltip.locator.bound.from_block", "定位器成功导入方块数据", "Locator imported block data successfully");
         add("tooltip.locator.unbound", "未绑定", "Unbound");
         add("tooltip.locator.usage", "按住Shift + 右键绑定当前玩家，右键方块绑定位置", "Hold Shift + Right-click to bind current player, Right-click block to bind location.");
 

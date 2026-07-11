@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.item;
 
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.block.entity.PathFinderBlockEntity;
 import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
@@ -102,17 +103,34 @@ public class LocatorItem extends Item {
         var level = context.getLevel();
         LocatorData data = getLocatorData(stack);
 
+
         if (data == null) {
             // 没有设置目标，按Shift写入玩家UUID
             if (player.isCrouching()) {
-                if (!level.isClientSide()) {
-                    LocatorData newData = LocatorData.forPlayer(player.getUUID());
-                    stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
+                if (level.isClientSide()) {
                     player.sendSystemMessage(Component.translatable("item.simple_path_finder.locator.bound.player",
                             player.getName()));
+                } else {
+                    LocatorData newData = LocatorData.forPlayer(player.getUUID());
+                    stack.set(ModDataComponents.LOCATOR_COMPONENT.get(), newData);
                 }
                 return InteractionResult.SUCCESS;
             }
+
+            if (level.getBlockEntity(context.getClickedPos()) instanceof PathFinderBlockEntity be) {
+                var targetData = be.getBlockLocatorData().getLocatorData();
+                if (targetData != null) {
+                    if (level.isClientSide()) {
+                        player.sendSystemMessage(Component.translatable("tooltip.locator.bound.from_block",
+                                player.getName()));
+                    } else {
+                        stack.set(ModDataComponents.LOCATOR_COMPONENT, targetData);
+                    }
+                    return InteractionResult.SUCCESS;
+                }
+            }
+
+
         }
         return super.onItemUseFirst(stack, context);
     }

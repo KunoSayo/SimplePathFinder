@@ -84,6 +84,7 @@
   "simple_path_finder.nav_brush.no_layer_at_pos": "此位置没有导航层",
   "simple_path_finder.nav_brush.no_nav_data": "此位置没有导航数据",
   "simple_path_finder.remove.current.success": "成功移除当前所在区块导航",
+  "tooltip.locator.bound.from_block": "定位器成功导入方块数据",
   "tooltip.locator.bound.player": "已绑定到玩家",
   "tooltip.locator.bound.pos": "已绑定到位置",
   "tooltip.locator.unbound": "未绑定",

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_locator": {
+      "conditions": {
+        "items": [
+          {
+            "items": "simple_path_finder:locator"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:unbind_locator"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_locator"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:unbind_locator"
+    ]
+  }
+}
