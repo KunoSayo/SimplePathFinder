@@ -50,22 +50,7 @@ public final class NavChunk implements INavChunk {
             ByteBufCodecs.<ByteBuf, NavLink>list().apply(NavLink.STREAM_CODEC)
     );
 
-    private static final StreamCodec<ByteBuf, Map<ChunkInnerPosWithY, List<NavLink>>> NAV_LINKS_MAP_CODEC = StreamCodec.of(NAV_LINKS_MAP_NEW_CODEC, byteBuf -> {
-        int idx = byteBuf.readerIndex();
-        try {
-            var result = NAV_LINKS_MAP_OLD_CODEC.decode(byteBuf);
-            result.forEach((chunkInnerPos, _) -> {
-                if (chunkInnerPos.x < 0 || chunkInnerPos.z < 0 || chunkInnerPos.x >= 16 || chunkInnerPos.z >= 16) {
-                    throw new UnsupportedOperationException();
-                }
-            });
-            return new ConcurrentHashMap<>();
-        } catch (Throwable t) {
-            SimplePathFinder.LOGGER.warn(t);
-        }
-        byteBuf.readerIndex(idx);
-        return NAV_LINKS_MAP_NEW_CODEC.decode(byteBuf);
-    });
+    private static final StreamCodec<ByteBuf, Map<ChunkInnerPosWithY, List<NavLink>>> NAV_LINKS_MAP_CODEC = NAV_LINKS_MAP_NEW_CODEC;
 
     public static final StreamCodec<ByteBuf, NavChunk> STREAM_CODEC = StreamCodec
             .composite(

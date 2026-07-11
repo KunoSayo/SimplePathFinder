@@ -39,16 +39,7 @@ public record NavLink(BlockPos dest, NavLinkType type) {
             NavLink::new
     );
 
-    public static final StreamCodec<ByteBuf, NavLink> STREAM_CODEC = StreamCodec.of(CURRENT_STREAM_CODEC, byteBuf -> {
-        int reader = byteBuf.readerIndex();
-        try {
-            return STREAM_CODEC_V1.decode(byteBuf);
-        } catch (Throwable t) {
-            SimplePathFinder.LOGGER.warn(t);
-        }
-        byteBuf.readerIndex(reader);
-        return CURRENT_STREAM_CODEC.decode(byteBuf);
-    });
+    public static final StreamCodec<ByteBuf, NavLink> STREAM_CODEC = CURRENT_STREAM_CODEC;
 
     public NavLink {
     }
