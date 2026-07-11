@@ -4,7 +4,7 @@
   "block.simple_path_finder.path_finder_block.already_has_data": "Block already has data, cannot write",
   "block.simple_path_finder.path_finder_block.empty_locator": "Locator is empty, cannot write",
   "block.simple_path_finder.path_finder_block.wrote.player": "Wrote player locator data to block",
-  "block.simple_path_finder.path_finder_block.wrote.pos": "Wrote position data to block: ",
+  "block.simple_path_finder.path_finder_block.wrote.pos": "Wrote position data to block: %s %s %s",
   "gui.simple_path_finder.block_distance.add": "Add",
   "gui.simple_path_finder.block_distance.cancel": "Cancel",
   "gui.simple_path_finder.block_distance.remove": "Remove",

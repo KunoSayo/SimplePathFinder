@@ -150,7 +150,7 @@ public class LangGen {
 
         // 路径查找方块消息
         add("block.simple_path_finder.path_finder_block.wrote.player", "已将玩家定位数据写入方块", "Wrote player locator data to block");
-        add("block.simple_path_finder.path_finder_block.wrote.pos", "已将位置数据写入方块：", "Wrote position data to block: ");
+        add("block.simple_path_finder.path_finder_block.wrote.pos", "已将位置数据写入方块：%s %s %s", "Wrote position data to block: %s %s %s");
         add("block.simple_path_finder.path_finder_block.empty_locator", "定位器为空，无法写入", "Locator is empty, cannot write");
         add("block.simple_path_finder.path_finder_block.already_has_data", "方块已有数据，无法写入", "Block already has data, cannot write");
 
