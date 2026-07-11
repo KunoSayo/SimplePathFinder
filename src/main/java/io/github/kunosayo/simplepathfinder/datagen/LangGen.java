@@ -163,6 +163,8 @@ public class LangGen {
         add("simple_path_finder.failed.not_found", "未能找到导航区块", "Navigation chunk not found");
 
 
+        add("simple_path_finder.nav.progress", "寻路中... %s %d%%", "Pathfinding... %s %d%%");
+        add("simple_path_finder.nav.done", "寻路完成", "Pathfinding Done!");
         add("item_group.simple_path_finder.name", "简单路径查找器", "Simple Path Finder");
 
         // 导航笔刷模式
