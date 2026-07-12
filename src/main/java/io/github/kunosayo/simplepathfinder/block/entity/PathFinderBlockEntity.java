@@ -5,11 +5,15 @@ import io.github.kunosayo.simplepathfinder.data.LocatorDataAttachment;
 import io.github.kunosayo.simplepathfinder.init.ModAttachments;
 import io.github.kunosayo.simplepathfinder.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.Optional;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 路径查找方块实体
@@ -28,6 +32,11 @@ public class PathFinderBlockEntity extends BlockEntity {
         return getData(ModAttachments.LOCATOR_DATA.get());
     }
 
+    @Override
+    public @NonNull CompoundTag getUpdateTag(HolderLookup.@NonNull Provider registries) {
+        return this.saveWithoutMetadata(registries);
+    }
+
     /**
      * 设置定位器数据
      * 使用 setData 会自动标记方块实体为已修改并同步到客户端
@@ -36,41 +45,9 @@ public class PathFinderBlockEntity extends BlockEntity {
         setData(ModAttachments.LOCATOR_DATA.get(), LocatorDataAttachment.of(data));
     }
 
-    /**
-     * 检查是否有有效的定位数据
-     */
-    public boolean hasValidTarget() {
-        LocatorDataAttachment blockData = getBlockLocatorData();
-        if (!blockData.hasLocator()) {
-            return false;
-        }
-
-        LocatorData data = blockData.getLocatorData();
-        if (data.isPlayerBound()) {
-            // 检查玩家是否在线
-            if (level instanceof ServerLevel serverLevel) {
-                var player = serverLevel.getServer().getPlayerList().getPlayer(data.getPlayerUuid());
-                return player != null;
-            }
-            return false;
-        } else {
-            return data.isPosBound();
-        }
+    @Override
+    public @Nullable Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    /**
-     * 获取目标玩家名称（如果绑定到玩家）
-     */
-    public Optional<String> getTargetPlayerName() {
-        LocatorDataAttachment blockData = getBlockLocatorData();
-        if (!blockData.hasLocator()) {
-            return Optional.empty();
-        }
-        LocatorData data = blockData.getLocatorData();
-        if (data.isPlayerBound() && level instanceof ServerLevel serverLevel) {
-            var player = serverLevel.getServer().getPlayerList().getPlayer(data.getPlayerUuid());
-            return Optional.ofNullable(player).map(p -> p.getName().getString());
-        }
-        return Optional.empty();
-    }
 }

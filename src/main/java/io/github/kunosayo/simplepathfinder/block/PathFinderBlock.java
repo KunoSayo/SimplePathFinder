@@ -6,14 +6,11 @@ import io.github.kunosayo.simplepathfinder.data.LocatorData;
 import io.github.kunosayo.simplepathfinder.item.LocatorItem;
 import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.nav.NavigationService;
-import io.github.kunosayo.simplepathfinder.network.PlayerLocationPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -24,7 +21,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
@@ -83,7 +79,7 @@ public class PathFinderBlock extends BaseEntityBlock {
                     be.setLocatorData(locatorData);
 
                     // 更新方块状态为激活状态
-                    level.setBlock(pos, state.setValue(ACTIVE, true), 3);
+                    level.setBlock(pos, state.setValue(ACTIVE, true), Block.UPDATE_ALL);
 
                     // 发送确认消息
                     if (locatorData.isPosBound()) {
@@ -116,41 +112,15 @@ public class PathFinderBlock extends BaseEntityBlock {
         return super.useItemOn(itemStack, state, level, pos, player, hand, hitResult);
     }
 
-    /**
-     * 发送导航网络包到客户端
-     *
-     * @param level       服务端世界
-     * @param player      目标玩家
-     * @param locatorData 定位器数据
-     */
-    private void sendNavigationPacket(ServerLevel level, ServerPlayer player, LocatorData locatorData) {
-        if (locatorData.isPlayerBound()) {
-            // 绑定到玩家：检查玩家是否在线
-            java.util.UUID targetUuid = locatorData.getPlayerUuid();
-            var targetPlayer = level.getServer().getPlayerList().getPlayer(targetUuid);
-            if (targetPlayer == null) {
-                // 目标玩家不在线
-                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.offline());
-            } else {
-                // 目标玩家在线，发送位置
-                BlockPos targetPos = targetPlayer.blockPosition();
-                String playerName = targetPlayer.getName().getString();
-                PacketDistributor.sendToPlayer(player, PlayerLocationPacket.online(targetPos, playerName));
+    @Override
+    public void setPlacedBy(@NonNull Level level, @NonNull BlockPos pos, @NonNull BlockState state, @Nullable LivingEntity by, @NonNull ItemStack itemStack) {
+        super.setPlacedBy(level, pos, state, by, itemStack);
+        if (level.getBlockEntity(pos) instanceof PathFinderBlockEntity be) {
+            if (be.getBlockLocatorData().hasLocator() && state.getBlock() == this) {
+                if (!state.getValue(ACTIVE)) {
+                    level.setBlock(pos, state.setValue(ACTIVE, true), Block.UPDATE_ALL);
+                }
             }
-        } else if (locatorData.isPosBound()) {
-            // 绑定到位置：检查维度后发送位置
-            var globalPos = locatorData.getGlobalPos();
-            ResourceKey<Level> targetDimension = globalPos.dimension();
-            ResourceKey<Level> currentDimension = level.dimension();
-
-            if (!targetDimension.equals(currentDimension)) {
-                // 维度不匹配
-                player.sendSystemMessage(Component.translatable("simple_path_finder.nav.wrong_dimension"));
-                return;
-            }
-
-            BlockPos targetPos = globalPos.pos();
-            PacketDistributor.sendToPlayer(player, PlayerLocationPacket.online(targetPos, ""));
         }
     }
 }
