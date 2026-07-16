@@ -145,7 +145,7 @@ public final class NavChunk implements INavChunk {
     public Stream<ILayeredNavChunk> getLayerNav(BlockPos pos) {
         var inner = ChunkInnerPos.get(pos);
         // return the layer with walk y in range and possible max.
-        return layers.stream().filter(layeredNavChunk -> isInRange(layeredNavChunk.getWalkY(inner.x, inner.z), pos.getY() - 2, pos.getY()));
+        return layers.stream().filter(layeredNavChunk -> isInRange(layeredNavChunk.getWalkY(inner.x, inner.z), pos.getY() - 1, pos.getY()));
     }
 
     @Override
