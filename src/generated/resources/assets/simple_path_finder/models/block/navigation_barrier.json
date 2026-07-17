@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:item/generated",
   "textures": {
-    "all": "simple_path_finder:block/navigation_barrier"
+    "layer0": "simple_path_finder:block/navigation_barrier"
   }
 }

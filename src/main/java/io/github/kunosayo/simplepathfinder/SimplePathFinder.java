@@ -79,6 +79,10 @@ public final class SimplePathFinder {
         return NavConfig.NAV_CONFIG.getLeft().serverSidePathfinding.get();
     }
 
+    public static Identifier location(String path) {
+        return Identifier.fromNamespaceAndPath(MOD_ID, path);
+    }
+
     @SubscribeEvent
     public void onRegisterCommand(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();

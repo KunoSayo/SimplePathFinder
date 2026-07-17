@@ -10,8 +10,10 @@ import io.github.kunosayo.simplepathfinder.init.ModItems;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.ModelProvider;
+import net.minecraft.client.data.models.MultiVariant;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
 import net.minecraft.client.data.models.model.ItemModelUtils;
+import net.minecraft.client.data.models.model.ModelTemplate;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.data.models.model.TextureSlot;
@@ -31,6 +33,14 @@ import java.util.Optional;
  */
 public class ItemModelGen extends ModelProvider {
 
+    public static final TextureSlot SLOT_0 = TextureSlot.create("0");
+
+    public static final ModelTemplate PATH_FINDER_BLOCK_PARENT = new ModelTemplate(
+        Optional.of(SimplePathFinder.location("block/path_finder_block_parent")),
+        Optional.empty(),
+        SLOT_0
+    );
+
     public ItemModelGen(PackOutput output) {
         super(output, SimplePathFinder.MOD_ID);
     }
@@ -38,7 +48,10 @@ public class ItemModelGen extends ModelProvider {
     @Override
     protected void registerModels(BlockModelGenerators blockModels, ItemModelGenerators itemModels) {
         // 调试导航棍 - 使用原木棍纹理
-        itemModels.itemModelOutput.accept(ModItems.DEBUG_NAV.get(), ItemModelUtils.plainModel(Identifier.withDefaultNamespace("item/stick")));
+        itemModels.itemModelOutput.accept(
+            ModItems.DEBUG_NAV.get(),
+            ItemModelUtils.plainModel(Identifier.withDefaultNamespace("item/stick"))
+        );
 
         // 导航物品 - 基于模式切换模型
         registerNavigationItemModels(itemModels);
@@ -66,26 +79,28 @@ public class ItemModelGen extends ModelProvider {
 
         // 模式0使用无后缀贴图
         var defaultModel = ItemModelUtils.plainModel(
-                itemModels.createFlatItemModel(ModItems.NAVIGATION.get(), "", ModelTemplates.FLAT_ITEM)
+            itemModels.createFlatItemModel(ModItems.NAVIGATION.get(), "", ModelTemplates.FLAT_ITEM)
         );
         entries.add(new RangeSelectItemModel.Entry(0.0f, defaultModel));
 
         // 模式1-3使用带后缀贴图
         for (int i = 1; i < 4; i++) {
             var model = ItemModelUtils.plainModel(
-                    itemModels.createFlatItemModel(ModItems.NAVIGATION.get(), "_" + i, ModelTemplates.FLAT_ITEM)
+                itemModels.createFlatItemModel(ModItems.NAVIGATION.get(), "_" + i, ModelTemplates.FLAT_ITEM)
             );
             entries.add(new RangeSelectItemModel.Entry((float) i, model));
         }
 
-        itemModels.itemModelOutput.accept(ModItems.NAVIGATION.get(),
-                new RangeSelectItemModel.Unbaked(
-                        Optional.empty(),
-                        new NavigationModelProperty(),
-                        1,
-                        entries,
-                        Optional.of(defaultModel)
-                ));
+        itemModels.itemModelOutput.accept(
+            ModItems.NAVIGATION.get(),
+            new RangeSelectItemModel.Unbaked(
+                Optional.empty(),
+                new NavigationModelProperty(),
+                1,
+                entries,
+                Optional.of(defaultModel)
+            )
+        );
     }
 
     /**
@@ -97,19 +112,21 @@ public class ItemModelGen extends ModelProvider {
     private void registerNavBrushItemModels(ItemModelGenerators itemModels) {
         // 两个模式的模型
         var allEdgesModel = ItemModelUtils.plainModel(
-                itemModels.createFlatItemModel(ModItems.NAV_BRUSH.get(), "", ModelTemplates.FLAT_ITEM)
+            itemModels.createFlatItemModel(ModItems.NAV_BRUSH.get(), "", ModelTemplates.FLAT_ITEM)
         );
         var singleEdgeModel = ItemModelUtils.plainModel(
-                itemModels.createFlatItemModel(ModItems.NAV_BRUSH.get(), "_single", ModelTemplates.FLAT_ITEM)
+            itemModels.createFlatItemModel(ModItems.NAV_BRUSH.get(), "_single", ModelTemplates.FLAT_ITEM)
         );
 
-        itemModels.itemModelOutput.accept(ModItems.NAV_BRUSH.get(),
-                new ConditionalItemModel.Unbaked(
-                        Optional.empty(),
-                        new NavBrushModelProperty(),
-                        singleEdgeModel,  // onTrue - when SINGLE_EDGE (ordinal 1)
-                        allEdgesModel     // onFalse - when ALL_EDGES (ordinal 0)
-                ));
+        itemModels.itemModelOutput.accept(
+            ModItems.NAV_BRUSH.get(),
+            new ConditionalItemModel.Unbaked(
+                Optional.empty(),
+                new NavBrushModelProperty(),
+                singleEdgeModel,  // onTrue - when SINGLE_EDGE (ordinal 1)
+                allEdgesModel     // onFalse - when ALL_EDGES (ordinal 0)
+            )
+        );
     }
 
     /**
@@ -124,30 +141,32 @@ public class ItemModelGen extends ModelProvider {
 
         // 状态0使用无后缀贴图
         var unboundModel = ItemModelUtils.plainModel(
-                itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "", ModelTemplates.FLAT_ITEM)
+            itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "", ModelTemplates.FLAT_ITEM)
         );
         entries.add(new RangeSelectItemModel.Entry(0.0f, unboundModel));
 
         // 状态1: 绑定玩家
         var playerBoundModel = ItemModelUtils.plainModel(
-                itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "_player", ModelTemplates.FLAT_ITEM)
+            itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "_player", ModelTemplates.FLAT_ITEM)
         );
         entries.add(new RangeSelectItemModel.Entry(1.0f, playerBoundModel));
 
         // 状态2: 绑定位置
         var posBoundModel = ItemModelUtils.plainModel(
-                itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "_pos", ModelTemplates.FLAT_ITEM)
+            itemModels.createFlatItemModel(ModItems.LOCATOR.get(), "_pos", ModelTemplates.FLAT_ITEM)
         );
         entries.add(new RangeSelectItemModel.Entry(2.0f, posBoundModel));
 
-        itemModels.itemModelOutput.accept(ModItems.LOCATOR.get(),
-                new RangeSelectItemModel.Unbaked(
-                        Optional.empty(),
-                        new LocatorModelProperty(),
-                        1,
-                        entries,
-                        Optional.of(unboundModel)
-                ));
+        itemModels.itemModelOutput.accept(
+            ModItems.LOCATOR.get(),
+            new RangeSelectItemModel.Unbaked(
+                Optional.empty(),
+                new LocatorModelProperty(),
+                1,
+                entries,
+                Optional.of(unboundModel)
+            )
+        );
     }
 
     /**
@@ -159,65 +178,62 @@ public class ItemModelGen extends ModelProvider {
     private void registerPathFinderBlock(BlockModelGenerators blockModels, ItemModelGenerators itemModels) {
         var block = ModBlocks.PATH_FINDER_BLOCK.get();
 
-        // 定义纹理（使用 Material）
-        var topTexture = new Material(modLoc("block/path_finder_block_top"));
-        var bottomTexture = new Material(modLoc("block/path_finder_block_bottom"));
-        var activeSideTexture = new Material(modLoc("block/path_finder_block"));
-        var inactiveSideTexture = new Material(modLoc("block/path_finder_block_inactive"));
-        var blueNav = new Material(modLoc("block/navigation_barrier"));
+        Material activeTexture = new Material(modLoc("block/path_finder_block_real"));
+        Material inactiveTexture = new Material(modLoc("block/path_finder_block_real_inactive"));
 
-        // 创建激活模型（有数据时）
-        var activeTextureMapping = new TextureMapping()
-                .put(TextureSlot.UP, topTexture)
-                .put(TextureSlot.DOWN, bottomTexture)
-                .put(TextureSlot.SIDE, activeSideTexture)
-                .copySlot(TextureSlot.SIDE, TextureSlot.PARTICLE);
-
-        var activeModel = ModelTemplates.CUBE.create(
-                modLoc("block/path_finder_block_active"),
-                activeTextureMapping,
-                blockModels.modelOutput
+        Identifier activeModel = PATH_FINDER_BLOCK_PARENT.create(
+            modLoc("block/path_finder_block_active"),
+            new TextureMapping()
+                .put(SLOT_0, activeTexture),
+            blockModels.modelOutput
         );
 
-        // 创建未激活模型（无数据时）
-        var inactiveTextureMapping = new TextureMapping()
-                .put(TextureSlot.UP, topTexture)
-                .put(TextureSlot.DOWN, bottomTexture)
-                .put(TextureSlot.SIDE, inactiveSideTexture)
-                .copySlot(TextureSlot.SIDE, TextureSlot.PARTICLE);
-
-        var inactiveModel = ModelTemplates.CUBE.create(
-                modLoc("block/path_finder_block_inactive"),
-                inactiveTextureMapping,
-                blockModels.modelOutput
+        Identifier inactiveModel = PATH_FINDER_BLOCK_PARENT.create(
+            modLoc("block/path_finder_block_inactive"),
+            new TextureMapping()
+                .put(SLOT_0, inactiveTexture),
+            blockModels.modelOutput
         );
 
-        // 使用 plainVariant 包装模型
-        var activeVariant = BlockModelGenerators.plainVariant(activeModel);
-        var inactiveVariant = BlockModelGenerators.plainVariant(inactiveModel);
+        MultiVariant activeVariant = BlockModelGenerators.plainVariant(activeModel);
+        MultiVariant inactiveVariant = BlockModelGenerators.plainVariant(inactiveModel);
 
-        // 注册方块状态 - 根据 active 属性切换模型
-        // 使用 MultiVariantGenerator.dispatch() 创建调度
-        blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(block)
-                .with(BlockModelGenerators.createBooleanModelDispatch(
+        blockModels.blockStateOutput.accept(
+            MultiVariantGenerator.dispatch(block)
+                .with(
+                    BlockModelGenerators.createBooleanModelDispatch(
                         PathFinderBlock.ACTIVE,
                         activeVariant,
                         inactiveVariant
-                )));
+                    )
+                )
+        );
 
-        blockModels.blockStateOutput.accept(BlockModelGenerators
-                .createSimpleBlock(ModBlocks.NAVIGATION_BARRIER_BLOCK.get(),
-                        BlockModelGenerators.plainVariant(ModelTemplates.CUBE_ALL
-                                .create(ModBlocks.NAVIGATION_BARRIER_BLOCK.get(), new TextureMapping()
-                                                .put(TextureSlot.ALL, blueNav)
-                                                .copySlot(TextureSlot.ALL, TextureSlot.PARTICLE),
-                                        blockModels.modelOutput))));
+        Material blueNav = new Material(modLoc("block/navigation_barrier"));
+
+        blockModels.blockStateOutput.accept(
+            BlockModelGenerators.createSimpleBlock(
+                ModBlocks.NAVIGATION_BARRIER_BLOCK.get(),
+                BlockModelGenerators.plainVariant(ModelTemplates.FLAT_ITEM
+                    .create(
+                        ModBlocks.NAVIGATION_BARRIER_BLOCK.get(),
+                        new TextureMapping()
+                            .put(TextureSlot.LAYER0, blueNav)
+                            .copySlot(TextureSlot.LAYER0, TextureSlot.PARTICLE),
+                        blockModels.modelOutput
+                    )
+                )
+            )
+        );
 
         // 生成物品模型 - 使用方块模型作为父模型（3D方块外观）
         // 方块物品应该显示为3D方块，而不是平面贴图
-        var itemModelIdentifier = modLoc("block/path_finder_block_active");
+        Identifier itemModelIdentifier = modLoc("block/path_finder_block_active");
         itemModels.itemModelOutput.accept(block.asItem(), ItemModelUtils.plainModel(itemModelIdentifier));
-        itemModels.itemModelOutput.accept(ModBlocks.NAVIGATION_BARRIER_BLOCK.asItem(), ItemModelUtils.plainModel(modLoc("block/navigation_barrier")));
+        itemModels.itemModelOutput.accept(
+            ModBlocks.NAVIGATION_BARRIER_BLOCK.asItem(),
+            ItemModelUtils.plainModel(modLoc("block/navigation_barrier"))
+        );
     }
 
     private Identifier modLoc(String path) {

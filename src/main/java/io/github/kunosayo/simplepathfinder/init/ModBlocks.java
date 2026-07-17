@@ -16,7 +16,7 @@ public class ModBlocks {
 
     public static final DeferredBlock<Block> PATH_FINDER_BLOCK = BLOCKS.registerBlock("path_finder_block",
             PathFinderBlock::new,
-            props -> props.strength(1.5f).requiresCorrectToolForDrops());
+            props -> props.strength(1.5f).requiresCorrectToolForDrops().noOcclusion());
 
     public static final DeferredBlock<NavigationBarrierBlock> NAVIGATION_BARRIER_BLOCK = BLOCKS.registerBlock("navigation_barrier",
             NavigationBarrierBlock::new,
