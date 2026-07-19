@@ -304,7 +304,7 @@ public class NavigationItem extends Item {
         final var navChunk = optional.get();
         final var optionalLayered = navChunk.getLayer(layer, LayeredNavChunk::getDefault);
         if (optionalLayered.isEmpty()) {
-            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_limit", maxLayers - 1));
+            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.layer_limit", maxLayers));
             return true;
         }
         final var chunk = (LayeredNavChunk) optionalLayered.get();

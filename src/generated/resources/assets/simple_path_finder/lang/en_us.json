@@ -65,7 +65,7 @@
   "simple_path_finder.nav.invalid_block": "Invalid navigation block",
   "simple_path_finder.nav.layer_created": "Created navigation layer %d at %s, %s, %s",
   "simple_path_finder.nav.layer_exists": "This chunk already has layer %d",
-  "simple_path_finder.nav.layer_limit": "Layer must be between -128 and %d",
+  "simple_path_finder.nav.layer_limit": "Chunk layer count must be less or equal %d",
   "simple_path_finder.nav.layer_removed": "Removed navigation layer %d",
   "simple_path_finder.nav.link.created": "Created navigation link: (%s, %s, %s) → (%s, %s, %s)",
   "simple_path_finder.nav.link.no_start_nav": "No navigation data at start position",

@@ -65,7 +65,7 @@
   "simple_path_finder.nav.invalid_block": "无效的导航方块",
   "simple_path_finder.nav.layer_created": "在 %2$s, %3$s, %4$s 创建导航层级 %1$d",
   "simple_path_finder.nav.layer_exists": "该区块已存在层级 %d",
-  "simple_path_finder.nav.layer_limit": "层级必须在 -128 到 %d 之间",
+  "simple_path_finder.nav.layer_limit": "区块层级数量必须在 %d 内",
   "simple_path_finder.nav.layer_removed": "已移除导航层级 %d",
   "simple_path_finder.nav.link.created": "已创建导航链接：(%s, %s, %s) → (%s, %s, %s)",
   "simple_path_finder.nav.link.no_start_nav": "起始位置没有导航数据",

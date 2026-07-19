@@ -225,7 +225,7 @@ public class LangGen {
 
         // 导航层级系统消息（补充）
         add("simple_path_finder.nav.creative_required", "需要创造模式才能使用导航物品功能", "Creative mode required for navigation item features");
-        add("simple_path_finder.nav.layer_limit", "层级必须在 -128 到 %d 之间", "Layer must be between -128 and %d");
+        add("simple_path_finder.nav.layer_limit", "区块层级数量必须在 %d 内", "Chunk layer count must be less or equal %d");
         add("simple_path_finder.nav.layer_exists", "该区块已存在层级 %d", "This chunk already has layer %d");
         add("simple_path_finder.nav.layer_created", "在 %2$s, %3$s, %4$s 创建导航层级 %1$d", "Created navigation layer %d at %s, %s, %s");
         add("simple_path_finder.nav.layer_removed", "已移除导航层级 %d", "Removed navigation layer %d");
