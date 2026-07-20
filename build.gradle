@@ -29,6 +29,13 @@ base.archivesName = 'simple_path_finder'
 repositories {
     // mavenLocal 为本机仓库
     mavenLocal()
+
+    maven {
+        url = uri("https://xkball.com/repository/")
+        content {
+            includeGroup("com.xkball")
+        }
+    }
 }
 
 // 需要 Java 25 版本
@@ -132,6 +139,7 @@ dependencies {
     // Cloth Config (配置界面库)
     implementation "maven.modrinth:cloth-config:26.1.154+neoforge"
 
+    implementation "com.xkball:x3d_map:1.0.4"
     // JEI
     runtimeOnly("mezz.jei:jei-26.1.2-neoforge:29.5.0.26")
 

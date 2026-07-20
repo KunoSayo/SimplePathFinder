@@ -36,6 +36,9 @@ public class NavRenderingSupport {
     private static final float DEBUG_BOX_SIZE = 0.4f;
 
     private final List<IRenderElement> elements = new ArrayList<>();
+    /**
+     *
+     */
     private final List<IRenderElement> lineElements = new ArrayList<>();
     private NavResult cachedNavResult = null;
     private boolean cachedSmoothPath = false;
@@ -67,6 +70,10 @@ public class NavRenderingSupport {
         }
 
         this.prepareDebug();
+    }
+
+    public List<IRenderElement> getPathResultLineElements() {
+        return this.lineElements;
     }
 
     boolean shouldRebuildLineElements(NavResult currentNavResult, boolean smoothPath) {

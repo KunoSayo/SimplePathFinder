@@ -1,7 +1,9 @@
 package io.github.kunosayo.simplepathfinder.client.rendering;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.phys.Vec3;
@@ -25,7 +27,8 @@ public record Arrow(
     }
 
     @Override
-    public void render(PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
+    public void addVertex(PoseStack.Pose pose, VertexConsumer vertex) {
+
         float dx = (float) (this.end().x - this.start().x);
         float dy = (float) (this.end().y - this.start().y);
         float dz = (float) (this.end().z - this.start().z);
@@ -39,90 +42,90 @@ public record Arrow(
         float dirY = dy / length;
         float dirZ = dz / length;
 
-        collector.submitCustomGeometry(
-                poseStack,
-                RenderTypes.lines(),
-                (pose, vertex) -> {
-                    // Main line from start to arrow base
-                    vertex.addVertex(
-                                    pose.pose(),
-                                    (float) (this.start().x),
-                                    (float) (this.start().y),
-                                    (float) (this.start().z)
-                            )
-                            .setColor(startColor)
-                            .setLineWidth(this.thickness)
-                            .setNormal(pose, dirX, dirY, dirZ);
+        // Main line from start to arrow base
+        vertex.addVertex(
+                        pose.pose(),
+                        (float) (this.start().x),
+                        (float) (this.start().y),
+                        (float) (this.start().z)
+                )
+                .setColor(startColor)
+                .setLineWidth(this.thickness)
+                .setNormal(pose, dirX, dirY, dirZ);
 
-                    // Arrow base (where the arrow head starts)
-                    float arrowBaseX = (float) (this.end().x) - dirX * this.arrowHeadSize;
-                    float arrowBaseY = (float) (this.end().y) - dirY * this.arrowHeadSize;
-                    float arrowBaseZ = (float) (this.end().z) - dirZ * this.arrowHeadSize;
+        // Arrow base (where the arrow head starts)
+        float arrowBaseX = (float) (this.end().x) - dirX * this.arrowHeadSize;
+        float arrowBaseY = (float) (this.end().y) - dirY * this.arrowHeadSize;
+        float arrowBaseZ = (float) (this.end().z) - dirZ * this.arrowHeadSize;
 
-                    vertex.addVertex(
-                                    pose.pose(),
-                                    arrowBaseX,
-                                    arrowBaseY,
-                                    arrowBaseZ
-                            )
-                            .setColor(endColor)
-                            .setLineWidth(this.thickness)
-                            .setNormal(pose, dirX, dirY, dirZ);
+        vertex.addVertex(
+                        pose.pose(),
+                        arrowBaseX,
+                        arrowBaseY,
+                        arrowBaseZ
+                )
+                .setColor(endColor)
+                .setLineWidth(this.thickness)
+                .setNormal(pose, dirX, dirY, dirZ);
 
-                    // Arrow head - left wing
-                    Vec3 leftWing = calculateArrowHeadPoint(this.end(), dirX, dirY, dirZ, this.arrowHeadSize, true);
-                    vertex.addVertex(
-                                    pose.pose(),
-                                    (float) (this.end().x),
-                                    (float) (this.end().y),
-                                    (float) (this.end().z)
-                            )
-                            .setColor(endColor)
-                            .setLineWidth(this.thickness)
-                            .setNormal(pose, dirX, dirY, dirZ);
+        // Arrow head - left wing
+        Vec3 leftWing = calculateArrowHeadPoint(this.end(), dirX, dirY, dirZ, this.arrowHeadSize, true);
+        vertex.addVertex(
+                        pose.pose(),
+                        (float) (this.end().x),
+                        (float) (this.end().y),
+                        (float) (this.end().z)
+                )
+                .setColor(endColor)
+                .setLineWidth(this.thickness)
+                .setNormal(pose, dirX, dirY, dirZ);
 
-                    vertex.addVertex(
-                                    pose.pose(),
-                                    (float) leftWing.x,
-                                    (float) leftWing.y,
-                                    (float) leftWing.z
-                            )
-                            .setColor(endColor)
-                            .setLineWidth(this.thickness)
-                            .setNormal(pose, dirX, dirY, dirZ);
+        vertex.addVertex(
+                        pose.pose(),
+                        (float) leftWing.x,
+                        (float) leftWing.y,
+                        (float) leftWing.z
+                )
+                .setColor(endColor)
+                .setLineWidth(this.thickness)
+                .setNormal(pose, dirX, dirY, dirZ);
 
-                    // Arrow head - right wing
-                    Vec3 rightWing = calculateArrowHeadPoint(this.end(), dirX, dirY, dirZ, this.arrowHeadSize, false);
-                    vertex.addVertex(
-                                    pose.pose(),
-                                    (float) (this.end().x),
-                                    (float) (this.end().y),
-                                    (float) (this.end().z)
-                            )
-                            .setColor(endColor)
-                            .setLineWidth(this.thickness)
-                            .setNormal(pose, dirX, dirY, dirZ);
+        // Arrow head - right wing
+        Vec3 rightWing = calculateArrowHeadPoint(this.end(), dirX, dirY, dirZ, this.arrowHeadSize, false);
+        vertex.addVertex(
+                        pose.pose(),
+                        (float) (this.end().x),
+                        (float) (this.end().y),
+                        (float) (this.end().z)
+                )
+                .setColor(endColor)
+                .setLineWidth(this.thickness)
+                .setNormal(pose, dirX, dirY, dirZ);
 
-                    vertex.addVertex(
-                                    pose.pose(),
-                                    (float) rightWing.x,
-                                    (float) rightWing.y,
-                                    (float) rightWing.z
-                            )
-                            .setColor(endColor)
-                            .setLineWidth(this.thickness)
-                            .setNormal(pose, dirX, dirY, dirZ);
-                }
-        );
+        vertex.addVertex(
+                        pose.pose(),
+                        (float) rightWing.x,
+                        (float) rightWing.y,
+                        (float) rightWing.z
+                )
+                .setColor(endColor)
+                .setLineWidth(this.thickness)
+                .setNormal(pose, dirX, dirY, dirZ);
+    }
+
+    @Override
+    public RenderType getRenderType() {
+        return RenderTypes.lines();
     }
 
     /**
      * Calculate a point for the arrow head wing
-     * @param tip The arrow tip position
-     * @param dirX Direction X component (normalized)
-     * @param dirY Direction Y component (normalized)
-     * @param dirZ Direction Z component (normalized)
-     * @param size Size of the arrow head
+     *
+     * @param tip    The arrow tip position
+     * @param dirX   Direction X component (normalized)
+     * @param dirY   Direction Y component (normalized)
+     * @param dirZ   Direction Z component (normalized)
+     * @param size   Size of the arrow head
      * @param isLeft Whether this is the left wing (true) or right wing (false)
      * @return The calculated wing position
      */
