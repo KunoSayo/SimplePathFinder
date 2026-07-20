@@ -263,6 +263,9 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
      */
     private static int getDistanceWithFluid(BlockState state, @Nullable PlayerBlockDistanceData distanceData) {
         var fluid = state.getFluidState();
+        if (distanceData != null && !distanceData.distanceMap().isEmpty()) {
+            return distanceData.getDistance(state.getBlock());
+        }
         if (!fluid.isEmpty()) {
             if (fluid.getType().isSame(Fluids.WATER) || fluid.getType().isSame(Fluids.FLOWING_WATER)) {
                 return 127;
