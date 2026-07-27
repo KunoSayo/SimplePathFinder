@@ -5,6 +5,7 @@ import io.github.kunosayo.simplepathfinder.block.NavigationBarrierBlock;
 import io.github.kunosayo.simplepathfinder.block.PathFinderBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.material.MapColor;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -22,6 +23,9 @@ public class ModBlocks {
             NavigationBarrierBlock::new,
             props -> props
                     .noOcclusion()
+                    .isValidSpawn(Blocks::never)
+                    .noTerrainParticles()
+                    .mapColor(MapColor.NONE)
                     .isSuffocating((_, _, _) -> false)
                     .isViewBlocking((_, _, _) -> false));
 }
