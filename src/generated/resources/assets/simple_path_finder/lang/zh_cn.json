@@ -86,6 +86,8 @@
   "simple_path_finder.nav_brush.no_layer_at_pos": "此位置没有导航层",
   "simple_path_finder.nav_brush.no_nav_data": "此位置没有导航数据",
   "simple_path_finder.remove.current.success": "成功移除当前所在区块导航",
+  "simple_path_finder.x3dmap.nav": "导航到此处",
+  "simple_path_finder.x3dmap.toggle": "显示导航引导(由SimplePathFinder提供)",
   "tooltip.locator.bound.from_block": "定位器成功导入方块数据",
   "tooltip.locator.bound.player": "已绑定到玩家",
   "tooltip.locator.bound.pos": "已绑定到位置",
