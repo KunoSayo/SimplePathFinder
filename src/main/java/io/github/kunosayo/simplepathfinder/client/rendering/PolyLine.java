@@ -2,6 +2,7 @@ package io.github.kunosayo.simplepathfinder.client.rendering;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import io.github.kunosayo.simplepathfinder.config.ClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -72,6 +73,10 @@ public record PolyLine(
                 this.getRenderType(),
                 (pose, vertex) -> {
                     int lineCount = points.size() - 1;
+                    int chunkDistance = ClientConfig.CLIENT_CONFIG.getLeft().pathResultChunkDistance.get();
+                    if (chunkDistance == 0) {
+                        chunkDistance = (int) Minecraft.getInstance().levelRenderer.getLastViewDistance();
+                    }
                     for (int index = 1; index < points.size(); index++) {
                         Vec3 start = points.get(index - 1);
                         Vec3 end = points.get(index);
@@ -79,9 +84,11 @@ public record PolyLine(
                         double distanceStart = start.distanceTo(cameraPos);
                         double distanceEnd = end.distanceTo(cameraPos);
 
-                        double rd = Minecraft.getInstance().levelRenderer.getLastViewDistance() * 16;
-                        if (distanceEnd > rd && distanceStart > rd) {
-                            continue;
+                        if (chunkDistance > 0) {
+                            double rd = chunkDistance * 16;
+                            if (distanceEnd > rd && distanceStart > rd) {
+                                continue;
+                            }
                         }
 
                         if (start.equals(end)) {
