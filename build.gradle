@@ -25,19 +25,6 @@ group = mod_group_id
 // 打包成 jar 时的名称
 base.archivesName = 'simple_path_finder'
 
-// 需要的前置库，目前没有
-repositories {
-    // mavenLocal 为本机仓库
-    mavenLocal()
-
-    maven {
-        url = uri("https://xkball.com/repository/")
-        content {
-            includeGroup("com.xkball")
-        }
-    }
-}
-
 // 需要 Java 25 版本
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
@@ -107,6 +94,8 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+    // mavenLocal 为本机仓库
+    mavenLocal()
     // ./libs 目录为库
     flatDir {
         dir "libs"
@@ -133,13 +122,19 @@ repositories {
             includeGroup "mezz.jei"
         }
     }
+    maven {
+        url = uri("https://xkball.com/repository/")
+        content {
+            includeGroup("com.xkball")
+        }
+    }
 }
 
 dependencies {
     // Cloth Config (配置界面库)
     implementation "maven.modrinth:cloth-config:26.1.154+neoforge"
 
-    implementation "com.xkball:x3d_map:1.0.4"
+    implementation "com.xkball:x3d_map:1.0.10"
     // JEI
     runtimeOnly("mezz.jei:jei-26.1.2-neoforge:29.5.0.26")
 

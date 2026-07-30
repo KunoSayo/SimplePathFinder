@@ -115,7 +115,7 @@ public record PolyLine(
         );
     }
 
-    private static int colorFromRatio(double ratio, boolean oneIsGreen) {
+    public static int colorFromRatio(double ratio, boolean oneIsGreen) {
         double p = ratio;
 
         if (!oneIsGreen) {
