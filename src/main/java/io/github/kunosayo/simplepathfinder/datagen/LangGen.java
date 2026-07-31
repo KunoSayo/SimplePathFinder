@@ -253,7 +253,8 @@ public class LangGen {
         add("simple_path_finder.nav.no_target_in_block", "导航方块中没有目标", "No target in navigation block");
         add("simple_path_finder.nav.wrong_dimension", "目标位置在不同维度", "Target is in different dimension");
         add("simple_path_finder.nav.already_pathfinding", "已有寻路任务正在执行中，请稍后再试", "A pathfinding task is already in progress, please try again later");
-        
+        add("simple_path_finder.nav.server_busy", "服务端有大量寻路任务正在执行中，请稍后再试", "Many pathfinding tasks is already running on server, please try again later");
+
         //x3dmap兼容
         add("simple_path_finder.x3dmap.toggle","显示导航引导(由SimplePathFinder提供)","Show navigation guidance (provided by SimplePathFinder)");
         add("simple_path_finder.x3dmap.nav","导航到此处","Navigate here");

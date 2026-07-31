@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav.finder;
 
+import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.nav.NavNotificationConfig;
 import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import io.github.kunosayo.simplepathfinder.network.PathfindingResultPacket;
@@ -78,7 +79,7 @@ public class ServerPathfindingManager {
         // Check if server queue is full
         if (taskQueue.size() >= MAX_QUEUED_REQUESTS) {
             // Queue is full, send rejection message
-            PacketDistributor.sendToPlayer(player, new PathfindingResultPacket("simple_path_finder.nav.already_pathfinding"));
+            PacketDistributor.sendToPlayer(player, new PathfindingResultPacket("simple_path_finder.nav.server_busy"));
             return false;
         }
 
@@ -87,8 +88,11 @@ public class ServerPathfindingManager {
             return false;
         }
 
+        var data = LevelNavDataSavedData.loadFromLevel(player.level());
+
         // Create and add task to queue
-        PathfindingTask task = new PathfindingTask(new WeakReference<>(player.level().getServer()), player.getUUID(), targetPos, targetDesc, config, System.currentTimeMillis());
+        PathfindingTask task = new PathfindingTask(new WeakReference<>(player.level().getServer()), player.getUUID(),
+                data, player.blockPosition(), targetPos, targetDesc, config, System.currentTimeMillis());
         queuePlayer.put(player.getUUID(), Boolean.TRUE);
         if (!taskQueue.offer(task)) {
             // Failed to add to queue (shouldn't happen with LinkedBlockingQueue, but just in case)
@@ -159,6 +163,7 @@ public class ServerPathfindingManager {
     public static PathfindingContext getProgressContext(UUID playerId) {
         return activeCtxs.get(playerId);
     }
+
     public static void removeProgressContext(UUID playerId) {
         activeCtxs.remove(playerId);
     }

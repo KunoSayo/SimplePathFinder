@@ -16,7 +16,8 @@ import java.util.UUID;
 /**
  * Represents a pathfinding task.
  */
-public record PathfindingTask(WeakReference<MinecraftServer> server, UUID player, BlockPos targetPos,
+public record PathfindingTask(WeakReference<MinecraftServer> server, UUID player, LevelNavDataSavedData data,
+                              BlockPos startPos, BlockPos targetPos,
                               String targetDesc, NavNotificationConfig config,
                               long submissionTime) implements Runnable {
     @Override
@@ -26,34 +27,40 @@ public record PathfindingTask(WeakReference<MinecraftServer> server, UUID player
         if (server == null) {
             return;
         }
-        var player = server.getPlayerList().getPlayer(task.player);
-        if (player == null) {
-            return;
-        }
         try {
 
             BlockPos targetPos = task.targetPos;
             String targetDesc = task.targetDesc;
 
-            // Get player's current position
-            BlockPos startPos = player.blockPosition();
-
-            // Get nav data from server
-            var level = player.level();
-            var data = LevelNavDataSavedData.loadFromLevel(level);
-
             // Execute pathfinding with progress tracking
-            var ctx = new PathfindingContext(player.getUUID());
+            var ctx = new PathfindingContext(player);
             ServerPathfindingManager.startProgress(ctx);
+            long startTime = System.nanoTime();
             Optional<NavResult> result = data.levelNavData.findNav(startPos, targetPos, ctx);
+            long endTime = System.nanoTime();
+            long dur = endTime - startTime;
+            long durMs = dur / 1_000_000;
+            if (durMs >= 1000) {
+                SimplePathFinder.LOGGER.debug("Player {} found nav in {} ms", player, durMs);
+            }
 
-            ServerPathfindingManager.sendPathfindingResult(player, targetPos, targetDesc, result, task.config);
+            var _ = server.submit(() -> {
+                var player = server.getPlayerList().getPlayer(this.player);
+                if (player != null) {
+                    ServerPathfindingManager.sendPathfindingResult(player, targetPos, targetDesc, result, task.config);
+                }
+            });
 
         } catch (Exception e) {
             // Error during pathfinding
             SimplePathFinder.LOGGER.error("Error during pathfinding for player {}", task.player, e);
 
-            PacketDistributor.sendToPlayer(player, new PathfindingResultPacket("simple_path_finder.nav.no_path"));
+            var _ = server.submit(() -> {
+                var player = server.getPlayerList().getPlayer(this.player);
+                if (player != null) {
+                    PacketDistributor.sendToPlayer(player, new PathfindingResultPacket("simple_path_finder.nav.no_path"));
+                }
+            });
         }
 
     }

@@ -160,8 +160,16 @@ public interface ILayeredNavChunk {
         return finder.visitedNodes.get(vKey);
     }
 
+    default NavPathFinder.SearchNode getSearchNodeEnsureCached(NavPathFinder finder, int tx, int tz) {
+        return getSearchNode(finder, tx, tz);
+    }
+
     default void putSearchNode(NavPathFinder finder, NavPathFinder.SearchNode node) {
         long vKey = NavPathFinder.SearchedPos.toLong(getLayer(), node.x, node.z);
         finder.visitedNodes.put(vKey, node);
+    }
+
+    default void putSearchNodeEnsureCached(NavPathFinder finder, NavPathFinder.SearchNode node) {
+        putSearchNode(finder, node);
     }
 }

@@ -75,6 +75,7 @@
   "simple_path_finder.nav.no_path": "Cannot find valid path",
   "simple_path_finder.nav.no_target_in_block": "No target in navigation block",
   "simple_path_finder.nav.progress": "Pathfinding... %s %d%%",
+  "simple_path_finder.nav.server_busy": "Many pathfinding tasks is already running on server, please try again later",
   "simple_path_finder.nav.starting": "Starting pathfinding to %s, %s, %s. (Arrive or run \"/nav clear\" to cancel",
   "simple_path_finder.nav.to_player": "Starting pathfinding to player: %s",
   "simple_path_finder.nav.wrong_dimension": "Target is in different dimension",

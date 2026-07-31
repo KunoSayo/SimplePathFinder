@@ -54,6 +54,7 @@ public class NavPathFinder implements EdgeConsumer {
     private final ResourceKey<Level> dimension;
     private int cacheIndex = -1;
     private final PathfindingContext ctx;
+    EdgeConsumer finalEdgeConsumer = this;
 
     public NavPathFinder(LevelNavData levelNavData, ResourceKey<Level> dimension, BlockPos start, BlockPos end, PathfindingContext ctx) {
         this.levelNavData = levelNavData;
@@ -271,8 +272,13 @@ public class NavPathFinder implements EdgeConsumer {
 
         queue.enqueue(startKey);
         SearchedPos.markVisited(this, visited, startLayerOpt.get(), start);
-        EdgeConsumer edgeConsumer = (_, tx, _, tz, layerChunk, _) -> {
+        EdgeConsumer edgeConsumer = visited != null ? (_, tx, _, tz, layerChunk, _) -> {
             if (SearchedPos.markVisited(this, visited, layerChunk, tx, tz)) {
+                long nextKey = SearchedPos.toLong(layerChunk.getLayer(), tx, tz);
+                queue.enqueue(nextKey);
+            }
+        } : (_, tx, _, tz, layerChunk, _) -> {
+            if (SearchedPos.markVisitedCached(this, layerChunk, tx, tz)) {
                 long nextKey = SearchedPos.toLong(layerChunk.getLayer(), tx, tz);
                 queue.enqueue(nextKey);
             }
@@ -350,7 +356,7 @@ public class NavPathFinder implements EdgeConsumer {
                 ctx.markCompleted();
                 return Optional.of(new NavResult(node, this.end));
             }
-            getEdge(node, this);
+            getEdge(node, finalEdgeConsumer);
 //            node.layer.checkExtraPath(this, node, this);
         }
         ctx.markCompleted();
@@ -363,6 +369,30 @@ public class NavPathFinder implements EdgeConsumer {
             if (USING_CACHE_VISIT[i].compareAndSet(false, true)) {
                 this.cacheIndex = i;
                 addCacheCount(i, 1);
+                finalEdgeConsumer = (int distance, int tx, int ty, int tz, ILayeredNavChunk layer, NavLinkType type) -> {
+                    var node = currentSearchingNode;
+                    SearchNode existingNode = layer.getSearchNodeEnsureCached(this, tx, tz);
+
+                    if (existingNode != null && existingNode.heapIndex == -2) {
+                        return;
+                    }
+
+                    long extraCost = node.getExtraCost(tx, ty, tz);
+                    long new_g = extraCost + distance + node.cost;
+
+                    if (existingNode == null) {
+                        long h = getHeuristic(tx, ty, tz);
+                        long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                        SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node, type);
+                        layer.putSearchNodeEnsureCached(this, targetNode);
+                        searchNodes.push(targetNode);
+                    } else if (new_g < existingNode.cost) {
+                        existingNode.cost = new_g;
+                        existingNode.priority = new_g + (existingNode.hValue * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                        existingNode.lastNode = node;
+                        searchNodes.decreaseKey(existingNode);
+                    }
+                };
                 break;
             }
         }
@@ -429,9 +459,10 @@ public class NavPathFinder implements EdgeConsumer {
         }
 
         public static boolean markVisited(NavPathFinder finder, LongOpenHashSet visited, ILayeredNavChunk layerChunk, int tx, int tz) {
-            if (finder.cacheIndex == -1) {
-                return visited.add(toLong(layerChunk.getLayer(), tx, tz));
-            }
+            return visited.add(toLong(layerChunk.getLayer(), tx, tz));
+        }
+
+        public static boolean markVisitedCached(NavPathFinder finder, ILayeredNavChunk layerChunk, int tx, int tz) {
             return layerChunk.markVisited(finder.cacheIndex, NavPathFinder.CACHE_COUNT[finder.cacheIndex], tx, tz);
         }
 
@@ -506,6 +537,14 @@ public class NavPathFinder implements EdgeConsumer {
             }
             return Long.compare(this.hValue, o.hValue);
         }
+
+        public boolean isGreaterEqual(@NotNull SearchNode o) {
+            if (this.priority == o.priority) {
+                return this.hValue >= o.hValue;
+            }
+            return this.priority > o.priority;
+        }
+
 
         public long getExtraCost(BlockPos next) {
             if (lastNode == null) {
@@ -602,7 +641,7 @@ public class NavPathFinder implements EdgeConsumer {
             while (index > 0) {
                 int parentIndex = (index - 1) >>> 1;
                 SearchNode parent = heap[parentIndex];
-                if (node.compareTo(parent) >= 0) {
+                if (node.isGreaterEqual(parent)) {
                     break;
                 }
                 heap[index] = parent;
@@ -620,11 +659,11 @@ public class NavPathFinder implements EdgeConsumer {
                 int childIndex = (index << 1) + 1;
                 SearchNode child = heap[childIndex];
                 int rightIndex = childIndex + 1;
-                if (rightIndex < size && heap[rightIndex].compareTo(child) < 0) {
+                if (rightIndex < size && !heap[rightIndex].isGreaterEqual(child)) {
                     childIndex = rightIndex;
                     child = heap[rightIndex];
                 }
-                if (node.compareTo(child) <= 0) {
+                if (child.isGreaterEqual(node)) {
                     break;
                 }
                 heap[index] = child;
