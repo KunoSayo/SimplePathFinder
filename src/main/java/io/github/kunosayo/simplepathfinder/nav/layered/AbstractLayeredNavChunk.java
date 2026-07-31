@@ -32,21 +32,6 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
     }
 
     @Override
-    public void putSearchNode(NavPathFinder finder, NavPathFinder.SearchNode node) {
-        int idx = finder.getCacheIndex();
-        if (idx == -1) {
-            ILayeredNavChunk.super.putSearchNode(finder, node);
-            return;
-        }
-        final int pointIdx = convertToIndex(node.x & 15, node.z & 15);
-        visitedCache[idx][pointIdx] = finder.getCacheVisitCount();
-        var arr = NavPathFinder.VISIT_NODE_CACHE.get(idx);
-        int len = arr.size();
-        arr.add(node);
-        visitedSearchNode[idx][pointIdx] = len;
-    }
-
-    @Override
     public void putSearchNodeEnsureCached(NavPathFinder finder, NavPathFinder.SearchNode node) {
         int idx = finder.getCacheIndex();
         final int pointIdx = convertToIndex(node.x & 15, node.z & 15);

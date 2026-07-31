@@ -7,6 +7,7 @@ import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
+import io.github.kunosayo.simplepathfinder.util.UncheckedArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -27,11 +28,11 @@ public class NavPathFinder implements EdgeConsumer {
     public static final int NULL_POS = Integer.MIN_VALUE + 9;
     private static final AtomicBoolean[] USING_CACHE_VISIT;
     private static final int[] CACHE_COUNT = new int[VISIT_CACHE_SIZE];
-    public static final ArrayList<List<SearchNode>> VISIT_NODE_CACHE = new ArrayList<>();
+    public static final UncheckedArrayList<List<SearchNode>> VISIT_NODE_CACHE = new UncheckedArrayList<>(VISIT_CACHE_SIZE);
 
     static {
         for (int i = 0; i < VISIT_CACHE_SIZE; i++) {
-            VISIT_NODE_CACHE.add(new ArrayList<>());
+            VISIT_NODE_CACHE.set(i, new ArrayList<>());
         }
     }
 
@@ -118,7 +119,11 @@ public class NavPathFinder implements EdgeConsumer {
                     ctx.setInitialH(h);
                     long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
                     SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
-                    layeredNavChunk.putSearchNode(this, startNode);
+                    if (this.cacheIndex == -1) {
+                        layeredNavChunk.putSearchNode(this, startNode);
+                    } else {
+                        layeredNavChunk.putSearchNodeEnsureCached(this, startNode);
+                    }
                     searchNodes.push(startNode);
                 }));
     }
