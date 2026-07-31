@@ -37,7 +37,6 @@ public class PathfindingContext {
 
     private long initialH;
     private long currentMinH;
-    private final AtomicInteger progress = new AtomicInteger(0);
     private final AtomicBoolean completed = new AtomicBoolean(false);
 
     public PathfindingContext(@Nullable UUID playerId) {
@@ -51,14 +50,13 @@ public class PathfindingContext {
     }
 
     public void onNodePopped(long hValue) {
-        if (hValue > currentMinH) return;
-        this.currentMinH = hValue;
-        int pct = initialH > 0 ? (int) ((initialH - hValue) * 100 / initialH) : 0;
-        this.progress.set(Mth.clamp(pct, 0, 99));
+        // do not use atomic for not to slow speed..
+        this.currentMinH = Math.min(hValue, currentMinH);
     }
 
     public int getProgress() {
-        return progress.get();
+        int pct = initialH > 0 ? (int) ((initialH - currentMinH) * 100 / initialH) : 0;
+        return Mth.clamp(pct, 0, 100);
     }
 
     public boolean isCompleted() {
@@ -66,7 +64,7 @@ public class PathfindingContext {
     }
 
     public void markCompleted() {
-        progress.set(100);
+        this.currentMinH = 0;
         completed.set(true);
     }
 
