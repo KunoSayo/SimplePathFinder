@@ -133,7 +133,7 @@ public class NavRenderingSupport {
                 var chunkPos = new ChunkPos(currentChunkPos.x() + offsetX, currentChunkPos.z() + offsetZ);
                 int finalLayerRangeRight = layerRangeRight;
                 data.getNavChunk(chunkPos, false).ifPresent(navChunk -> {
-                    for (ILayeredNavChunk layer : navChunk.getLayersCollection()) {
+                    for (var layer : navChunk.getLayersCollection()) {
                         if (layer.getLayer() > finalLayerRangeRight || layer.getLayer() < layerRangeLeft) {
                             continue;
                         }

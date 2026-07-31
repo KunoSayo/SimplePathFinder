@@ -8,7 +8,7 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
 
 
     @Override
-    public boolean markVisited(int cacheIndex, int cnt, int tx, int tz) {
+    public final boolean markVisited(int cacheIndex, int cnt, int tx, int tz) {
         final int[] data = visitedCache[cacheIndex];
         final int idx = convertToIndex(tx & 15, tz & 15);
         boolean result = data[idx] != cnt;
@@ -20,8 +20,7 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
         return (x << 4) | z;
     }
 
-    @Override
-    public NavPathFinder.SearchNode getSearchNodeEnsureCached(NavPathFinder finder, int tx, int tz) {
+    public final NavPathFinder.SearchNode getSearchNodeEnsureCached(NavPathFinder finder, int tx, int tz) {
         int idx = finder.getCacheIndex();
         int cnt = finder.getCacheVisitCount();
         final int pointIdx = convertToIndex(tx & 15, tz & 15);
@@ -31,8 +30,7 @@ public abstract class AbstractLayeredNavChunk implements ILayeredNavChunk {
         return null;
     }
 
-    @Override
-    public void putSearchNodeEnsureCached(NavPathFinder finder, NavPathFinder.SearchNode node) {
+    public final void putSearchNodeEnsureCached(NavPathFinder finder, NavPathFinder.SearchNode node) {
         int idx = finder.getCacheIndex();
         final int pointIdx = convertToIndex(node.x & 15, node.z & 15);
         visitedCache[idx][pointIdx] = finder.getCacheVisitCount();

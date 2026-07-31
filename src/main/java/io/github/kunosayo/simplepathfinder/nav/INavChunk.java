@@ -1,6 +1,7 @@
 package io.github.kunosayo.simplepathfinder.nav;
 
 import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
+import io.github.kunosayo.simplepathfinder.nav.layered.AbstractLayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.netty.buffer.ByteBuf;
@@ -57,9 +58,9 @@ public interface INavChunk {
      * @param supplier supplier for creating new layers
      * @return optional containing the layer if it exists or was created. Empty if exceeded max layer or supplier return null.
      */
-    Optional<ILayeredNavChunk> getLayer(int layer, java.util.function.Supplier<LayeredNavChunk> supplier);
+    Optional<AbstractLayeredNavChunk> getLayer(int layer, java.util.function.Supplier<LayeredNavChunk> supplier);
 
-    default Optional<ILayeredNavChunk> getLayer(int layer) {
+    default Optional<AbstractLayeredNavChunk> getLayer(int layer) {
         return getLayer(layer, () -> null);
     }
 
@@ -69,7 +70,7 @@ public interface INavChunk {
      * @param pos the block position
      * @return optional containing the layer that can walk to this position
      */
-    Stream<ILayeredNavChunk> getLayerNav(BlockPos pos);
+    Stream<AbstractLayeredNavChunk> getLayerNav(BlockPos pos);
 
     /**
      * Get all layers that are within 1 block of the target Y position
@@ -77,16 +78,16 @@ public interface INavChunk {
      * @param target the target block position
      * @return stream of matching layers
      */
-    default Stream<ILayeredNavChunk> getLayers(BlockPos target) {
+    default Stream<AbstractLayeredNavChunk> getLayers(BlockPos target) {
         var inner = ChunkInnerPos.get(target);
         return getLayers().filter(layer -> Math.abs(layer.getWalkY(inner.x, inner.z) - target.getY()) <= 1);
     }
 
-    default Stream<ILayeredNavChunk> getLayers() {
+    default Stream<AbstractLayeredNavChunk> getLayers() {
         return getLayersCollection().stream();
     }
 
-    Collection<ILayeredNavChunk> getLayersCollection();
+    Collection<AbstractLayeredNavChunk> getLayersCollection();
 
     /**
      * Process all layers within 1 block of the target Y position with distance information
@@ -109,7 +110,7 @@ public interface INavChunk {
      * @param bz the block z coordinate
      * @return optional containing the nearest layer
      */
-    Optional<ILayeredNavChunk> getNearestLayer(int bx, int y, int bz);
+    Optional<AbstractLayeredNavChunk> getNearestLayer(int bx, int y, int bz);
 
     /**
      * Get the nearest walkable Y coordinate within 1 block of the specified Y position

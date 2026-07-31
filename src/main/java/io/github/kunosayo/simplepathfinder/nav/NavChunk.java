@@ -3,6 +3,7 @@ package io.github.kunosayo.simplepathfinder.nav;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.finder.EdgeConsumer;
+import io.github.kunosayo.simplepathfinder.nav.layered.AbstractLayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.netty.buffer.ByteBuf;
@@ -19,7 +20,7 @@ import java.util.stream.Stream;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public final class NavChunk implements INavChunk {
-    private static final StreamCodec<ByteBuf, ILayeredNavChunk> TYPED_LAYERED_NAV_CHUNK_CODEC = StreamCodec.of((buffer, value) -> {
+    private static final StreamCodec<ByteBuf, AbstractLayeredNavChunk> TYPED_LAYERED_NAV_CHUNK_CODEC = StreamCodec.of((buffer, value) -> {
         if (value instanceof LayeredNavChunk layeredNavChunk) {
             buffer.writeByte(0);
             LayeredNavChunk.STREAM_CODEC.encode(buffer, layeredNavChunk);
@@ -54,7 +55,7 @@ public final class NavChunk implements INavChunk {
 
     public static final StreamCodec<ByteBuf, NavChunk> STREAM_CODEC = StreamCodec
             .composite(
-                    ByteBufCodecs.<ByteBuf, ILayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
+                    ByteBufCodecs.<ByteBuf, AbstractLayeredNavChunk>list().apply(TYPED_LAYERED_NAV_CHUNK_CODEC),
                     navChunk -> navChunk.layers,
                     NAV_LINKS_MAP_CODEC,
                     navChunk -> {
@@ -68,7 +69,7 @@ public final class NavChunk implements INavChunk {
             );
 
 
-    private List<ILayeredNavChunk> layers = new ArrayList<>();
+    private List<AbstractLayeredNavChunk> layers = new ArrayList<>();
     public ChunkPos chunkPos;
 
     private Int2ObjectOpenHashMap<List<NavLink>> navLinks = new Int2ObjectOpenHashMap<>();
@@ -78,11 +79,11 @@ public final class NavChunk implements INavChunk {
         this.chunkPos = pos;
     }
 
-    private NavChunk(List<ILayeredNavChunk> layers, Map<ChunkInnerPosWithY, List<NavLink>> navLinks) {
+    private NavChunk(List<AbstractLayeredNavChunk> layers, Map<ChunkInnerPosWithY, List<NavLink>> navLinks) {
         this.layers = new ArrayList<>(layers);
-        List<ILayeredNavChunk> iLayeredNavChunks = this.layers;
+        var iLayeredNavChunks = this.layers;
         for (int i = 0; i < iLayeredNavChunks.size(); i++) {
-            ILayeredNavChunk layer = iLayeredNavChunks.get(i);
+            var layer = iLayeredNavChunks.get(i);
             layer.setParentChunk(this);
         }
         this.navLinks.ensureCapacity(navLinks.size());
@@ -102,10 +103,10 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
-    public Optional<ILayeredNavChunk> getLayer(int layer, Supplier<LayeredNavChunk> supplier) {
+    public Optional<AbstractLayeredNavChunk> getLayer(int layer, Supplier<LayeredNavChunk> supplier) {
         var layers = this.layers;
         for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
-            ILayeredNavChunk layerChunk = layers.get(i);
+            var layerChunk = layers.get(i);
             if (layerChunk.getLayer() == layer) {
                 return Optional.of(layerChunk);
             }
@@ -126,10 +127,10 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
-    public Optional<ILayeredNavChunk> getLayer(int layer) {
+    public Optional<AbstractLayeredNavChunk> getLayer(int layer) {
         var layers = this.layers;
         for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
-            ILayeredNavChunk layerChunk = layers.get(i);
+            AbstractLayeredNavChunk layerChunk = layers.get(i);
             if (layerChunk.getLayer() == layer) {
                 return Optional.of(layerChunk);
             }
@@ -142,14 +143,14 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
-    public Stream<ILayeredNavChunk> getLayerNav(BlockPos pos) {
+    public Stream<AbstractLayeredNavChunk> getLayerNav(BlockPos pos) {
         var inner = ChunkInnerPos.get(pos);
         // return the layer with walk y in range and possible max.
         return layers.stream().filter(layeredNavChunk -> isInRange(layeredNavChunk.getWalkY(inner.x, inner.z), pos.getY() - 1, pos.getY()));
     }
 
     @Override
-    public Collection<ILayeredNavChunk> getLayersCollection() {
+    public Collection<AbstractLayeredNavChunk> getLayersCollection() {
         return this.layers;
     }
 
@@ -157,9 +158,9 @@ public final class NavChunk implements INavChunk {
     public void getEdgeForLayers(int x, int y, int z, int distance, EdgeConsumer edgeInfoConsumer) {
         int innerX = ChunkInnerPos.getInnerPos(x);
         int innerZ = ChunkInnerPos.getInnerPos(z);
-        List<ILayeredNavChunk> iLayeredNavChunks = this.layers;
+        var iLayeredNavChunks = this.layers;
         for (int i = 0, iLayeredNavChunksSize = iLayeredNavChunks.size(); i < iLayeredNavChunksSize; i++) {
-            ILayeredNavChunk layer = iLayeredNavChunks.get(i);
+            var layer = iLayeredNavChunks.get(i);
             final int wy = layer.getWalkY(innerX, innerZ);
             final int delta = y - wy;
             if (Math.abs(delta) <= 1) {
@@ -170,7 +171,7 @@ public final class NavChunk implements INavChunk {
 
 
     @Override
-    public Optional<ILayeredNavChunk> getNearestLayer(int bx, int y, int bz) {
+    public Optional<AbstractLayeredNavChunk> getNearestLayer(int bx, int y, int bz) {
         var pos = ChunkInnerPos.getWithModulo(bx, bz);
         return layers.stream().filter(layeredNavChunk -> Math.abs(y - layeredNavChunk.getWalkY(pos.x, pos.z)) <= 1)
                 .findAny();
@@ -187,7 +188,7 @@ public final class NavChunk implements INavChunk {
         var inner = ChunkInnerPos.getWithModulo(x, z);
         var layers = this.layers;
         for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
-            ILayeredNavChunk layeredNavChunk = layers.get(i);
+            var layeredNavChunk = layers.get(i);
             final int delta = (layeredNavChunk.getWalkY(inner.x, inner.z) - y);
             if (-1 <= delta && delta <= 1) {
                 // we checked for the walk y is checked.

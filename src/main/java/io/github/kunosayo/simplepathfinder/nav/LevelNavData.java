@@ -4,6 +4,7 @@ import io.github.kunosayo.simplepathfinder.SimplePathFinder;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
+import io.github.kunosayo.simplepathfinder.nav.layered.AbstractLayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
 import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
@@ -170,12 +171,12 @@ public class LevelNavData {
         return navChunks.get(ChunkPos.pack(cx, cz));
     }
 
-    public Optional<ILayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
+    public Optional<AbstractLayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
         return Optional.ofNullable(navChunks.get(pos.pack()))
                 .flatMap(navChunk -> navChunk.getLayer(layer));
     }
 
-    public Optional<ILayeredNavChunk> getNavChunk(int cx, int cz, int layer) {
+    public Optional<AbstractLayeredNavChunk> getNavChunk(int cx, int cz, int layer) {
         return Optional.ofNullable(navChunks.get(ChunkPos.pack(cx, cz)))
                 .flatMap(navChunk -> navChunk.getLayer(layer));
     }
