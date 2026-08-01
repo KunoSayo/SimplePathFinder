@@ -744,24 +744,26 @@ public class NavPathFinder implements EdgeConsumer {
         var node = currentSearchingNode;
         SearchNode existingNode = layer.getSearchNodeEnsureCached(this, tx, tz);
 
-        if (existingNode != null && existingNode.heapIndex == -2) {
-            return;
-        }
-
-        long extraCost = node.getExtraCost(tx, ty, tz);
-        long new_g = extraCost + distance + node.cost;
-
         if (existingNode == null) {
+            long extraCost = node.getExtraCost(tx, ty, tz);
+            long new_g = extraCost + distance + node.cost;
             long h = getHeuristic(tx, ty, tz);
             long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
             SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node, type);
             layer.putSearchNodeEnsureCached(this, targetNode);
             searchNodes.push(targetNode);
-        } else if (new_g < existingNode.cost) {
-            existingNode.cost = new_g;
-            existingNode.priority = new_g + (existingNode.hValue * HEURISTIC_WEIGHT_PERCENT) / 100L;
-            existingNode.lastNode = node;
-            searchNodes.decreaseKey(existingNode);
+        } else {
+            if (existingNode.heapIndex == -2) {
+                return;
+            }
+            long extraCost = node.getExtraCost(tx, ty, tz);
+            long new_g = extraCost + distance + node.cost;
+            if (new_g < existingNode.cost) {
+                existingNode.cost = new_g;
+                existingNode.priority = new_g + (existingNode.hValue * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                existingNode.lastNode = node;
+                searchNodes.decreaseKey(existingNode);
+            }
         }
     }
 
