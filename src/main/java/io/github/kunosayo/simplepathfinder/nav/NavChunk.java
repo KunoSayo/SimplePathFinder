@@ -13,6 +13,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.ChunkPos;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -171,10 +172,18 @@ public final class NavChunk implements INavChunk {
 
 
     @Override
-    public Optional<AbstractLayeredNavChunk> getNearestLayer(int bx, int y, int bz) {
-        var pos = ChunkInnerPos.getWithModulo(bx, bz);
-        return layers.stream().filter(layeredNavChunk -> Math.abs(y - layeredNavChunk.getWalkY(pos.x, pos.z)) <= 1)
-                .findAny();
+    public @Nullable AbstractLayeredNavChunk getNearestLayer(int bx, int y, int bz) {
+        int ix = bx & 15;
+        int iz = bz & 15;
+        for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
+            var layeredNavChunk = layers.get(i);
+            final int delta = (layeredNavChunk.getWalkY(ix, iz) - y);
+            if (Math.abs(delta) <= 1) {
+                // we checked for the walk y is checked.
+                return layeredNavChunk;
+            }
+        }
+        return null;
     }
 
     public OptionalInt getNearestWalkY(int bx, int y, int bz) {
@@ -244,6 +253,34 @@ public final class NavChunk implements INavChunk {
         }
         return false;
     }
+
+
+    @Override
+    public int getPositiveDistanceX(int y, int ix, int iz) {
+        for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
+            var layeredNavChunk = layers.get(i);
+            final int delta = (layeredNavChunk.getWalkY(ix, iz) - y);
+            if (Math.abs(delta) <= 1) {
+                // we checked for the walk y is checked.
+                return layeredNavChunk.getPositiveDistanceX(ix, iz);
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int getPositiveDistanceZ(int y, int ix, int iz) {
+        for (int i = 0, layersSize = layers.size(); i < layersSize; i++) {
+            var layeredNavChunk = layers.get(i);
+            final int delta = (layeredNavChunk.getWalkY(ix, iz) - y);
+            if (Math.abs(delta) <= 1) {
+                // we checked for the walk y is checked.
+                return layeredNavChunk.getPositiveDistanceZ(ix, iz);
+            }
+        }
+        return -1;
+    }
+
 
     @Override
     public void clearNavLinks() {

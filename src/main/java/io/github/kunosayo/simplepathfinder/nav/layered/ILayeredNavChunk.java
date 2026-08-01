@@ -73,6 +73,20 @@ public interface ILayeredNavChunk {
     int getDistance(int x, int z, boolean isZ);
 
     /**
+     * @param x   the x coordinate in chunk [0, 15]
+     * @param z   the z coordinate in chunk [0, 15]
+     * @return the distance walk to +x
+     */
+    int getPositiveDistanceX(int x, int z);
+
+    /**
+     * @param x   the x coordinate in chunk [0, 15]
+     * @param z   the z coordinate in chunk [0, 15]
+     * @return the distance walk to +z
+     */
+    int getPositiveDistanceZ(int x, int z);
+
+    /**
      * Set distance in specified direction
      *
      * @param x     the x coordinate in chunk [0, 15]

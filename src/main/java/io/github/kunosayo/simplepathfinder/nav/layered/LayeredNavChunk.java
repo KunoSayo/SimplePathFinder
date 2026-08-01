@@ -149,6 +149,15 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
         return (convertToIndex(sx, sz) << 1) | (isZ ? 1 : 0);
     }
 
+    @Override
+    public int getPositiveDistanceX(int x, int z) {
+        return distances[convertToIndex(x, z) << 1];
+    }
+
+    @Override
+    public int getPositiveDistanceZ(int x, int z) {
+        return distances[(convertToIndex(x, z) << 1) | 1];
+    }
 
     /**
      * Get the distance cost for a block.

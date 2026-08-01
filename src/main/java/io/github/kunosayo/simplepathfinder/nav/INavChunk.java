@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.ChunkPos;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +111,7 @@ public interface INavChunk {
      * @param bz the block z coordinate
      * @return optional containing the nearest layer
      */
-    Optional<AbstractLayeredNavChunk> getNearestLayer(int bx, int y, int bz);
+    @Nullable AbstractLayeredNavChunk getNearestLayer(int bx, int y, int bz);
 
     /**
      * Get the nearest walkable Y coordinate within 1 block of the specified Y position
@@ -186,4 +187,8 @@ public interface INavChunk {
      * Clear all navigation links
      */
     void clearNavLinks();
+
+    int getPositiveDistanceX(int y, int ix, int iz);
+
+    int getPositiveDistanceZ(int y, int ix, int iz);
 }

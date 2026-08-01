@@ -171,6 +171,20 @@ public class LevelNavData {
         return navChunks.get(ChunkPos.pack(cx, cz));
     }
 
+    public @Nullable INavChunk readNavChunkWorldPos(int x, int z) {
+        // checkBoundedAccess(pos, create);
+        // When create is only attempted on the main thread, there's no trouble
+        return navChunks.get(ChunkPos.pack(x >> 4, z >> 4));
+    }
+
+    public @Nullable AbstractLayeredNavChunk readLayeredNavChunk(int x, int z, int y) {
+        var chunk = navChunks.get(ChunkPos.pack(x >> 4, z >> 4));
+        if (chunk != null) {
+            return chunk.getNearestLayer(x, y, z);
+        }
+        return null;
+    }
+
     public Optional<AbstractLayeredNavChunk> getNavChunk(ChunkPos pos, int layer) {
         return Optional.ofNullable(navChunks.get(pos.pack()))
                 .flatMap(navChunk -> navChunk.getLayer(layer));

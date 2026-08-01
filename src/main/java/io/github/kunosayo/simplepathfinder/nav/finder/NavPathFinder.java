@@ -4,7 +4,6 @@ import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavLinkType;
 import io.github.kunosayo.simplepathfinder.nav.layered.AbstractLayeredNavChunk;
-import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
 import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
@@ -129,14 +128,14 @@ public class NavPathFinder implements EdgeConsumer {
                 }));
     }
 
-    private void getEdge(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y, int currentDistance, int lastDistance, EdgeConsumer edgeInfoConsumer) {
-        if (currentDistance < 0) {
+    private void getEdge(INavChunk chunk, int ax, int az, int bx, int bz, int y, int currentDistance, int lastDistance, EdgeConsumer edgeInfoConsumer) {
+        if (chunk == null || currentDistance < 0) {
             return;
         }
         if (currentDistance > lastDistance) {
             currentDistance += (currentDistance - lastDistance) * 20;
         }
-        bNavChunk.getEdgeForLayers(bx, y, bz, currentDistance, edgeInfoConsumer);
+        chunk.getEdgeForLayers(bx, y, bz, currentDistance, edgeInfoConsumer);
     }
 
     private int getDistance(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y) {
@@ -147,14 +146,13 @@ public class NavPathFinder implements EdgeConsumer {
         } else {
             return navChunk.getDistance(ax, y, az, isZ);
         }
-
     }
 
     /**
      * Get edges from navigation links at the current position.
      * This allows the pathfinder to consider teleports, vehicles, and other travel methods.
      */
-    private void getNavLinkEdges(INavChunk navChunk, AbstractLayeredNavChunk layeredNavChunk, int x, int y, int z, EdgeConsumer edgeInfoConsumer) {
+    private void getNavLinkEdges(INavChunk navChunk, int x, int y, int z, EdgeConsumer edgeInfoConsumer) {
 
         // Get all nav links from this position
         for (var navLink : navChunk.getNavLinks(x, y, z)) {
@@ -178,22 +176,14 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    private void getEdge(INavChunk navChunk, AbstractLayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int ly, int lz, boolean skipDiag, EdgeConsumer edgeInfoConsumer) {
+    private void getEdgeForCheckConnection(INavChunk navChunk, int x, int y, int z, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
-        getNavLinkEdges(navChunk, layeredNavChunk, x, y, z, edgeInfoConsumer);
-        var navChunk1 = levelNavData.readNavChunk(lx >> 4, lz >> 4);
-        int lastDistance = 0;
-        if (navChunk1 != null) {
-            lastDistance = getDistance(navChunk1, navChunk, lx, lz, x, z, y);
-        }
+        getNavLinkEdges(navChunk, x, y, z, edgeInfoConsumer);
 
         // Then, get normal walking edges
         for (int i = 0; i < 4; i++) {
             int tx = x + LayeredNavChunk.SEARCH_DX[i];
             int tz = z + LayeredNavChunk.SEARCH_DZ[i];
-            if (tx == lx && tz == lz) {
-                continue;
-            }
             boolean isSame = NavUtil.isSameChunk(x, z, tx, tz);
             var thatChunk = navChunk;
             if (!isSame) {
@@ -205,41 +195,362 @@ public class NavPathFinder implements EdgeConsumer {
 
             int distance = getDistance(navChunk, thatChunk, x, z, tx, tz, y);
             if (distance < 0) continue;
-            getEdge(navChunk, thatChunk, x, z, tx, tz, y, distance, lastDistance, edgeInfoConsumer);
+            thatChunk.getEdgeForLayers(tx, y, tz, distance, edgeInfoConsumer);
 
-            if (!skipDiag)
-                for (int j = 1; j >= -1; j -= 2) {
-                    //反转 xz，并乘+-1，获取共轭向量
-                    int diagX = tx + LayeredNavChunk.SEARCH_DZ[i] * j;
-                    int diagZ = tz + LayeredNavChunk.SEARCH_DX[i] * j;
+        }
+    }
 
-                    boolean isSameDiag = NavUtil.isSameChunk(tx, tz, diagX, diagZ);
-                    var diagChunk = thatChunk;
-                    if (!isSameDiag) {
-                        var thatChunkOpt = levelNavData.readNavChunk(diagX >> 4, diagZ >> 4);
-                        if (thatChunkOpt == null) {
-                            continue;
-                        }
-                        diagChunk = thatChunkOpt;
+    private void getEdge(INavChunk navChunk, AbstractLayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int lz, EdgeConsumer edgeInfoConsumer) {
+        // First, get edges from navigation links (teleports, vehicles, etc.)
+        getNavLinkEdges(navChunk, x, y, z, edgeInfoConsumer);
+        int lastDistance = 0;
+        {
+            // check last distance.
+            var navChunk1 = levelNavData.readNavChunk(lx >> 4, lz >> 4);
+            if (navChunk1 != null) {
+                lastDistance = getDistance(navChunk1, navChunk, lx, lz, x, z, y);
+            }
+        }
+
+        // Then, get normal walking edges, We expanded these codes.
+//        for (int i = 0; i < 4; i++) {
+//            int tx = x + LayeredNavChunk.SEARCH_DX[i];
+//            int tz = z + LayeredNavChunk.SEARCH_DZ[i];
+//            if (tx == lx && tz == lz) {
+//                continue;
+//            }
+//            boolean isSame = NavUtil.isSameChunk(x, z, tx, tz);
+//            var thatChunk = navChunk;
+//            if (!isSame) {
+//                thatChunk = levelNavData.readNavChunk(tx >> 4, tz >> 4);
+//                if (thatChunk == null) {
+//                    continue;
+//                }
+//            }
+//
+//            int distance = getDistance(navChunk, thatChunk, x, z, tx, tz, y);
+//            if (distance < 0) continue;
+//            getEdge(thatChunk, x, z, tx, tz, y, distance, lastDistance, edgeInfoConsumer);
+//
+//
+//            for (int j = 1; j >= -1; j -= 2) {
+//                //反转 xz，并乘+-1，获取共轭向量
+//                int diagX = tx + LayeredNavChunk.SEARCH_DZ[i] * j;
+//                int diagZ = tz + LayeredNavChunk.SEARCH_DX[i] * j;
+//
+//                boolean isSameDiag = NavUtil.isSameChunk(tx, tz, diagX, diagZ);
+//                var diagChunk = thatChunk;
+//                if (!isSameDiag) {
+//                    var thatChunkOpt = levelNavData.readNavChunk(diagX >> 4, diagZ >> 4);
+//                    if (thatChunkOpt == null) {
+//                        continue;
+//                    }
+//                    diagChunk = thatChunkOpt;
+//                }
+//                int distance2 = getDistance(thatChunk, diagChunk, tx, tz, diagX, diagZ, y);
+//                if (distance2 < 0) continue;
+//                getEdge(diagChunk, tx, tz, diagX, diagZ, y, Math.max(distance2, distance), lastDistance, edgeInfoConsumer);
+//            }
+//        }
+
+        int px = x + 1;
+        int pz = z + 1;
+        int nx = x - 1;
+        int nz = z - 1;
+        var pxData = navChunk;
+        var pzData = navChunk;
+        var nxData = navChunk;
+        var nzData = navChunk;
+        var nXpZData = navChunk;
+        var pXnZData = navChunk;
+        var nXnZData = navChunk;
+        var pXpZData = navChunk;
+
+
+        if (NavUtil.isSameChunk(x, z, px, z)) {
+            if (NavUtil.isSameChunk(x, z, nx, z)) {
+                if (NavUtil.isSameChunk(x, z, x, pz)) {
+                    // CASE 0: no code, all x & z in same chunk.
+                    if (!NavUtil.isSameChunk(x, z, x, nz)) {
+                        // CASE 1: -z different chunk.
+                        pXnZData = nXnZData = nzData = levelNavData.readNavChunkWorldPos(x, nz);
                     }
-                    int distance2 = getDistance(thatChunk, diagChunk, tx, tz, diagX, diagZ, y);
-                    if (distance2 < 0) continue;
-                    getEdge(thatChunk, diagChunk, tx, tz, diagX, diagZ, y, Math.max(distance2, distance), lastDistance, edgeInfoConsumer);
+                } else {
+                    // CASE 2: +z different chunk
+                    nXpZData = pzData = levelNavData.readNavChunkWorldPos(x, pz);
                 }
+            } else {
+                nxData = levelNavData.readNavChunkWorldPos(nx, z);
+                if (NavUtil.isSameChunk(x, z, x, pz)) {
+                    if (NavUtil.isSameChunk(x, z, x, nz)) {
+                        // CASE 3: -x different chunk
+                        nXpZData = nXnZData = nxData;
+                    } else {
+                        // -z is same chunk, so we need check -z
+                        // CASE 4: -x -z different chunk
+                        pXnZData = nzData = levelNavData.readNavChunkWorldPos(x, nz);
+                        nXpZData = nxData;
+                        nXnZData = levelNavData.readNavChunkWorldPos(nx, nz);
+                    }
+                } else {
+                    // pz is different chunk
+                    // CASE 5: -x +z different chunk
+                    pXpZData = pzData = levelNavData.readNavChunkWorldPos(x, pz);
+                    nXnZData = nxData;
+                    nXpZData = levelNavData.readNavChunkWorldPos(nx, pz);
+                }
+            }
+        } else {
+            pxData = levelNavData.readNavChunkWorldPos(px, z);
+            if (NavUtil.isSameChunk(x, z, x, pz)) {
+                if (NavUtil.isSameChunk(x, z, x, nz)) {
+                    // CASE 6: +x different chunk
+                    pXpZData = pXnZData = pxData;
+                } else {
+                    // -z is same chunk, so we need check -z
+                    // CASE 7: +x -z different chunk
+                    nXnZData = nzData = levelNavData.readNavChunkWorldPos(x, nz);
+                    pXpZData = pxData;
+                    pXnZData = levelNavData.readNavChunkWorldPos(px, nz);
+                }
+            } else {
+                // +z is different chunk
+                // CASE 8: +x +z different chunk
+                nXpZData = pzData = levelNavData.readNavChunkWorldPos(x, pz);
+                pXnZData = pxData;
+                pXpZData = levelNavData.readNavChunkWorldPos(px, pz);
+            }
+        }
+
+
+        int ix = x & 15;
+        int iz = z & 15;
+        int ipx = px & 15;
+        int ipz = pz & 15;
+        int inx = nx & 15;
+        int inz = nz & 15;
+
+        int pXpZDistance = -1;
+        int nXpZDistance = -1;
+        int pXnZDistance = -1;
+        int nXnZDistance = -1;
+        int pxDistance = layeredNavChunk.getPositiveDistanceX(ix, iz);
+        int pzDistance = layeredNavChunk.getPositiveDistanceZ(ix, iz);
+        int nxDistance = -1;
+        int nzDistance = -1;
+
+        // we have
+        // .-.-.
+        // | | |
+        // .-.-.
+        // | | |
+        // .-.-.
+        // 12 distances in total.
+
+        if (pxData != null && pxDistance >= 0) {
+            int pzDis = pxData.getPositiveDistanceZ(y, ipx, iz);
+            if (pzDis >= 0) {
+                pXpZDistance = Math.max(pxDistance, pzDis);
+            }
+        }
+        if (pzData != null && pzDistance >= 0) {
+            // [+x] from (x, pz) to (px, pz)
+            int dis = pzData.getPositiveDistanceX(y, ix, ipz);
+            if (dis >= 0) {
+                if (pXpZDistance >= 0) {
+                    pXpZDistance = Math.min(pXpZDistance, Math.max(pzDistance, dis));
+                } else {
+                    pXpZDistance = Math.max(pzDistance, dis);
+                }
+            }
+        }
+        if (nxData != null) {
+            // [+x] from (nx, z) to (x, z)
+            nxDistance = nxData.getPositiveDistanceX(y, inx, iz);
+            if (nxDistance >= 0) {
+                {
+                    // [+z] from (nx, z) to (nx, pz)
+                    int dis = nxData.getPositiveDistanceZ(y, inx, iz);
+                    if (dis >= 0) {
+                        nXpZDistance = Math.max(nxDistance, dis);
+                    }
+                }
+            }
+        }
+        if (nzData != null) {
+            // [+z] from (x, nz) to (x, z)
+            nzDistance = nzData.getPositiveDistanceZ(y, ix, inz);
+            if (nzDistance >= 0) {
+                {
+                    // [+x] from (x, nz) to (px, nz)
+                    int dis = nzData.getPositiveDistanceX(y, ix, inz);
+                    if (dis >= 0) {
+                        pXnZDistance = Math.max(nzDistance, dis);
+                    }
+                }
+            }
+        }
+
+        if (nXnZData != null) {
+            if (nzDistance >= 0) {
+                // [+x] from (nx, nz) to (x, nz)
+                int dis = nXnZData.getPositiveDistanceX(y, inx, inz);
+                if (dis >= 0) {
+                    nXnZDistance = Math.max(nzDistance, dis);
+                }
+            }
+            if (nxDistance >= 0) {
+                // [+z] from (nx, nz) to (nx, z)
+                int dis = nXnZData.getPositiveDistanceZ(y, inx, inz);
+                if (dis >= 0) {
+                    if (nXnZDistance >= 0) {
+                        nXnZDistance = Math.min(nXnZDistance, Math.max(nxDistance, dis));
+                    } else {
+                        nXnZDistance = Math.max(nxDistance, dis);
+                    }
+                }
+            }
+        }
+
+        if (nXpZData != null && pzDistance >= 0) {
+            // [+x] from (nx, pz) to (x, pz)
+            int dis = nXpZData.getPositiveDistanceX(y, inx, ipz);
+            if (dis >= 0) {
+                if (nXpZDistance >= 0) {
+                    nXpZDistance = Math.min(nXpZDistance, Math.max(pzDistance, dis));
+                } else {
+                    nXpZDistance = Math.max(pzDistance, dis);
+                }
+            }
+        }
+
+        if (pXnZData != null && pxDistance >= 0) {
+            // [+z] from (px, nz) to (px, z)
+            int dis = pXnZData.getPositiveDistanceZ(y, ipx, inz);
+            if (dis >= 0) {
+                if (pXnZDistance >= 0) {
+                    pXnZDistance = Math.min(pXnZDistance, Math.max(pxDistance, dis));
+                } else {
+                    pXnZDistance = Math.max(pxDistance, dis);
+                }
+            }
+        }
+
+        if (lx == px) {
+            if (lz == pz) {
+                // not to +x +z
+                // and not to around.
+                // so we only go -x -z
+                getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXpZLayer, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            } else if (lz == nz) {
+                // not to +x -z
+                // and not to around.
+                getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXnZLayer, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            } else {
+                // not to px
+//                getEdge(pxLayer, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            }
+        } else if (lx == nx) {
+            if (lz == pz) {
+                // not to -x +z
+                // and not to around.
+                getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXpZLayer, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            } else if (lz == nz) {
+                // not to -x -z
+                // and not to around.
+                getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXnZLayer, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            } else {
+                // not to -x
+                getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nxLayer, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            }
+        } else {
+            if (lz == pz) {
+                // not to +z
+                // and not to around.
+                getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pzLayer, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            } else if (lz == nz) {
+                // not to -z
+                // and not to around.
+                getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nzLayer, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);          just nz!
+                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            } else {
+                // full
+                getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+            }
         }
     }
 
     private void getEdge(SearchNode node, EdgeConsumer edgeInfoConsumer) {
         if (node.lastNode == null) {
-            getEdge(node.layer.getParentChunk(), node.layer, node.x, node.y, node.z,
+            getEdge(node.layer.getParentChunk(), node.layer(), node.x, node.y, node.z,
                     Integer.MIN_VALUE + 9,
-                    Integer.MIN_VALUE + 9,
-                    Integer.MIN_VALUE + 9, false, edgeInfoConsumer);
+                    Integer.MIN_VALUE + 9, edgeInfoConsumer);
         } else {
-            getEdge(node.layer.getParentChunk(), node.layer, node.x, node.y, node.z,
+            getEdge(node.layer.getParentChunk(), node.layer(), node.x, node.y, node.z,
                     node.lastNode.x,
-                    node.lastNode.y,
-                    node.lastNode.z, false, edgeInfoConsumer);
+                    node.lastNode.z, edgeInfoConsumer);
         }
 
     }
@@ -313,7 +624,7 @@ public class NavPathFinder implements EdgeConsumer {
 
             int y = currentLayer.getWalkY(cx & 15, cz & 15);
             if (!currentLayer.isWalkYValid(y)) continue;
-            getEdge(currentChunk, currentLayer, cx, y, cz, NULL_POS, NULL_POS, NULL_POS, true, edgeConsumer);
+            getEdgeForCheckConnection(currentChunk, cx, y, cz, edgeConsumer);
         }
 
         return false;
