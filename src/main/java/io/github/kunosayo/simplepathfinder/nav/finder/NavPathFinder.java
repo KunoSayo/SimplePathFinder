@@ -446,8 +446,8 @@ public class NavPathFinder implements EdgeConsumer {
                 getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(pXpZLayer, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else if (lz == nz) {
                 // not to +x -z
@@ -456,19 +456,19 @@ public class NavPathFinder implements EdgeConsumer {
                 getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(pXnZLayer, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else {
                 // not to px
 //                getEdge(pxLayer, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
                 getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             }
         } else if (lx == nx) {
@@ -479,10 +479,10 @@ public class NavPathFinder implements EdgeConsumer {
                 getEdge(pzData, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(nXpZLayer, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else if (lz == nz) {
                 // not to -x -z
                 // and not to around.
@@ -491,8 +491,8 @@ public class NavPathFinder implements EdgeConsumer {
                 getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
                 getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(nXnZLayer, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else {
                 // not to -x
@@ -501,9 +501,9 @@ public class NavPathFinder implements EdgeConsumer {
 //                getEdge(nxLayer, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
                 getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             }
         } else {
             if (lz == pz) {
@@ -513,8 +513,8 @@ public class NavPathFinder implements EdgeConsumer {
 //                getEdge(pzLayer, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nxData, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nzData, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else if (lz == nz) {
@@ -526,8 +526,8 @@ public class NavPathFinder implements EdgeConsumer {
 //                getEdge(nzLayer, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);          just nz!
                 getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
                 getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+//                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else {
                 // full
                 getEdge(pxData, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
