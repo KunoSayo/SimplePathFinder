@@ -41,7 +41,7 @@ public class NavigationBarrierBlock extends TransparentBlock {
     @Override
     public void animateTick(@NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull RandomSource random) {
         if (level.isClientSide()) {
-            if (ClientWrapperUtil.isClientPlayerHoldingNavBarrier()) {
+            if (ClientWrapperUtil.shouldClientPlayerShowNavBarrier()) {
 
                 // Spawn particle at the center of the block
                 double x = pos.getX() + 0.5;

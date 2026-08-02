@@ -4,9 +4,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 
 public class ClientWrapperUtil {
-    public static boolean isClientPlayerHoldingNavBarrier() {
+    public static boolean shouldClientPlayerShowNavBarrier() {
         if (FMLEnvironment.getDist() == Dist.CLIENT) {
-            return ClientUtil.isClientPlayerHoldingNavBarrier();
+            return ClientUtil.shhouldClientPlayerShowNavBarrier();
         }
         return false;
     }
