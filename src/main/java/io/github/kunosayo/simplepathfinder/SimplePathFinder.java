@@ -188,26 +188,21 @@ public final class SimplePathFinder {
     }
 
     @SubscribeEvent
-    public void onTrackChunk(ChunkWatchEvent.Sent event) {
-        if (isServerSidePathfindingEnabled()) {
-            var player = event.getPlayer();
-            if (NavUtil.shouldShowNav(player.getMainHandItem())) {
-                var level = event.getLevel();
-                var pos = event.getPos();
-
-
-                trySyncSingleForPlayer(player, level, pos);
-            }
-        }
-    }
-
-    @SubscribeEvent
     public void onServerTick(PlayerTickEvent.Post event) {
         if (isServerSidePathfindingEnabled()) {
-            if ((event.getEntity().tickCount & 0b111) == 0) {
+            if ((event.getEntity().tickCount & 0b1111) == 0) {
                 if (event.getEntity() instanceof ServerPlayer sp) {
                     if (NavUtil.shouldShowNav(event.getEntity().getMainHandItem())) {
-                        trySyncSingleForPlayer(sp, sp.level(), event.getEntity().chunkPosition());
+                        var cp = event.getEntity().chunkPosition();
+                        if (!trySyncSingleForPlayer(sp, sp.level(), cp)) {
+                            if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.getRegionX(), cp.getRegionZ() + 1))) {
+                                if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.getRegionX(), cp.getRegionZ() - 1))) {
+                                    if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.getRegionX() + 1, cp.getRegionZ()))) {
+                                        trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.getRegionX() - 1, cp.getRegionZ()));
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -234,17 +229,20 @@ public final class SimplePathFinder {
         return Component.translatable("simple_path_finder.nav.progress", bar, percent).append(String.format(" [ %d | %d ]", ctx.getNodes(), ctx.getCurrentProgress()));
     }
 
-    public static void trySyncSingleForPlayer(ServerPlayer player, ServerLevel level, ChunkPos pos) {
+    public static boolean trySyncSingleForPlayer(ServerPlayer player, ServerLevel level, ChunkPos pos) {
         var data = LevelNavDataSavedData.loadFromLevel(level);
 
-        data.levelNavData.getNavChunk(pos, false).ifPresent(iNavChunk -> {
+        return data.levelNavData.getNavChunk(pos, false).map(iNavChunk -> {
             var worldMap = playerGotNav.computeIfAbsent(player.getUUID(), (_) -> new HashMap<>());
             var set = worldMap.computeIfAbsent(level.dimension().identifier(), _ -> new HashSet<>());
             if (set.add(pos)) {
                 var packet = new SyncSingleChunkPacket(level.dimension().identifier(), pos, iNavChunk);
                 PacketDistributor.sendToPlayer(player, packet);
+                return true;
             }
-        });
+            return false;
+        }).orElse(false);
+
     }
 
 
