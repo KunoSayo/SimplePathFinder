@@ -135,9 +135,9 @@ public class NavPathFinder implements EdgeConsumer {
         if (chunk == null || currentDistance < 0) {
             return;
         }
-//        if (currentDistance > lastDistance) {
-//            currentDistance += (currentDistance - lastDistance) * 20;
-//        }
+        if (currentDistance > lastDistance) {
+            currentDistance += (currentDistance - lastDistance) * 20;
+        }
         chunk.getEdgeForLayers(bx, y, bz, currentDistance, edgeInfoConsumer);
     }
 
