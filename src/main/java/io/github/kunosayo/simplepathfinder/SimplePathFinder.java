@@ -212,7 +212,7 @@ public final class SimplePathFinder {
                 if (ctx != null) {
                     if (ctx.isCompleted()) {
                         ServerPathfindingManager.removeProgressContext(sp.getUUID());
-                        sp.sendSystemMessage(Component.translatable("simple_path_finder.nav.done").append(String.format("[ %d ]", ctx.getNodes())), true);
+                        sp.sendSystemMessage(Component.translatable("simple_path_finder.nav.done").append(String.format(" [%d]", ctx.getNodes())), true);
                     } else {
                         sp.sendSystemMessage(createProgressBar(ctx), true);
                     }
