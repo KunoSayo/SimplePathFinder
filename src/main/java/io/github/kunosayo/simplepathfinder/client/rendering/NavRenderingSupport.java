@@ -11,8 +11,8 @@ import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavLink;
 import io.github.kunosayo.simplepathfinder.nav.finder.ModNavResult;
+import io.github.kunosayo.simplepathfinder.nav.finder.NavPathFinder;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
-import io.github.kunosayo.simplepathfinder.nav.layered.ILayeredNavChunk;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -94,9 +94,15 @@ public class NavRenderingSupport {
     public void prepareDebug() {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
-        if (!(player.getMainHandItem().is(ModItems.DEBUG_NAV) || player.getMainHandItem().is(ModItems.NAVIGATION))) {
+        if (player.getMainHandItem().is(ModItems.DEBUG_NAV)) {
+            if (NavPathFinder.bugNodes != null) {
+                drawBugNodes();
+            }
+        }
+        if (!(player.getMainHandItem().is(ModItems.NAVIGATION) || player.getMainHandItem().is(ModItems.DEBUG_NAV))) {
             return;
         }
+
 
         var level = player.level();
         LevelNavData data;
@@ -191,6 +197,28 @@ public class NavRenderingSupport {
                     prepareNavLinks(navChunk, chunkPos, level);
                 });
             }
+        }
+    }
+
+    private void drawBugNodes() {
+        var nodes = NavPathFinder.bugNodes;
+        if (nodes == null) {
+            return;
+        }
+        int i = 0;
+        for (NavPathFinder.SearchNode node : nodes) {
+            var self = new BlockPos(node.x, node.y, node.z).getCenter();
+//            filledBox(
+//                    self,
+//                    DEBUG_BOX_SIZE,
+//                    0x77aa9977
+//            );
+            if (node.lastNode != null) {
+                node = node.lastNode;
+                elements.add(new Arrow(new BlockPos(node.x, node.y, node.z).getCenter(), self, 0xffff0000, 0xff00ff00));
+                elements.add(new DebugText(self.add(0.0, 1.0, 0.0), String.valueOf(i)));
+            }
+            ++i;
         }
     }
 

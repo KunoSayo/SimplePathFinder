@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 public class NavPathFinder implements EdgeConsumer {
+    public static List<SearchNode> bugNodes = null;
     // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
     public static final long HEURISTIC_WEIGHT_PERCENT = 110L;
     public static final int VISIT_CACHE_SIZE = 2;
@@ -281,7 +282,7 @@ public class NavPathFinder implements EdgeConsumer {
                     }
                 } else {
                     // CASE 2: +z different chunk
-                    nXpZData = pzData = levelNavData.readNavChunkWorldPos(x, pz);
+                    pXpZData = nXpZData = pzData = levelNavData.readNavChunkWorldPos(x, pz);
                 }
             } else {
                 nxData = levelNavData.readNavChunkWorldPos(nx, z);
@@ -682,6 +683,10 @@ public class NavPathFinder implements EdgeConsumer {
 //            node.layer.checkExtraPath(this, node, this);
         }
         ctx.markCompleted();
+        // this should be bug.
+        if (this.cacheIndex != -1) {
+            bugNodes = new ArrayList<>(VISIT_NODE_CACHE.get(this.cacheIndex));
+        }
         return Optional.empty();
     }
 
