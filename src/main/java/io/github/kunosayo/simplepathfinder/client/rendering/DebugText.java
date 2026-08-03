@@ -8,7 +8,6 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.phys.Vec3;
