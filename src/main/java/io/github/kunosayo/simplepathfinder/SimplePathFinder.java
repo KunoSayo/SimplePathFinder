@@ -9,6 +9,7 @@ import io.github.kunosayo.simplepathfinder.init.*;
 import io.github.kunosayo.simplepathfinder.nav.finder.NavResult;
 import io.github.kunosayo.simplepathfinder.nav.finder.ServerPathfindingManager;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
+import io.github.kunosayo.simplepathfinder.nav.progress.PathfindingContext;
 import io.github.kunosayo.simplepathfinder.network.SyncLevelNavDataPacket;
 import io.github.kunosayo.simplepathfinder.network.SyncSingleChunkPacket;
 import io.github.kunosayo.simplepathfinder.util.NavUtil;
@@ -217,19 +218,20 @@ public final class SimplePathFinder {
                     if (ctx.isCompleted()) {
                         ServerPathfindingManager.removeProgressContext(sp.getUUID());
                         sp.sendSystemMessage(Component.translatable("simple_path_finder.nav.done"), true);
-                    }else{
-                        sp.sendSystemMessage(createProgressBar(ctx.getProgress()), true);
+                    } else {
+                        sp.sendSystemMessage(createProgressBar(ctx), true);
                     }
                 }
             }
         }
     }
 
-    private static Component createProgressBar(int percent) {
+    private static Component createProgressBar(PathfindingContext ctx) {
+        int percent = ctx.getProgress();
         int filled = percent / 10;
         String bar = "[" + "=".repeat(Math.max(0, filled - 1)) + ">"
                 + " ".repeat(Math.max(0, 9 - filled)) + "]";
-        return Component.translatable("simple_path_finder.nav.progress", bar, percent);
+        return Component.translatable("simple_path_finder.nav.progress", bar, percent).append(String.format(" [ %d | %d ]", ctx.getNodes(), ctx.getCurrentProgress()));
     }
 
     public static void trySyncSingleForPlayer(ServerPlayer player, ServerLevel level, ChunkPos pos) {
