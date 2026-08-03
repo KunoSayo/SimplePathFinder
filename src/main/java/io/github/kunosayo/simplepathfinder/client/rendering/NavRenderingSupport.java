@@ -220,8 +220,8 @@ public class NavRenderingSupport {
 //                    0x77aa9977
 //            );
             if (node.lastNode != null) {
-                node = node.lastNode;
-                elements.add(new Arrow(new BlockPos(node.x, node.y, node.z).getCenter(), self, 0xffff0000, 0xff00ff00));
+                var lastNode = node.lastNode;
+                elements.add(new Arrow(new BlockPos(lastNode.x, lastNode.y, lastNode.z).getCenter(), self, 0xffff0000, 0xff00ff00));
                 elements.add(new DebugText(self.add(0.0, 10.0, 0.0), String.valueOf(i), 0xff000000));
                 elements.add(new DebugText(self.add(0.0, 5.0f, 0.0), String.valueOf(node.getExtraCost(node.x, node.y, node.z)), 0xff000000));
                 elements.add(new DebugText(self.add(0.0, 1.0, 0.0), String.valueOf(node.cost), 0xffffffff));

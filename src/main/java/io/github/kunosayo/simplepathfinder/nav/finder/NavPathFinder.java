@@ -876,24 +876,7 @@ public class NavPathFinder implements EdgeConsumer {
 
 
         public long getExtraCost(BlockPos next) {
-            if (lastNode == null) {
-                return 0;
-            }
-            int nx = next.getX();
-            int ny = next.getY();
-            int nz = next.getZ();
-            int px = x;
-            int py = y;
-            int pz = z;
-            int lx = lastNode.x;
-            int ly = lastNode.y;
-            int lz = lastNode.z;
-            if (nx - px == px - lx
-                    && ny - py == py - ly
-                    && nz - pz == pz - lz) {
-                return 0;
-            }
-            return 37;
+            return getExtraCost(next.getX(), next.getY(), next.getZ());
         }
 
         public long getExtraCost(int nx, int ny, int nz) {
