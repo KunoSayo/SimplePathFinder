@@ -131,7 +131,7 @@ public class NavPathFinder implements EdgeConsumer {
                 }));
     }
 
-    private void getEdge(INavChunk chunk, int bx, int bz, int y, int currentDistance, int lastDistance, EdgeConsumer edgeInfoConsumer) {
+    private void getEdge(INavChunk chunk, int bx, int bz, int y, int currentDistance, EdgeConsumer edgeInfoConsumer) {
         if (chunk == null || currentDistance < 0) {
             return;
         }
@@ -209,14 +209,6 @@ public class NavPathFinder implements EdgeConsumer {
     private void getEdge(INavChunk navChunk, AbstractLayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int lz, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
         getNavLinkEdges(navChunk, x, y, z, edgeInfoConsumer);
-        int lastDistance = 0;
-        {
-            // check last distance.
-            var navChunk1 = levelNavData.readNavChunk(lx >> 4, lz >> 4);
-            if (navChunk1 != null) {
-                lastDistance = getDistance(navChunk1, navChunk, lx, lz, x, z, y);
-            }
-        }
 
         // Then, get normal walking edges, We expanded these codes.
 //        for (int i = 0; i < 4; i++) {
@@ -447,103 +439,103 @@ public class NavPathFinder implements EdgeConsumer {
                 // not to +x +z
                 // and not to around.
                 // so we only go -x -z
-                getEdge(pxData, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pzData, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nxData, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nzData, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pxData, px, z, y, pxDistance, edgeInfoConsumer);
+                getEdge(pzData, x, pz, y, pzDistance, edgeInfoConsumer);
+                getEdge(nxData, nx, z, y, nxDistance, edgeInfoConsumer);
+                getEdge(nzData, x, nz, y, nzDistance, edgeInfoConsumer);
 //                getEdge(pXpZLayer, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXnZData, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, nx, nz, y, nXnZDistance, edgeInfoConsumer);
             } else if (lz == nz) {
                 // not to +x -z
                 // and not to around.
-                getEdge(pxData, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pzData, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nxData, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nzData, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pxData, px, z, y, pxDistance, edgeInfoConsumer);
+                getEdge(pzData, x, pz, y, pzDistance, edgeInfoConsumer);
+                getEdge(nxData, nx, z, y, nxDistance, edgeInfoConsumer);
+                getEdge(nzData, x, nz, y, nzDistance, edgeInfoConsumer);
 //                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXpZData, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, nx, pz, y, nXpZDistance, edgeInfoConsumer);
 //                getEdge(pXnZLayer, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else {
                 // not to px
 //                getEdge(pxLayer, x, z, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pzData, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nxData, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nzData, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pzData, x, pz, y, pzDistance, edgeInfoConsumer);
+                getEdge(nxData, nx, z, y, nxDistance, edgeInfoConsumer);
+                getEdge(nzData, x, nz, y, nzDistance, edgeInfoConsumer);
 //                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXpZData, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXpZData, nx, pz, y, nXpZDistance, edgeInfoConsumer);
 //                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXnZData, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nXnZData, nx, nz, y, nXnZDistance, edgeInfoConsumer);
             }
         } else if (lx == nx) {
             if (lz == pz) {
                 // not to -x +z
                 // and not to around.
-                getEdge(pxData, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pzData, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nxData, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nzData, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pxData, px, z, y, pxDistance, edgeInfoConsumer);
+                getEdge(pzData, x, pz, y, pzDistance, edgeInfoConsumer);
+                getEdge(nxData, nx, z, y, nxDistance, edgeInfoConsumer);
+                getEdge(nzData, x, nz, y, nzDistance, edgeInfoConsumer);
 //                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(nXpZLayer, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXnZData, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, px, nz, y, pXnZDistance, edgeInfoConsumer);
 //                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else if (lz == nz) {
                 // not to -x -z
                 // and not to around.
-                getEdge(pxData, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pzData, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nxData, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nzData, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXpZData, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pxData, px, z, y, pxDistance, edgeInfoConsumer);
+                getEdge(pzData, x, pz, y, pzDistance, edgeInfoConsumer);
+                getEdge(nxData, nx, z, y, nxDistance, edgeInfoConsumer);
+                getEdge(nzData, x, nz, y, nzDistance, edgeInfoConsumer);
+                getEdge(pXpZData, px, pz, y, pXpZDistance, edgeInfoConsumer);
 //                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(nXnZLayer, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else {
                 // not to -x
-                getEdge(pxData, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pzData, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pxData, px, z, y, pxDistance, edgeInfoConsumer);
+                getEdge(pzData, x, pz, y, pzDistance, edgeInfoConsumer);
 //                getEdge(nxLayer, x, z, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nzData, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXpZData, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nzData, x, nz, y, nzDistance, edgeInfoConsumer);
+                getEdge(pXpZData, px, pz, y, pXpZDistance, edgeInfoConsumer);
 //                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXnZData, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, px, nz, y, pXnZDistance, edgeInfoConsumer);
 //                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             }
         } else {
             if (lz == pz) {
                 // not to +z
                 // and not to around.
-                getEdge(pxData, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pxData, px, z, y, pxDistance, edgeInfoConsumer);
 //                getEdge(pzLayer, x, z, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nxData, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nzData, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
+                getEdge(nxData, nx, z, y, nxDistance, edgeInfoConsumer);
+                getEdge(nzData, x, nz, y, nzDistance, edgeInfoConsumer);
 //                getEdge(pXpZData, x, z, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(nXpZData, x, z, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXnZData, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXnZData, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXnZData, px, nz, y, pXnZDistance, edgeInfoConsumer);
+                getEdge(nXnZData, nx, nz, y, nXnZDistance, edgeInfoConsumer);
             } else if (lz == nz) {
                 // not to -z
                 // and not to around.
-                getEdge(pxData, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pzData, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nxData, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pxData, px, z, y, pxDistance, edgeInfoConsumer);
+                getEdge(pzData, x, pz, y, pzDistance, edgeInfoConsumer);
+                getEdge(nxData, nx, z, y, nxDistance, edgeInfoConsumer);
 //                getEdge(nzLayer, x, z, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);          just nz!
-                getEdge(pXpZData, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXpZData, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pXpZData, px, pz, y, pXpZDistance, edgeInfoConsumer);
+                getEdge(nXpZData, nx, pz, y, nXpZDistance, edgeInfoConsumer);
 //                getEdge(pXnZData, x, z, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
 //                getEdge(nXnZData, x, z, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
             } else {
                 // full
-                getEdge(pxData, px, z, y, pxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pzData, x, pz, y, pzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nxData, nx, z, y, nxDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nzData, x, nz, y, nzDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXpZData, px, pz, y, pXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXpZData, nx, pz, y, nXpZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(pXnZData, px, nz, y, pXnZDistance, lastDistance, edgeInfoConsumer);
-                getEdge(nXnZData, nx, nz, y, nXnZDistance, lastDistance, edgeInfoConsumer);
+                getEdge(pxData, px, z, y, pxDistance, edgeInfoConsumer);
+                getEdge(pzData, x, pz, y, pzDistance, edgeInfoConsumer);
+                getEdge(nxData, nx, z, y, nxDistance, edgeInfoConsumer);
+                getEdge(nzData, x, nz, y, nzDistance, edgeInfoConsumer);
+                getEdge(pXpZData, px, pz, y, pXpZDistance, edgeInfoConsumer);
+                getEdge(nXpZData, nx, pz, y, nXpZDistance, edgeInfoConsumer);
+                getEdge(pXnZData, px, nz, y, pXnZDistance, edgeInfoConsumer);
+                getEdge(nXnZData, nx, nz, y, nXnZDistance, edgeInfoConsumer);
             }
         }
     }
