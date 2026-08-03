@@ -93,11 +93,17 @@ public class NavRenderingSupport {
 
     public void prepareDebug() {
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null) return;
+        if (player == null) {
+            NavPathFinder.requireDebug = false;
+            return;
+        }
         if (player.getMainHandItem().is(ModItems.DEBUG_NAV)) {
+            NavPathFinder.requireDebug = true;
             if (NavPathFinder.bugNodes != null) {
                 drawBugNodes();
             }
+        } else {
+            NavPathFinder.requireDebug = false;
         }
         if (!(player.getMainHandItem().is(ModItems.NAVIGATION) || player.getMainHandItem().is(ModItems.DEBUG_NAV))) {
             return;
@@ -216,7 +222,8 @@ public class NavRenderingSupport {
             if (node.lastNode != null) {
                 node = node.lastNode;
                 elements.add(new Arrow(new BlockPos(node.x, node.y, node.z).getCenter(), self, 0xffff0000, 0xff00ff00));
-                elements.add(new DebugText(self.add(0.0, 1.0, 0.0), String.valueOf(i)));
+                elements.add(new DebugText(self.add(0.0, 10.0, 0.0), String.valueOf(i), 0xff000000));
+                elements.add(new DebugText(self.add(0.0, 1.0, 0.0), String.valueOf(node.cost), 0xffffffff));
             }
             ++i;
         }

@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 public class NavPathFinder implements EdgeConsumer {
+    public static boolean requireDebug = false;
     public static List<SearchNode> bugNodes = null;
     // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
     public static final long HEURISTIC_WEIGHT_PERCENT = 110L;
@@ -677,6 +678,9 @@ public class NavPathFinder implements EdgeConsumer {
 
             if (NavUtil.distManhattan(this.end, node.x, node.y, node.z) <= 1) {
                 ctx.markCompleted();
+                if (this.cacheIndex != -1 && requireDebug) {
+                    bugNodes = new ArrayList<>(VISIT_NODE_CACHE.get(this.cacheIndex));
+                }
                 return Optional.of(new NavResult(node, this.end));
             }
             getEdge(node, finalEdgeConsumer);
@@ -684,7 +688,7 @@ public class NavPathFinder implements EdgeConsumer {
         }
         ctx.markCompleted();
         // this should be bug.
-        if (this.cacheIndex != -1) {
+        if (this.cacheIndex != -1 && requireDebug) {
             bugNodes = new ArrayList<>(VISIT_NODE_CACHE.get(this.cacheIndex));
         }
         return Optional.empty();
