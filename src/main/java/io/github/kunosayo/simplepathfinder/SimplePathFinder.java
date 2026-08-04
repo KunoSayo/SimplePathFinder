@@ -29,7 +29,6 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.level.ChunkWatchEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -195,10 +194,10 @@ public final class SimplePathFinder {
                     if (NavUtil.shouldShowNav(event.getEntity().getMainHandItem())) {
                         var cp = event.getEntity().chunkPosition();
                         if (!trySyncSingleForPlayer(sp, sp.level(), cp)) {
-                            if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.getRegionX(), cp.getRegionZ() + 1))) {
-                                if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.getRegionX(), cp.getRegionZ() - 1))) {
-                                    if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.getRegionX() + 1, cp.getRegionZ()))) {
-                                        trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.getRegionX() - 1, cp.getRegionZ()));
+                            if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.x(), cp.z() + 1))) {
+                                if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.x(), cp.z() - 1))) {
+                                    if (!trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.x() + 1, cp.z()))) {
+                                        trySyncSingleForPlayer(sp, sp.level(), new ChunkPos(cp.x() - 1, cp.z()));
                                     }
                                 }
                             }
