@@ -8,8 +8,9 @@ import com.xkball.x3dmap.api.client.registration.IMapGuiRegistration;
 import com.xkball.x3dmap.api.client.registration.IMapLayerRegistration;
 import com.xkball.x3dmap.api.client.render.Map3dLayerPhase;
 import com.xkball.x3dmap.api.client.render.MapViewportPresets;
-import com.xkball.x3dmap.api.client.runtime.IX3dMapRuntime;
+import com.xkball.x3dmap.client.terrain.ChunkComplier;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.init.ModBlocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -20,21 +21,14 @@ import java.util.Set;
 
 @X3dMapPlugin
 public class X3dPathPlugin implements IX3dMapPlugin {
-    @Override
-    public void onRuntimeAvailable(@NonNull IX3dMapRuntime runtime) {
+    public X3dPathPlugin() {
         NeoForge.EVENT_BUS.register(this);
-    }
-
-    @Override
-    public void onRuntimeUnavailable() {
-        NeoForge.EVENT_BUS.unregister(this);
     }
 
     @Override
     public @NonNull Identifier getPluginUid() {
         return Identifier.fromNamespaceAndPath(SimplePathFinder.MOD_ID, "x3d_plugin");
     }
-
 
     @Override
     public void registerGui(IMapGuiRegistration registration) {
@@ -67,6 +61,11 @@ public class X3dPathPlugin implements IX3dMapPlugin {
             if (player == null) return;
             player.connection.sendCommand("navserver " + waypoint.pos().getX() + " " + waypoint.pos().getY() + " " + waypoint.pos().getZ());
         });
+    }
+
+    @SubscribeEvent
+    public void onOpenWaypointWindow(ChunkComplier.RegisterChunkComplierBlackListEvent event) {
+        event.add(ModBlocks.NAVIGATION_BARRIER_BLOCK.get());
     }
 
 }

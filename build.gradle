@@ -134,7 +134,7 @@ dependencies {
     // Cloth Config (配置界面库)
     implementation "maven.modrinth:cloth-config:26.1.154+neoforge"
 
-    implementation "com.xkball:x3d_map:1.0.10"
+    implementation "com.xkball:x3d_map:1.0.11"
     // JEI
     runtimeOnly("mezz.jei:jei-26.1.2-neoforge:29.5.0.26")
 
