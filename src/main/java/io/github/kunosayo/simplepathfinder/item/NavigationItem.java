@@ -9,7 +9,9 @@ import io.github.kunosayo.simplepathfinder.init.ModAttachments;
 import io.github.kunosayo.simplepathfinder.init.ModDataComponents;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPos;
 import io.github.kunosayo.simplepathfinder.nav.ChunkInnerPosWithY;
+import io.github.kunosayo.simplepathfinder.nav.layered.ChunkScanner;
 import io.github.kunosayo.simplepathfinder.nav.layered.LayeredNavChunk;
+import io.github.kunosayo.simplepathfinder.nav.layered.ScanResult;
 import io.github.kunosayo.simplepathfinder.network.UpdateItemPropertiesPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -265,6 +267,10 @@ public class NavigationItem extends Item {
         }
 
         switch (mode) {
+            case DEFAULT -> {
+                // 默认模式 - 扫描整个区块
+                return handleDefaultScan((ServerLevel) level, player, clickedPos);
+            }
             case ADD_NAV -> {
                 // 添加导航模式 - 在点击位置构建导航层
                 return handleAddNav((ServerLevel) level, player, stack, clickedPos);
@@ -278,7 +284,6 @@ public class NavigationItem extends Item {
                 return handleAddLink((ServerLevel) level, player, stack, clickedPos);
             }
             default -> {
-                // 默认模式不做任何服务端处理
                 return false;
             }
         }
@@ -454,6 +459,44 @@ public class NavigationItem extends Item {
             SimplePathFinder.syncSingleChunk(level, startChunkPos);
         }
 
+    }
+
+    /**
+     * 处理默认模式扫描逻辑
+     * 清除当前区块的所有导航层，然后从点击位置Y坐标开始扫描整个区块
+     * 扫描顺序：Y, Y+1, Y-1, Y+2, Y-2, Y+3, Y-3...
+     */
+    private boolean handleDefaultScan(ServerLevel level, ServerPlayer player, BlockPos clickedPos) {
+        var chunkPos = ChunkPos.containing(clickedPos);
+        var data = LevelNavDataSavedData.loadFromLevel(level);
+
+        // 获取或创建导航区块
+        var navChunkOpt = data.levelNavData.getNavChunk(chunkPos, true);
+        if (navChunkOpt.isEmpty()) {
+            player.sendSystemMessage(Component.translatable("simple_path_finder.build.nav.limited"));
+            return true;
+        }
+        var navChunk = navChunkOpt.get();
+
+        // Get player-specific block distance configuration
+        var distanceAttachment = player.getData(io.github.kunosayo.simplepathfinder.init.ModAttachments.PLAYER_BLOCK_DISTANCE.get());
+        var distanceData = distanceAttachment.getData();
+
+        // 使用新的扫描算法扫描整个区块（会自动清除和创建多个层级）
+        var result = ChunkScanner.scanChunk(level, navChunk, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ(), distanceData);
+
+        if (result.isSuccess()) {
+            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.chunk_scanned",
+                    result.getLayerCount(), result.getMinLayer(), result.getMaxLayer()));
+        } else {
+            player.sendSystemMessage(Component.translatable("simple_path_finder.nav.scan_failed"));
+            return false;
+        }
+
+        // 标记数据为脏并同步单个区块
+        data.setDirty();
+        SimplePathFinder.syncSingleChunk(level, chunkPos);
+        return true;
     }
 
     /**

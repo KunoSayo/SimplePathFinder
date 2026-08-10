@@ -217,6 +217,11 @@ public final class NavChunk implements INavChunk {
     }
 
     @Override
+    public void removeAllLayers() {
+        this.layers = new ArrayList<>();
+    }
+
+    @Override
     public int getLayerCount() {
         return this.layers.size();
     }

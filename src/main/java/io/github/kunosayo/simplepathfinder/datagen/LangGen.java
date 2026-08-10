@@ -121,7 +121,7 @@ public class LangGen {
         addBlock(ModBlocks.NAVIGATION_BARRIER_BLOCK.get(), "导航屏障", "Navigation Barrier");
 
         // 导航模式
-        add("item.navigation_mode.default", "默认显示", "Default Display");
+        add("item.navigation_mode.default", "默认模式", "Default Mode");
         add("item.navigation_mode.add_nav", "添加导航", "Add Navigation");
         add("item.navigation_mode.remove_nav", "移除导航", "Remove Navigation");
         add("item.navigation_mode.add_link", "添加导航链接", "Add Navigation Link");
@@ -229,6 +229,8 @@ public class LangGen {
         add("simple_path_finder.nav.layer_exists", "该区块已存在层级 %d", "This chunk already has layer %d");
         add("simple_path_finder.nav.layer_created", "在 %2$s, %3$s, %4$s 创建导航层级 %1$d", "Created navigation layer %d at %s, %s, %s");
         add("simple_path_finder.nav.layer_removed", "已移除导航层级 %d", "Removed navigation layer %d");
+        add("simple_path_finder.nav.chunk_scanned", "已扫描区块：创建了 %d 个层级，范围从 layer=%d 到 layer=%d", "Scanned chunk: created %d layers, ranging from layer=%d to layer=%d");
+        add("simple_path_finder.nav.scan_failed", "区块扫描失败", "Chunk scan failed");
         add("simple_path_finder.nav.chunk_not_found", "此位置未找到导航区块", "Navigation chunk not found at this position");
         add("simple_path_finder.nav.no_layer_at_pos", "此位置未找到导航层级", "No navigation layer found at this position");
         add("simple_path_finder.nav.no_data", "没有可用的导航数据", "No navigation data available");

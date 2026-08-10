@@ -144,6 +144,11 @@ public interface INavChunk {
     void removeNavChunk(ILayeredNavChunk layeredNavChunk);
 
     /**
+     * Remove all layers from this navigation chunk
+     */
+    void removeAllLayers();
+
+    /**
      * Get the number of layers in this navigation chunk
      *
      * @return the number of layers

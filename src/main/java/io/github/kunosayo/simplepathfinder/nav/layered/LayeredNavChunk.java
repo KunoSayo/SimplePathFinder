@@ -304,7 +304,7 @@ public final class LayeredNavChunk extends AbstractLayeredNavChunk {
         short[] walkY = new short[LevelNavData.CHUNK_AREA];
         int[] distance = new int[LevelNavData.CHUNK_AREA << 1];
         Arrays.fill(distance, -1);
-        Arrays.fill(walkY, (short) -9961);
+        Arrays.fill(walkY, (short) LayeredNavChunk.INVALID_WALK_Y);
         return new LayeredNavChunk(walkY, distance);
     }
 
