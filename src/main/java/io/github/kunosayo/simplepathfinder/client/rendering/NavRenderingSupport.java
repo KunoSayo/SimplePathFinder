@@ -171,11 +171,10 @@ public class NavRenderingSupport {
                                             0x55ff0101
                                     );
                                 } else {
-                                    filledBox(
-                                            new Vec3(blockPos.getX() + 1.0, blockPos.getY(), blockPos.getZ() + 0.5),
-                                            0.8f / (dis + 1),
-                                            0x55ffffff
-                                    );
+                                    int color = colorFromRatio(dis / 127.0f, false);
+                                    var pos = new Vec3(blockPos.getX() + 1.0, blockPos.getY() + 0.125f, blockPos.getZ() + 0.5);
+                                    this.elements.add(new DebugText(pos,
+                                            String.valueOf(dis), color, ClientConfig.CLIENT_CONFIG.getLeft().distanceTextScale.get().floatValue()));
                                 }
                                 dis = layer.getDistance(x, z, true);
                                 if (dis < 0) {
@@ -185,12 +184,13 @@ public class NavRenderingSupport {
                                             0x55ff0101
                                     );
                                 } else {
-                                    filledBox(
-                                            new Vec3(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 1.0),
-                                            0.8f / (dis + 1),
-                                            0x55ffffff
-                                    );
+                                    int color = colorFromRatio(dis / 127.0f, false);
+                                    var pos = new Vec3(blockPos.getX() + 0.5, blockPos.getY() + 0.125f, blockPos.getZ() + 1.0);
+                                    this.elements.add(new DebugText(pos,
+                                            String.valueOf(dis), color, ClientConfig.CLIENT_CONFIG.getLeft().distanceTextScale.get().floatValue()));
                                 }
+                                this.elements.add(new DebugText(blockPos.getCenter(),
+                                        String.valueOf(layer.getLayer()), 0xffffffff));
                                 filledBox(
                                         blockPos.getCenter(),
                                         DEBUG_BOX_SIZE,

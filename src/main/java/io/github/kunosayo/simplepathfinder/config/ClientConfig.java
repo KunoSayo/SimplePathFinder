@@ -9,6 +9,7 @@ public class ClientConfig {
 
     public final ModConfigSpec.ConfigValue<Boolean> smoothPath;
     public final ModConfigSpec.ConfigValue<Integer> pathResultChunkDistance;
+    public final ModConfigSpec.ConfigValue<Double> distanceTextScale;
 
     ClientConfig(ModConfigSpec.Builder builder) {
         smoothPath = builder
@@ -17,5 +18,8 @@ public class ClientConfig {
         pathResultChunkDistance = builder
                 .comment("Enable smooth navigation path rendering (0 indicates same as level renderer, -1 indicates unlimit")
                 .defineInRange("path_result_chunk_distance", 0, -1, 37);
+        distanceTextScale = builder
+                .comment("The distance text scale")
+                .defineInRange("distance_text_scale", 0.5f, 0.0f, 1.0f);
     }
 }
