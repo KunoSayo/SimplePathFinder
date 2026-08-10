@@ -268,8 +268,11 @@ public class NavigationItem extends Item {
 
         switch (mode) {
             case DEFAULT -> {
-                // 默认模式 - 扫描整个区块
-                return handleDefaultScan((ServerLevel) level, player, clickedPos);
+                if (player.isCreative()) {
+                    // 默认模式 - 扫描整个区块
+                    return handleDefaultScan((ServerLevel) level, player, clickedPos);
+                }
+                return false;
             }
             case ADD_NAV -> {
                 // 添加导航模式 - 在点击位置构建导航层
