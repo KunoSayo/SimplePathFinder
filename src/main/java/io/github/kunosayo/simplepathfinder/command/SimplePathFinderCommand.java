@@ -15,6 +15,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.Player;
 
 public final class SimplePathFinderCommand {
@@ -65,10 +66,14 @@ public final class SimplePathFinderCommand {
             var data = LevelNavDataSavedData.loadFromLevel(sl);
             long total = data.levelNavData.getTotalLayers();
             long chunks = data.levelNavData.getTotalNavChunks();
-            long bytes = data.levelNavData.getEncodedBytes();
-            long compressed = data.levelNavData.getEncodedCompressedBytes();
-            context.getSource().source.sendSystemMessage(Component.literal(String.format("[SPF][NavData] Chunks: %d, Layers: %d\nBytes: %d (Compressed %d)",
-                    chunks, total, bytes, compressed)));
+            Util.backgroundExecutor().execute(() -> {
+                long bytes = data.levelNavData.getEncodedBytes();
+                long compressed = data.levelNavData.getEncodedCompressedBytes();
+                var _ = sl.getServer().submit(() -> context.getSource().source.sendSystemMessage(Component.literal(String.format("[SPF][NavData] Chunks: %d, Layers: %d\nBytes: %d (Compressed %d)",
+                        chunks, total, bytes, compressed))));
+            });
+
+
         }
         return Command.SINGLE_SUCCESS;
     }
