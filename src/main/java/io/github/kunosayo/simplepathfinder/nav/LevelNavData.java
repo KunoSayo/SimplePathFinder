@@ -48,6 +48,7 @@ public class LevelNavData {
                 levelNavData.navChunks.forEach((aLong, iNavChunk) -> map.put(ChunkPos.unpack(aLong), iNavChunk));
                 return map;
             }, LevelNavData::new);
+    public boolean renderDirty = true;
 
     // Cached STREAM_CODEC for LevelNavData.
     public static final StreamCodec<ByteBuf, LevelNavData> STREAM_CODEC = StreamCodec.of((byteBuf, levelNavData) -> {
@@ -221,6 +222,7 @@ public class LevelNavData {
             navChunks.put(pos.pack(), navChunk);
         }
         this.navChunks = navChunks;
+        this.renderDirty = true;
     }
 
 

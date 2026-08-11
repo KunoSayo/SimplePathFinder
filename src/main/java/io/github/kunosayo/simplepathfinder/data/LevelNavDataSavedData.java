@@ -49,6 +49,7 @@ public class LevelNavDataSavedData extends SavedData {
     public void setDirty(boolean dirty) {
         super.setDirty(dirty);
         if (dirty) {
+            levelNavData.renderDirty = true;
             ++levelNavData.dirtyCount;
         }
     }

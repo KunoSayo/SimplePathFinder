@@ -32,7 +32,7 @@ public class NavUtil {
     }
 
     public static boolean considerSafeGround(Level level, BlockPos pos, BlockState state) {
-        return !isNoCollision(level, pos, state) || state.getFluidState().is(FluidTags.WATER);
+        return !isNoCollision(level, pos, state) || !state.getFluidState().isEmpty();
     }
 
     public static boolean isSameChunk(BlockPos a, BlockPos b) {

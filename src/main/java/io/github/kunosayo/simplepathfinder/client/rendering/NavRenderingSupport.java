@@ -35,7 +35,8 @@ public class NavRenderingSupport {
     private static final float DEFAULT_BOX_SIZE = 0.4f;
     private static final float DEBUG_BOX_SIZE = 0.4f;
 
-    private final List<IRenderElement> elements = new ArrayList<>();
+    private final List<IRenderElement> debugElements = new ArrayList<>();
+    private final List<IRenderElement> immediateElements = new ArrayList<>();
     /**
      *
      */
@@ -43,9 +44,10 @@ public class NavRenderingSupport {
     private NavResult cachedNavResult = null;
     private boolean cachedSmoothPath = false;
     private boolean linesDirty = false;
+    private ChunkPos lastChunkPos = null;
 
     public void prepare() {
-        elements.clear();
+        immediateElements.clear();
         linesDirty = false;
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) {
@@ -105,10 +107,6 @@ public class NavRenderingSupport {
         } else {
             NavPathFinder.requireDebug = false;
         }
-        if (!(player.getMainHandItem().is(ModItems.NAVIGATION) || player.getMainHandItem().is(ModItems.DEBUG_NAV))) {
-            return;
-        }
-
 
         var level = player.level();
         LevelNavData data;
@@ -117,7 +115,23 @@ public class NavRenderingSupport {
         } else {
             data = ClientNavDataManager.getNavDataForPlayer();
         }
-        if (data == null) return;
+        if (data == null) {
+            debugElements.clear();
+            return;
+        }
+        if (!(player.getMainHandItem().is(ModItems.NAVIGATION) || player.getMainHandItem().is(ModItems.DEBUG_NAV))) {
+            debugElements.clear();
+            data.renderDirty = true;
+            return;
+        }
+        var currentChunkPos = ChunkPos.containing(player.blockPosition());
+        if (!data.renderDirty && currentChunkPos == lastChunkPos) {
+            return;
+        }
+        data.renderDirty = false;
+        lastChunkPos = currentChunkPos;
+        debugElements.clear();
+
 
         int amount = player.getMainHandItem().getCount();
         if (amount == 64 || amount == 63) {
@@ -133,7 +147,6 @@ public class NavRenderingSupport {
             layerRangeLeft = Integer.MIN_VALUE;
         }
         amount = Math.clamp(amount, 3, 16);
-        var currentChunkPos = ChunkPos.containing(player.blockPosition());
 
         for (int offsetX = -amount; offsetX <= amount; offsetX++) {
             for (int offsetZ = -amount; offsetZ <= amount; offsetZ++) {
@@ -173,7 +186,7 @@ public class NavRenderingSupport {
                                 } else {
                                     int color = colorFromRatio(dis / 127.0f, false);
                                     var pos = new Vec3(blockPos.getX() + 1.0, blockPos.getY() + 0.125f, blockPos.getZ() + 0.5);
-                                    this.elements.add(new DebugText(pos,
+                                    this.debugElements.add(new DebugText(pos,
                                             String.valueOf(dis), color, ClientConfig.CLIENT_CONFIG.getLeft().distanceTextScale.get().floatValue()));
                                 }
                                 dis = layer.getDistance(x, z, true);
@@ -186,10 +199,10 @@ public class NavRenderingSupport {
                                 } else {
                                     int color = colorFromRatio(dis / 127.0f, false);
                                     var pos = new Vec3(blockPos.getX() + 0.5, blockPos.getY() + 0.125f, blockPos.getZ() + 1.0);
-                                    this.elements.add(new DebugText(pos,
+                                    this.debugElements.add(new DebugText(pos,
                                             String.valueOf(dis), color, ClientConfig.CLIENT_CONFIG.getLeft().distanceTextScale.get().floatValue()));
                                 }
-                                this.elements.add(new DebugText(blockPos.getCenter(),
+                                this.debugElements.add(new DebugText(blockPos.getCenter(),
                                         String.valueOf(layer.getLayer()), 0xffffffff));
                                 filledBox(
                                         blockPos.getCenter(),
@@ -221,10 +234,10 @@ public class NavRenderingSupport {
 //            );
             if (node.lastNode != null) {
                 var lastNode = node.lastNode;
-                elements.add(new Arrow(new BlockPos(lastNode.x, lastNode.y, lastNode.z).getCenter(), self, 0xffff0000, 0xff00ff00));
-                elements.add(new DebugText(self.add(0.0, 10.0, 0.0), String.valueOf(i), 0xff000000));
-                elements.add(new DebugText(self.add(0.0, 5.0f, 0.0), String.valueOf(node.lastNode.getExtraCost(node.x, node.y, node.z)), 0xff000000));
-                elements.add(new DebugText(self.add(0.0, 1.0, 0.0), String.valueOf(node.cost), 0xffffffff));
+                immediateElements.add(new Arrow(new BlockPos(lastNode.x, lastNode.y, lastNode.z).getCenter(), self, 0xffff0000, 0xff00ff00));
+                immediateElements.add(new DebugText(self.add(0.0, 10.0, 0.0), String.valueOf(i), 0xff000000));
+                immediateElements.add(new DebugText(self.add(0.0, 5.0f, 0.0), String.valueOf(node.lastNode.getExtraCost(node.x, node.y, node.z)), 0xff000000));
+                immediateElements.add(new DebugText(self.add(0.0, 1.0, 0.0), String.valueOf(node.cost), 0xffffffff));
             }
             ++i;
         }
@@ -273,7 +286,7 @@ public class NavRenderingSupport {
                         dest.getY() + 0.5,
                         dest.getZ() + 0.5
                 );
-                elements.add(new Arrow(fromVec, toVec, yellowColor, blueColor));
+                debugElements.add(new Arrow(fromVec, toVec, yellowColor, blueColor));
             }
         }
     }
@@ -282,7 +295,10 @@ public class NavRenderingSupport {
         poseStack.pushPose();
         Vec3 position = Minecraft.getInstance().gameRenderer.getMainCamera().position();
         poseStack.translate(position.scale(-1));
-        for (IRenderElement element : elements) {
+        for (IRenderElement element : immediateElements) {
+            element.render(poseStack, collector, camera);
+        }
+        for (IRenderElement element : debugElements) {
             element.render(poseStack, collector, camera);
         }
         for (IRenderElement element : lineElements) {
@@ -299,7 +315,7 @@ public class NavRenderingSupport {
         if (size <= 0.0f) {
             return;
         }
-        elements.add(new FilledBox(center, size, color));
+        debugElements.add(new FilledBox(center, size, color));
     }
 
     public void line(Vec3 start, Vec3 end, int color) {
@@ -310,7 +326,7 @@ public class NavRenderingSupport {
         if (start.equals(end)) {
             return;
         }
-        elements.add(new Line(start, end, 5, startColor, endColor));
+        debugElements.add(new Line(start, end, 5, startColor, endColor));
         linesDirty = true;
     }
 
@@ -334,7 +350,7 @@ public class NavRenderingSupport {
 
     private List<Line> extractLines() {
         List<Line> extractedLines = new ArrayList<>();
-        Iterator<IRenderElement> iterator = elements.iterator();
+        Iterator<IRenderElement> iterator = debugElements.iterator();
         while (iterator.hasNext()) {
             IRenderElement element = iterator.next();
             if (element instanceof Line line) {
