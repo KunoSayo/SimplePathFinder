@@ -261,9 +261,9 @@ public class NavigationItem extends Item {
         NavigationMode mode = getNavigationMode(stack);
 
         // 检查是否可以使用导航物品
-        if (mode != NavigationMode.DEFAULT && !canUseNavigationItem(player)) {
+        if (!canUseNavigationItem(player)) {
             player.sendSystemMessage(Component.translatable("simple_path_finder.nav.creative_required"));
-            return false;
+            return true;
         }
 
         switch (mode) {
@@ -272,7 +272,7 @@ public class NavigationItem extends Item {
                     // 默认模式 - 扫描整个区块
                     return handleDefaultScan((ServerLevel) level, player, clickedPos);
                 }
-                return false;
+                return true;
             }
             case ADD_NAV -> {
                 // 添加导航模式 - 在点击位置构建导航层
@@ -395,7 +395,7 @@ public class NavigationItem extends Item {
             if (navChunkOpt.isEmpty()) {
                 player.sendSystemMessage(Component.translatable("simple_path_finder.nav.link.no_start_nav"));
                 clearLinkCreationData(stack);
-                return false;
+                return true;
             }
 
             var navChunk = navChunkOpt.get();
