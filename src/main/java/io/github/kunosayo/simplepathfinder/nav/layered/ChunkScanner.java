@@ -28,8 +28,7 @@ public class ChunkScanner {
      * @return ScanResult containing layer information
      */
     public static ScanResult scanChunk(Level level, io.github.kunosayo.simplepathfinder.nav.INavChunk chunk, int centerX, int centerY, int centerZ, @Nullable PlayerBlockDistanceData distanceData) {
-        // Clear existing layers
-        chunk.removeAllLayers();
+
 
         int chunkX = SectionPos.blockToSectionCoord(centerX);
         int chunkZ = SectionPos.blockToSectionCoord(centerZ);
@@ -76,7 +75,8 @@ public class ChunkScanner {
         if (layerPositions.size() > maxLayers) {
             return ScanResult.failed();
         }
-
+        // Clear existing layers
+        chunk.removeAllLayers();
         // Create the layers
         int minLayer = Integer.MAX_VALUE;
         int maxLayer = Integer.MIN_VALUE;
