@@ -875,7 +875,7 @@ public class NavPathFinder implements EdgeConsumer {
             if (lastNode == null) {
                 return 0;
             }
-            int a = 9;
+            int a = 3;
             int px = x;
             int pz = z;
             int lx = lastNode.x;
