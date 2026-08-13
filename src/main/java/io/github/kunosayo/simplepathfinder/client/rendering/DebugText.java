@@ -55,7 +55,7 @@ public class DebugText implements IRenderElement {
 
         float width = Minecraft.getInstance().font.width(this.text);
         float height = Minecraft.getInstance().font.lineHeight;
-        int bgColor = 0x77000000;
+        int bgColor = 0x37373737;
         collector.submitText(poseStack, -width / 2.0f, -height / 2.0f,
                 FormattedCharSequence.forward(this.text, Style.EMPTY.withColor(color)),
                 false, Font.DisplayMode.NORMAL, LightCoordsUtil.pack(15, 15), 0xffffffff, bgColor, 0);
