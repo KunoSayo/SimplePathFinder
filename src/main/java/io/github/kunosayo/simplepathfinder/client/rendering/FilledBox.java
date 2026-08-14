@@ -17,7 +17,7 @@ public record FilledBox(
 
     @Override
     public void addVertex(PoseStack.Pose pose, VertexConsumer vertex) {
-        float radius = size * 0.5f;
+        final float radius = size * 0.5f;
         float minX = (float) center.x - radius;
         float minY = (float) center.y - radius;
         float minZ = (float) center.z - radius;
@@ -36,6 +36,14 @@ public record FilledBox(
     @Override
     public RenderType getRenderType() {
         return RenderTypes.debugFilledBox();
+    }
+
+    @Override
+    public void render(PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
+        if (!camera.cullFrustum.pointInFrustum(center.x, center.y, center.z)) {
+            return;
+        }
+        IRenderElement.super.render(poseStack, collector, camera);
     }
 
     private void quad(

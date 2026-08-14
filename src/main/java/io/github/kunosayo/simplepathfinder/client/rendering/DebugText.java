@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.LightCoordsUtil;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public class DebugText implements IRenderElement {
@@ -43,6 +44,9 @@ public class DebugText implements IRenderElement {
 
     @Override
     public void render(PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
+        if (!camera.cullFrustum.pointInFrustum(pos.x, pos.y, pos.z)) {
+            return;
+        }
         poseStack.pushPose();
         poseStack.translate(pos.x, pos.y, pos.z);
         float fontScale = -0.03125f * this.scale;
