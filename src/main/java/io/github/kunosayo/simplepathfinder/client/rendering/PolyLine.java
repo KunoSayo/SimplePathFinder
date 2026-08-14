@@ -24,11 +24,6 @@ public record PolyLine(
 
     @Override
     public void addVertex(PoseStack.Pose pose, VertexConsumer vertex) {
-
-    }
-
-    @Override
-    public void addVertex(PoseStack.Pose pose, VertexConsumer vertex, CameraRenderState camera) {
         int lineCount = points.size() - 1;
         for (int index = 1; index < points.size(); index++) {
             Vec3 start = points.get(index - 1);

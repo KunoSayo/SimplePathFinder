@@ -11,17 +11,13 @@ public interface IRenderElement {
 
     void addVertex(PoseStack.Pose pose, VertexConsumer vertex);
 
-    default void addVertex(PoseStack.Pose pose, VertexConsumer vertex, CameraRenderState camera) {
-        addVertex(pose, vertex);
-    }
-
     RenderType getRenderType();
 
     default void render(PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
         collector.submitCustomGeometry(
                 poseStack,
                 this.getRenderType(),
-                (pose, vertexConsumer) -> addVertex(pose, vertexConsumer, camera)
+                this::addVertex
         );
     }
 }
