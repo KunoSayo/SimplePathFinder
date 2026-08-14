@@ -125,7 +125,7 @@ public class NavRenderingSupport {
             return;
         }
         var currentChunkPos = ChunkPos.containing(player.blockPosition());
-        if (!data.renderDirty && currentChunkPos == lastChunkPos) {
+        if (!data.renderDirty && currentChunkPos.equals(lastChunkPos)) {
             return;
         }
         data.renderDirty = false;
