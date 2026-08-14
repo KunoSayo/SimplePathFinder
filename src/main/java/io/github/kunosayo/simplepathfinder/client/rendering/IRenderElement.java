@@ -4,10 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
+import org.jspecify.annotations.NonNull;
 
-public interface IRenderElement {
+public interface IRenderElement extends SubmitNodeCollector.CustomGeometryRenderer {
 
     void addVertex(PoseStack.Pose pose, VertexConsumer vertex);
 
@@ -17,7 +17,13 @@ public interface IRenderElement {
         collector.submitCustomGeometry(
                 poseStack,
                 this.getRenderType(),
-                this::addVertex
+                this
         );
     }
+
+    @Override
+    default void render(PoseStack.@NonNull Pose pose, @NonNull VertexConsumer vertex) {
+        addVertex(pose, vertex);
+    }
+
 }
