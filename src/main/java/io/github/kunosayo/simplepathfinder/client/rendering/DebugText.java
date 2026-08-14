@@ -45,14 +45,10 @@ public class DebugText implements IRenderElement {
     public void render(PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
         poseStack.pushPose();
         poseStack.translate(pos.x, pos.y, pos.z);
-        float fontScale = 0.03125f;
+        float fontScale = -0.03125f * this.scale;
         poseStack.scale(fontScale, fontScale, fontScale);
-        poseStack.scale(-1.0f, -1.0f, -1.0f);
-        poseStack.scale(this.scale, this.scale, this.scale);
         poseStack.mulPose(camera.orientation);
         poseStack.mulPose(Axis.YP.rotationDegrees(180));
-//        poseStack.translate(-camera.pos.x, -camera.pos.y, -camera.pos.z);
-
         float width = Minecraft.getInstance().font.width(this.text);
         float height = Minecraft.getInstance().font.lineHeight;
         int bgColor = 0x37373737;
