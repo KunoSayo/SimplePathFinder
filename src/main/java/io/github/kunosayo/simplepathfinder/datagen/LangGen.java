@@ -202,7 +202,7 @@ public class LangGen {
         add("gui.simple_path_finder.navigation.link_type.normal", "普通", "Normal");
         add("gui.simple_path_finder.navigation.link_type.teleport", "传送", "Teleport");
         add("gui.simple_path_finder.navigation.link_type.vehicle", "载具", "Vehicle");
-        add("gui.simple_path_finder.navigation.layer", "层级值:", "Layer:");
+        add("gui.simple_path_finder.navigation.layer", "导航层级:", "Layer:");
         add("gui.simple_path_finder.navigation.save", "保存", "Save");
         add("gui.simple_path_finder.navigation.cancel", "取消", "Cancel");
         add("gui.simple_path_finder.navigation.block_distance_config", "方块距离配置", "Block Distance Config");
@@ -213,6 +213,9 @@ public class LangGen {
         add("gui.simple_path_finder.block_distance.remove", "移除", "Remove");
         add("gui.simple_path_finder.block_distance.save", "保存", "Save");
         add("gui.simple_path_finder.block_distance.cancel", "取消", "Cancel");
+        add("gui.simple_path_finder.block_distance.dist", "距离权重", "Distance");
+        add("gui.simple_path_finder.block_distance.default_distance", "默认方块距离权重", "Default Block Distance");
+        add("gui.simple_path_finder.block_distance.default_distance.tooltip", "新添加的方块默认使用的权重值", "Default weight value for newly added blocks");
 
         // 导航笔刷系统消息
         add("simple_path_finder.nav_brush.creative_required", "需要创造模式才能使用导航笔刷", "Creative mode required to use navigation brush");

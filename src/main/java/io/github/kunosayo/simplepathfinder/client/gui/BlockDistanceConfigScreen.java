@@ -32,11 +32,11 @@ public class BlockDistanceConfigScreen extends Screen {
     // UI Components
     private EditBox blockIdEditBox;
     private EditBox distanceEditBox;
+    private EditBox defaultDistanceEditBox;
     private Button addButton;
     private Button removeButton;
     private Button saveButton;
     private Button cancelButton;
-    private Button defaultDistanceButton;
 
     // List entry buttons (10 entries visible at a time)
     private final List<Button> listEntryButtons = new ArrayList<>();
@@ -108,7 +108,7 @@ public class BlockDistanceConfigScreen extends Screen {
 
         // Distance input label
         var distLabel = new StringWidget(
-                Component.literal("Dist:"), this.font);
+                Component.translatable("gui.simple_path_finder.block_distance.dist"), this.font);
         distLabel.setPosition(leftPos + 200, topPos + 8);
         this.addRenderableWidget(distLabel);
 
@@ -171,11 +171,25 @@ public class BlockDistanceConfigScreen extends Screen {
                 btn -> removeSelectedEntry()
         ).bounds(leftPos + 10, listY + pageSize * lineHeight + 10, 80, 20).build());
 
-        // Default distance button
-        defaultDistanceButton = this.addRenderableWidget(Button.builder(
-                Component.literal("Default: " + defaultDistance),
-                btn -> cycleDefaultDistance()
-        ).bounds(leftPos + 100, listY + pageSize * lineHeight + 10, 100, 20).build());
+        // Default distance input label
+        var defaultDistLabel = new StringWidget(
+                Component.translatable("gui.simple_path_finder.block_distance.default_distance"), this.font);
+        defaultDistLabel.setPosition(leftPos + 100, listY + pageSize * lineHeight + 2);
+        this.addRenderableWidget(defaultDistLabel);
+
+        // Default distance input
+        defaultDistanceEditBox = new EditBox(this.font, leftPos + 100, listY + pageSize * lineHeight + 15, 100, 20,
+                Component.translatable("gui.simple_path_finder.block_distance.default_distance"));
+        defaultDistanceEditBox.setValue(String.valueOf(defaultDistance));
+        defaultDistanceEditBox.setFilter(s -> s.matches("-?\\d*"));
+        defaultDistanceEditBox.setResponder(s -> {
+            try {
+                defaultDistance = Integer.parseInt(s);
+            } catch (NumberFormatException e) {
+                // Keep current value if invalid
+            }
+        });
+        this.addRenderableWidget(defaultDistanceEditBox);
 
         // Save button
         saveButton = this.addRenderableWidget(Button.builder(
@@ -549,17 +563,6 @@ public class BlockDistanceConfigScreen extends Screen {
         refreshListDisplay();
     }
 
-    private void cycleDefaultDistance() {
-        defaultDistance = switch (defaultDistance) {
-            case 0 -> 1;
-            case 1 -> 10;
-            case 10 -> 50;
-            default -> 0;
-        };
-        defaultDistanceButton.setMessage(Component.literal("Default: " + defaultDistance));
-        distanceEditBox.setValue(String.valueOf(defaultDistance));
-    }
-
     private void saveAndClose() {
         Map<BlockDistanceKey, Integer> newMap = new HashMap<>();
 
@@ -581,7 +584,15 @@ public class BlockDistanceConfigScreen extends Screen {
             newMap.put(key, entry.distance);
         }
 
-        PlayerBlockDistanceData newData = new PlayerBlockDistanceData(newMap, defaultDistance);
+        // Get default distance from edit box
+        int parsedDefaultDistance = defaultDistance;
+        try {
+            parsedDefaultDistance = Integer.parseInt(defaultDistanceEditBox.getValue());
+        } catch (NumberFormatException e) {
+            // Keep current value if invalid
+        }
+
+        PlayerBlockDistanceData newData = new PlayerBlockDistanceData(newMap, parsedDefaultDistance);
 
         var connection = Minecraft.getInstance().getConnection();
         if (connection != null) {

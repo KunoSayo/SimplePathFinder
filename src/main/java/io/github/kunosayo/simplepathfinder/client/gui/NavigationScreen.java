@@ -9,6 +9,7 @@ import io.github.kunosayo.simplepathfinder.nav.NavLinkType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
@@ -29,6 +30,7 @@ public class NavigationScreen extends Screen {
     private Button modeAddLinkButton;
     private Button blockDistanceConfigButton;
     private EditBox layerEditBox;
+    private StringWidget layerLabel;
     private Button saveButton;
     private Button cancelButton;
 
@@ -116,6 +118,11 @@ public class NavigationScreen extends Screen {
 
         // Layer input (fourth row)
         buttonY = topPos + 100;
+        // Add label for layer input
+        layerLabel = new StringWidget(
+                Component.translatable("gui.simple_path_finder.navigation.layer"), this.font);
+        layerLabel.setPosition(leftPos + 10, buttonY + 3);
+        this.addRenderableWidget(layerLabel);
         layerEditBox = new EditBox(
                 this.font,
                 leftPos + 65,
