@@ -47,6 +47,9 @@ public class DebugText implements IRenderElement {
         if (!camera.cullFrustum.pointInFrustum(pos.x, pos.y, pos.z)) {
             return;
         }
+        if (camera.pos.distanceToSqr(pos) >= 4096.0) {
+            return;
+        }
         poseStack.pushPose();
         poseStack.translate(pos.x, pos.y, pos.z);
         float fontScale = -0.03125f * this.scale;
