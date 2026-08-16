@@ -23,7 +23,7 @@ public record Arrow(
 ) implements IRenderElement {
 
     public Arrow(Vec3 start, Vec3 end, int startColor, int endColor) {
-        this(start, end, 3, startColor, endColor, 0.3f);
+        this(start, end, 3.7f, startColor, endColor, 0.37f);
     }
 
     @Override
@@ -54,9 +54,9 @@ public record Arrow(
                 .setNormal(pose, dirX, dirY, dirZ);
 
         // Arrow base (where the arrow head starts)
-        float arrowBaseX = (float) (this.end().x) - dirX * this.arrowHeadSize;
-        float arrowBaseY = (float) (this.end().y) - dirY * this.arrowHeadSize;
-        float arrowBaseZ = (float) (this.end().z) - dirZ * this.arrowHeadSize;
+        float arrowBaseX = (float) (this.end().x);
+        float arrowBaseY = (float) (this.end().y);
+        float arrowBaseZ = (float) (this.end().z);
 
         vertex.addVertex(
                         pose.pose(),

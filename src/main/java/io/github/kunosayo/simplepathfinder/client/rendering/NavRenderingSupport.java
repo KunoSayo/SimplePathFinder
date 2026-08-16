@@ -258,8 +258,8 @@ public class NavRenderingSupport {
         }
 
         // Colors: yellow (start) to blue (end)
-        int yellowColor = 0x55FFFF00;  // ARGB: alpha=0x55, RGB=255,255,0
-        int blueColor = 0x550000FF;    // ARGB: alpha=0x55, RGB=0,0,255
+        int yellowColor = 0xAAFFFF00;
+        int blueColor = 0xAA0000FF;
 
         for (var entry : allNavLinks.entrySet()) {
             var fromPos = entry.getKey();
