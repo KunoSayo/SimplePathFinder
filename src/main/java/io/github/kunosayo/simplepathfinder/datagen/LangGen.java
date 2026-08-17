@@ -216,6 +216,20 @@ public class LangGen {
         add("gui.simple_path_finder.block_distance.dist", "距离权重", "Distance");
         add("gui.simple_path_finder.block_distance.default_distance", "默认方块距离权重", "Default Block Distance");
         add("gui.simple_path_finder.block_distance.default_distance.tooltip", "新添加的方块默认使用的权重值", "Default weight value for newly added blocks");
+        add("gui.simple_path_finder.block_distance.block_id_tag", "方块ID / 标签:", "Block ID / Tag:");
+        add("gui.simple_path_finder.block_distance.block_id_tag_placeholder", "方块ID或标签", "Block ID or Tag");
+        add("gui.simple_path_finder.block_distance.distance_placeholder", "距离", "Distance");
+        add("gui.simple_path_finder.block_distance.valid_tag", "✓ 标签: ", "✓ Tag: ");
+        add("gui.simple_path_finder.block_distance.tag_not_found", "? 标签未找到: ", "? Tag not found: ");
+        add("gui.simple_path_finder.block_distance.valid_block", "✓ 方块: ", "✓ Block: ");
+        add("gui.simple_path_finder.block_distance.unknown_block", "? 未知方块: ", "? Unknown block: ");
+        add("gui.simple_path_finder.block_distance.invalid_format", "✗ 格式无效", "✗ Invalid format");
+        add("gui.simple_path_finder.block_distance.suggestion", "建议: ", "Suggestion: ");
+        add("gui.simple_path_finder.block_distance.more_suggestions", " (+", " (+");
+        add("gui.simple_path_finder.block_distance.more_suffix", " 更多)", " more)");
+        add("gui.simple_path_finder.block_distance.distance_in_list", " - 距离权重: ", " - Distance: ");
+        add("gui.simple_path_finder.block_distance.selected_prefix", "→ ", "→ ");
+        add("gui.simple_path_finder.block_distance.page_info", "第 %d/%d 页 (共 %d 条)", "Page %d/%d (%d entries)");
 
         // 导航笔刷系统消息
         add("simple_path_finder.nav_brush.creative_required", "需要创造模式才能使用导航笔刷", "Creative mode required to use navigation brush");

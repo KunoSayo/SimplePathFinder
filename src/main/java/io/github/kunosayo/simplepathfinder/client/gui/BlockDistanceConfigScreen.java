@@ -95,13 +95,13 @@ public class BlockDistanceConfigScreen extends Screen {
 
         // Block ID / Tag input label
         var idLabel = new StringWidget(
-                Component.literal("Block ID / Tag:"), this.font);
+                Component.translatable("gui.simple_path_finder.block_distance.block_id_tag"), this.font);
         idLabel.setPosition(leftPos, topPos + 8);
         this.addRenderableWidget(idLabel);
 
         // Block ID / Tag input
         blockIdEditBox = new EditBox(this.font, leftPos + 10, topPos + 20, 180, 20,
-                Component.literal("Block ID or Tag"));
+                Component.translatable("gui.simple_path_finder.block_distance.block_id_tag_placeholder"));
         blockIdEditBox.setMaxLength(200);
         blockIdEditBox.setResponder(s -> onInputChanged(s));
         this.addRenderableWidget(blockIdEditBox);
@@ -113,7 +113,7 @@ public class BlockDistanceConfigScreen extends Screen {
         this.addRenderableWidget(distLabel);
 
         // Distance input
-        distanceEditBox = new EditBox(this.font, leftPos + 220, topPos + 20, 50, 20, Component.literal("Distance"));
+        distanceEditBox = new EditBox(this.font, leftPos + 220, topPos + 20, 50, 20, Component.translatable("gui.simple_path_finder.block_distance.distance_placeholder"));
         distanceEditBox.setValue(String.valueOf(defaultDistance));
         distanceEditBox.setFilter(s -> s.matches("-?\\d*"));
         distanceEditBox.setResponder(s -> updateAddButton());
@@ -248,38 +248,42 @@ public class BlockDistanceConfigScreen extends Screen {
             if (id != null) {
                 if (isTag) {
                     if (checkTagExists(id)) {
-                        result = Component.literal("✓ Tag: ").append(Component.literal(id.toString()).withColor(0x55FF55));
+                        result = Component.translatable("gui.simple_path_finder.block_distance.valid_tag")
+                                .append(Component.literal(id.toString()).withColor(0x55FF55));
                     } else {
-                        result = Component.literal("? Tag not found: ").append(Component.literal(id.toString()).withColor(0xFFFF55));
+                        result = Component.translatable("gui.simple_path_finder.block_distance.tag_not_found")
+                                .append(Component.literal(id.toString()).withColor(0xFFFF55));
                     }
                 } else {
                     if (BuiltInRegistries.BLOCK.containsKey(id)) {
                         var blockRef = BuiltInRegistries.BLOCK.get(id);
                         String blockName = blockRef.isPresent() ?
                                 blockRef.get().value().getName().getString() : id.toString();
-                        result = Component.literal("✓ Block: ").append(Component.literal(blockName).withColor(0x55FF55));
+                        result = Component.translatable("gui.simple_path_finder.block_distance.valid_block")
+                                .append(Component.literal(blockName).withColor(0x55FF55));
                     } else {
-                        result = Component.literal("? Unknown block: ").append(Component.literal(id.toString()).withColor(0xFFFF55));
+                        result = Component.translatable("gui.simple_path_finder.block_distance.unknown_block")
+                                .append(Component.literal(id.toString()).withColor(0xFFFF55));
                     }
                 }
             } else {
-                result = Component.literal("✗ Invalid format").withColor(0xFF5555);
+                result = Component.translatable("gui.simple_path_finder.block_distance.invalid_format").withColor(0xFF5555);
             }
 
             // Show suggestion if available
             if (!currentSuggestions.isEmpty()) {
                 String suggestion = currentSuggestions.get(0);
                 String prefix = isTag ? "#" : "";
-                suggestionWidget.setMessage(Component.literal("Suggestion: ")
+                suggestionWidget.setMessage(Component.translatable("gui.simple_path_finder.block_distance.suggestion")
                         .append(Component.literal(prefix + suggestion).withColor(0xAAAAAA))
-                        .append(Component.literal(" (+").withColor(0x888888))
+                        .append(Component.translatable("gui.simple_path_finder.block_distance.more_suggestions").withColor(0x888888))
                         .append(Component.literal(String.valueOf(currentSuggestions.size() - 1)).withColor(0x888888))
-                        .append(Component.literal(" more)").withColor(0x888888)));
+                        .append(Component.translatable("gui.simple_path_finder.block_distance.more_suffix").withColor(0x888888)));
             } else {
                 suggestionWidget.setMessage(Component.empty());
             }
         } catch (Exception e) {
-            result = Component.literal("✗ Invalid format").withColor(0xFF5555);
+            result = Component.translatable("gui.simple_path_finder.block_distance.invalid_format").withColor(0xFF5555);
             suggestionWidget.setMessage(Component.empty());
         }
 
@@ -407,12 +411,14 @@ public class BlockDistanceConfigScreen extends Screen {
             if (i < displayCount) {
                 int entryIndex = scrollPosition + i;
                 BlockDistanceEntry entry = distanceEntries.get(entryIndex);
-                String text = String.format("%s - Distance: %d", entry.displayId, entry.distance);
-                btn.setMessage(Component.literal(text));
+                Component text = Component.literal(entry.displayId)
+                        .append(Component.translatable("gui.simple_path_finder.block_distance.distance_in_list")
+                                .append(Component.literal(String.valueOf(entry.distance))));
+                btn.setMessage(text);
                 btn.active = true;
                 // Highlight selected entry
                 if (entryIndex == selectedIndex) {
-                    btn.setMessage(Component.literal("→ ").append(Component.literal(text)));
+                    btn.setMessage(Component.translatable("gui.simple_path_finder.block_distance.selected_prefix").append(text));
                 }
             } else {
                 btn.setMessage(Component.empty());
@@ -421,11 +427,11 @@ public class BlockDistanceConfigScreen extends Screen {
         }
 
         // Update page indicator
-        String pageInfo = String.format("Page %d/%d (%d entries)",
+        Component pageInfo = Component.translatable("gui.simple_path_finder.block_distance.page_info",
                 (scrollPosition / pageSize) + 1,
                 Math.max(1, (distanceEntries.size() + pageSize - 1) / pageSize),
                 distanceEntries.size());
-        pageIndicatorWidget.setMessage(Component.literal(pageInfo));
+        pageIndicatorWidget.setMessage(pageInfo);
     }
 
     private void addEntry() {
