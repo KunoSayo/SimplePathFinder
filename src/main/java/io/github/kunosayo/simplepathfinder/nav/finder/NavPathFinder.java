@@ -851,15 +851,8 @@ public class NavPathFinder implements EdgeConsumer {
         }
 
         private static long compare(long lht, long lho, long lpt, long lpo) {
-            final int hThis = (int) lht;
-            final int hThat = (int) lho;
-            final int priorityThis = (int) lpt;
-            final int priorityThat = (int) lpo;
-            if (hThis == lht && hThat == lho && priorityThis == lpt && priorityThat == lpo) {
-                try {
-                    return Math.subtractExact(((long) priorityThis) << 32 | hThis, ((long) priorityThat) << 32 | hThat);
-                } catch (ArithmeticException _) {
-                }
+            if ((lht | lho | lpt | lpo) <= Integer.MAX_VALUE) {
+                return ((lpt << 32) | lht) - ((lpo << 32) | lho);
             }
             return compareFallback(lht, lho, lpt, lpo);
         }
@@ -939,8 +932,7 @@ public class NavPathFinder implements EdgeConsumer {
                 siftDown(0);
             }
             heap[size] = null;
-            priorityAndHValue[size << 1] = -1L;
-            priorityAndHValue[(size << 1) + 1] = -1L;
+            // We don't clear priority and hValue here because it's not necessary
             return minNode;
         }
 
@@ -991,11 +983,17 @@ public class NavPathFinder implements EdgeConsumer {
             while (index < half) {
                 int leftIndex = (index << 1) + 1;
                 int rightIndex = Math.min(leftIndex, size - 2) + 1;
-                long comparison = compare(leftIndex, rightIndex);
-                int selection = (int) (comparison >> 63);
-                int childIndex = (selection & leftIndex) | (~selection & rightIndex);
-                long lpc = priorityAndHValue[childIndex << 1];
-                long lhc = priorityAndHValue[(childIndex << 1) + 1];
+                long lpl = priorityAndHValue[leftIndex << 1];
+                long lhl = priorityAndHValue[(leftIndex << 1) + 1];
+                long lpr = priorityAndHValue[rightIndex << 1];
+                long lhr = priorityAndHValue[(rightIndex << 1) + 1];
+                long s =  SearchNode.compare(lhl, lhr, lpl, lpr) >> 63;
+                long as = ~s;
+                long lpc = (s & lpl) | (as & lpr);
+                long lhc = (s & lhl) | (as & lhr);
+                int sl = (int) s;
+                int asl = ~sl;
+                int childIndex = (sl & leftIndex) | (asl & rightIndex);
                 if (SearchNode.compare(lhc, lht, lpc, lpt) >= 0) {
                     break;
                 }
@@ -1010,14 +1008,6 @@ public class NavPathFinder implements EdgeConsumer {
             priorityAndHValue[(index << 1) + 1] = lht;
             heap[index] = node;
             node.heapIndex = index;
-        }
-
-        private long compare(int first, int second) {
-            long lpt = priorityAndHValue[first << 1];
-            long lht = priorityAndHValue[(first << 1) + 1];
-            long lpo = priorityAndHValue[second << 1];
-            long lho = priorityAndHValue[(second << 1) + 1];
-            return SearchNode.compare(lht, lho, lpt, lpo);
         }
     }
 }
