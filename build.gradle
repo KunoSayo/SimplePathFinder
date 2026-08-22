@@ -18,6 +18,10 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.ALL
 }
 
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.addAll('--enable-preview', '--release', '25', '--add-modules', 'jdk.incubator.vector')
+}
+
 // 模组相关信息
 version = mod_version
 group = mod_group_id
@@ -36,6 +40,8 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            jvmArgument '--add-modules'
+            jvmArgument 'jdk.incubator.vector'
             //jvmArgument '-XX:+UnlockExperimentalVMOptions'
             //jvmArgument '-XX:+UnlockDiagnosticVMOptions'
             //jvmArgument '-XX:+DebugNonSafepoints'
