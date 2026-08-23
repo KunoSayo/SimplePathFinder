@@ -205,10 +205,10 @@ public class LangGen {
         add("gui.simple_path_finder.navigation.layer", "导航层级:", "Layer:");
         add("gui.simple_path_finder.navigation.save", "保存", "Save");
         add("gui.simple_path_finder.navigation.cancel", "取消", "Cancel");
-        add("gui.simple_path_finder.navigation.block_distance_config", "方块距离配置", "Block Distance Config");
+        add("gui.simple_path_finder.navigation.block_distance_config", "方块距离权重配置", "Block Distance Config");
 
         // 方块距离配置GUI
-        add("gui.simple_path_finder.block_distance.title", "方块距离配置", "Block Distance Configuration");
+        add("gui.simple_path_finder.block_distance.title", "方块距离权重配置", "Block Distance Configuration");
         add("gui.simple_path_finder.block_distance.add", "添加", "Add");
         add("gui.simple_path_finder.block_distance.remove", "移除", "Remove");
         add("gui.simple_path_finder.block_distance.save", "保存", "Save");
