@@ -12,11 +12,11 @@ import io.github.kunosayo.simplepathfinder.util.UncheckedArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import jdk.incubator.vector.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -851,23 +851,10 @@ public class NavPathFinder implements EdgeConsumer {
         }
 
         private static long compare(long lht, long lho, long lpt, long lpo) {
-            if (((lht | lho | lpt | lpo) & Long.MIN_VALUE) == 0) {
+            if ((lht | lho | lpt | lpo) <= Integer.MAX_VALUE) {
                 return ((lpt << 32) | lht) - ((lpo << 32) | lho);
             }
             return compareFallback(lht, lho, lpt, lpo);
-        }
-
-        // There's no other fucking way. Shit.
-        private static long compare(ByteVector hpThis, ByteVector hpThat) {
-            final var min = hpThis.lanewise(VectorOperators.UMIN, hpThat);
-            final long le = hpThis.compare(VectorOperators.EQ, min).toLong();
-            final long ge = hpThat.compare(VectorOperators.EQ, min).toLong();
-            return ge - le;
-            //return compareFallback(hpThis, hpThat);
-        }
-
-        private static long compareFallback(LongVector hpThis, LongVector hpThat) {
-            return compareFallback(hpThis.lane(0), hpThat.lane(0), hpThis.lane(1), hpThat.lane(1));
         }
 
         private static long compareFallback(long lht, long lho, long lpt, long lpo) {
@@ -903,12 +890,12 @@ public class NavPathFinder implements EdgeConsumer {
 
     public static class SearchNodeHeap {
         private SearchNode[] heap;
-        private long[] hValueAndPriority;
+        private long[] priorityAndHValue;
         private int size;
 
         public SearchNodeHeap(int capacity) {
             this.heap = new SearchNode[capacity];
-            this.hValueAndPriority = new long[capacity << 1];
+            this.priorityAndHValue = new long[capacity << 1];
             this.size = 0;
         }
 
@@ -917,21 +904,19 @@ public class NavPathFinder implements EdgeConsumer {
         }
 
         public void push(SearchNode node, long priority, long hValue) {
-            int idx = size++;
-            if (idx == heap.length) {
-                SearchNode[] newHeap = new SearchNode[idx << 1];
-                long[] newLong = new long[idx << 2];
-                System.arraycopy(heap, 0, newHeap, 0, idx);
-                System.arraycopy(hValueAndPriority, 0, newLong, 0, idx << 1);
+            if (size == heap.length) {
+                SearchNode[] newHeap = new SearchNode[heap.length << 1];
+                long[] newLong = new long[priorityAndHValue.length << 1];
+                System.arraycopy(heap, 0, newHeap, 0, heap.length);
+                System.arraycopy(priorityAndHValue, 0, newLong, 0, priorityAndHValue.length);
                 heap = newHeap;
-                hValueAndPriority = newLong;
+                priorityAndHValue = newLong;
             }
-            heap[idx] = node;
-            hValueAndPriority[idx << 1] = hValue;
-            hValueAndPriority[(idx << 1) + 1] = priority;
-            node.heapIndex = idx;
-            if (idx == 0) return;
-            siftUp(idx);
+            heap[size] = node;
+            priorityAndHValue[size << 1] = priority;
+            priorityAndHValue[(size << 1) + 1] = hValue;
+            node.heapIndex = size;
+            siftUp(size++);
         }
 
         public SearchNode pop() {
@@ -939,8 +924,8 @@ public class NavPathFinder implements EdgeConsumer {
             SearchNode minNode = heap[0];
             minNode.heapIndex = -2;
             if (--size > 0) {
-                LongVector.fromArray(LongVector.SPECIES_128, hValueAndPriority, size << 1)
-                        .intoArray(hValueAndPriority, 0);
+                priorityAndHValue[0] = priorityAndHValue[size << 1];
+                priorityAndHValue[1] = priorityAndHValue[(size << 1) + 1];
                 SearchNode lastNode = heap[size];
                 heap[0] = lastNode;
                 lastNode.heapIndex = 0;
@@ -953,62 +938,74 @@ public class NavPathFinder implements EdgeConsumer {
 
         public void decreaseKey(int idx, long newPriority) {
             if (idx >= 0) {
-                hValueAndPriority[(idx << 1) + 1] = newPriority;
+                priorityAndHValue[idx << 1] = newPriority;
                 siftUp(idx);
             }
         }
 
         public long getPriority(int idx) {
-            return hValueAndPriority[(idx << 1) + 1];
+            return priorityAndHValue[idx << 1];
         }
 
         public long getHValue(int idx) {
-            return hValueAndPriority[idx << 1];
+            return priorityAndHValue[(idx << 1) + 1];
         }
 
         private void siftUp(int index) {
-            final var hpThis = LongVector.fromArray(LongVector.SPECIES_128, hValueAndPriority, index << 1);
+            long lpt = priorityAndHValue[index << 1];
+            long lht = priorityAndHValue[(index << 1) + 1];
             SearchNode node = heap[index];
-            do {
+            while (index > 0) {
                 int parentIndex = (index - 1) >>> 1;
-                final var hpParent = LongVector.fromArray(LongVector.SPECIES_128, hValueAndPriority, parentIndex << 1);
-                if (SearchNode.compare(hpThis.reinterpretAsBytes(), hpParent.reinterpretAsBytes()) >= 0) {
+                long lpp = priorityAndHValue[parentIndex << 1];
+                long lhp = priorityAndHValue[(parentIndex << 1) + 1];
+                if (SearchNode.compare(lht, lhp, lpt, lpp) >= 0) {
                     break;
                 }
-                hpParent.intoArray(hValueAndPriority, index << 1);
+                priorityAndHValue[index << 1] = lpp;
+                priorityAndHValue[(index << 1) + 1] = lhp;
                 SearchNode parent = heap[parentIndex];
                 heap[index] = parent;
                 parent.heapIndex = index;
                 index = parentIndex;
-            } while (index > 0);
-            hpThis.intoArray(hValueAndPriority, index << 1);
+            }
+            priorityAndHValue[index << 1] = lpt;
+            priorityAndHValue[(index << 1) + 1] = lht;
             heap[index] = node;
             node.heapIndex = index;
         }
 
         private void siftDown(int index) {
-            final var hpThis = LongVector.fromArray(LongVector.SPECIES_128, hValueAndPriority, index << 1);
-            Objects.checkIndex((size << 1) - 1, hValueAndPriority.length);
+            long lpt = priorityAndHValue[index << 1];
+            long lht = priorityAndHValue[(index << 1) + 1];
             SearchNode node = heap[index];
             int half = size >>> 1;
             while (index < half) {
                 int leftIndex = (index << 1) + 1;
                 int rightIndex = Math.min(leftIndex, size - 2) + 1;
-                final var hpLeft = LongVector.fromArray(LongVector.SPECIES_128, hValueAndPriority, leftIndex << 1).reinterpretAsBytes();
-                final var hpRight = LongVector.fromArray(LongVector.SPECIES_128, hValueAndPriority, rightIndex << 1).reinterpretAsBytes();
-                long s = SearchNode.compare(hpLeft, hpRight) >> 63;
-                final var hpChild = hpRight.blend(hpLeft, VectorMask.fromLong(ByteVector.SPECIES_128, s)).reinterpretAsLongs();
-                int childIndex = rightIndex ^ ((rightIndex ^ leftIndex) & (int) s);
-                if (SearchNode.compare(hpChild.reinterpretAsBytes(), hpThis.reinterpretAsBytes()) >= 0) {
+                long lpl = priorityAndHValue[leftIndex << 1];
+                long lhl = priorityAndHValue[(leftIndex << 1) + 1];
+                long lpr = priorityAndHValue[rightIndex << 1];
+                long lhr = priorityAndHValue[(rightIndex << 1) + 1];
+                long s =  SearchNode.compare(lhl, lhr, lpl, lpr) >> 63;
+                long as = ~s;
+                long lpc = (s & lpl) | (as & lpr);
+                long lhc = (s & lhl) | (as & lhr);
+                int sl = (int) s;
+                int asl = ~sl;
+                int childIndex = (sl & leftIndex) | (asl & rightIndex);
+                if (SearchNode.compare(lhc, lht, lpc, lpt) >= 0) {
                     break;
                 }
-                hpChild.intoArray(hValueAndPriority, index << 1);
+                priorityAndHValue[index << 1] = lpc;
+                priorityAndHValue[(index << 1) + 1] = lhc;
                 SearchNode child = heap[childIndex];
                 heap[index] = child;
                 child.heapIndex = index;
                 index = childIndex;
             }
-            hpThis.intoArray(hValueAndPriority, index << 1);
+            priorityAndHValue[index << 1] = lpt;
+            priorityAndHValue[(index << 1) + 1] = lht;
             heap[index] = node;
             node.heapIndex = index;
         }
