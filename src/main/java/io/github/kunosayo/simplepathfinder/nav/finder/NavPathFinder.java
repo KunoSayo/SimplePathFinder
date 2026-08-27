@@ -121,13 +121,13 @@ public class NavPathFinder implements EdgeConsumer {
                     long h = getHeuristic(start.getX(), start.getY(), start.getZ());
                     ctx.setInitialH(h);
                     long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    SearchNode startNode = new SearchNode(0, priority, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
+                    SearchNode startNode = new SearchNode(0, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
                     if (this.cacheIndex == -1) {
                         layeredNavChunk.putSearchNode(this, startNode);
                     } else {
                         layeredNavChunk.putSearchNodeEnsureCached(this, startNode);
                     }
-                    searchNodes.push(startNode);
+                    searchNodes.push(startNode, priority, h);
                 }));
     }
 
@@ -711,14 +711,15 @@ public class NavPathFinder implements EdgeConsumer {
                 if (existingNode == null) {
                     long h = getHeuristic(tx, ty, tz);
                     long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node, type);
+                    SearchNode targetNode = new SearchNode(new_g, h, tx, ty, tz, layer, node, type);
                     layer.putSearchNode(this, targetNode);
-                    searchNodes.push(targetNode);
+                    searchNodes.push(targetNode, new_f, h);
                 } else if (new_g < existingNode.cost) {
                     existingNode.cost = new_g;
-                    existingNode.priority = new_g + (existingNode.hValue * HEURISTIC_WEIGHT_PERCENT) / 100L;
                     existingNode.lastNode = node;
-                    searchNodes.decreaseKey(existingNode);
+                    final int heapIdx = existingNode.heapIndex;
+                    final long newPriority = new_g + (searchNodes.getHValue(heapIdx) * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                    searchNodes.decreaseKey(heapIdx, newPriority);
                 }
             };
         }
@@ -750,9 +751,9 @@ public class NavPathFinder implements EdgeConsumer {
             long new_g = extraCost + distance + node.cost;
             long h = getHeuristic(tx, ty, tz);
             long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-            SearchNode targetNode = new SearchNode(new_g, new_f, h, tx, ty, tz, layer, node, type);
+            SearchNode targetNode = new SearchNode(new_g, h, tx, ty, tz, layer, node, type);
             layer.putSearchNodeEnsureCached(this, targetNode);
-            searchNodes.push(targetNode);
+            searchNodes.push(targetNode, new_f, h);
         } else {
             if (existingNode.heapIndex == -2) {
                 return;
@@ -761,9 +762,10 @@ public class NavPathFinder implements EdgeConsumer {
             long new_g = extraCost + distance + node.cost;
             if (new_g < existingNode.cost) {
                 existingNode.cost = new_g;
-                existingNode.priority = new_g + (existingNode.hValue * HEURISTIC_WEIGHT_PERCENT) / 100L;
                 existingNode.lastNode = node;
-                searchNodes.decreaseKey(existingNode);
+                final int heapIdx = existingNode.heapIndex;
+                final long newPriority = new_g + (searchNodes.getHValue(heapIdx) * HEURISTIC_WEIGHT_PERCENT) / 100L;
+                searchNodes.decreaseKey(heapIdx, newPriority);
             }
         }
     }
@@ -810,9 +812,8 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    public static class SearchNode implements Comparable<SearchNode> {
+    public static class SearchNode {
         public long cost; // g(u)
-        public long priority; // f(u)
         public final long hValue; // h(u)
         public final int x;
         public final int y;
@@ -822,9 +823,8 @@ public class NavPathFinder implements EdgeConsumer {
         public SearchNode lastNode;
         public int heapIndex = -1;
 
-        public SearchNode(long cost, long priority, long hValue, int x, int y, int z, AbstractLayeredNavChunk layer, SearchNode lastNode, NavLinkType navLinkType) {
+        public SearchNode(long cost, long hValue, int x, int y, int z, AbstractLayeredNavChunk layer, SearchNode lastNode, NavLinkType navLinkType) {
             this.cost = cost;
-            this.priority = priority;
             this.hValue = hValue;
             this.x = x;
             this.y = y;
@@ -850,22 +850,16 @@ public class NavPathFinder implements EdgeConsumer {
             return cost;
         }
 
-        @Override
-        public int compareTo(@NotNull SearchNode o) {
-            int cmp = Long.compare(this.priority, o.priority);
-            if (cmp != 0) {
-                return cmp;
+        private static long compare(long lht, long lho, long lpt, long lpo) {
+            if ((lht | lho | lpt | lpo) <= Integer.MAX_VALUE) {
+                return ((lpt << 32) | lht) - ((lpo << 32) | lho);
             }
-            return Long.compare(this.hValue, o.hValue);
+            return compareFallback(lht, lho, lpt, lpo);
         }
 
-        public boolean isGreaterEqual(@NotNull SearchNode o) {
-            if (this.priority == o.priority) {
-                return this.hValue >= o.hValue;
-            }
-            return this.priority > o.priority;
+        private static long compareFallback(long lht, long lho, long lpt, long lpo) {
+            return lpt == lpo ? lht - lho : lpt - lpo;
         }
-
 
         public long getExtraCost(BlockPos next) {
             return getExtraCost(next.getX(), next.getY(), next.getZ());
@@ -896,10 +890,12 @@ public class NavPathFinder implements EdgeConsumer {
 
     public static class SearchNodeHeap {
         private SearchNode[] heap;
+        private long[] priorityAndHValue;
         private int size;
 
         public SearchNodeHeap(int capacity) {
             this.heap = new SearchNode[capacity];
+            this.priorityAndHValue = new long[capacity << 1];
             this.size = 0;
         }
 
@@ -907,73 +903,109 @@ public class NavPathFinder implements EdgeConsumer {
             return size == 0;
         }
 
-        public void push(SearchNode node) {
+        public void push(SearchNode node, long priority, long hValue) {
             if (size == heap.length) {
-                SearchNode[] newHeap = new SearchNode[heap.length * 2];
+                SearchNode[] newHeap = new SearchNode[heap.length << 1];
+                long[] newLong = new long[priorityAndHValue.length << 1];
                 System.arraycopy(heap, 0, newHeap, 0, heap.length);
+                System.arraycopy(priorityAndHValue, 0, newLong, 0, priorityAndHValue.length);
                 heap = newHeap;
+                priorityAndHValue = newLong;
             }
             heap[size] = node;
+            priorityAndHValue[size << 1] = priority;
+            priorityAndHValue[(size << 1) + 1] = hValue;
             node.heapIndex = size;
-            size++;
-            siftUp(size - 1);
+            siftUp(size++);
         }
 
         public SearchNode pop() {
             if (size == 0) return null;
             SearchNode minNode = heap[0];
             minNode.heapIndex = -2;
-            SearchNode lastNode = heap[size - 1];
-            size--;
-            if (size > 0) {
+            if (--size > 0) {
+                priorityAndHValue[0] = priorityAndHValue[size << 1];
+                priorityAndHValue[1] = priorityAndHValue[(size << 1) + 1];
+                SearchNode lastNode = heap[size];
                 heap[0] = lastNode;
                 lastNode.heapIndex = 0;
                 siftDown(0);
             }
             heap[size] = null;
+            // We don't clear priority and hValue here because it's not necessary
             return minNode;
         }
 
-        public void decreaseKey(SearchNode node) {
-            if (node.heapIndex >= 0) {
-                siftUp(node.heapIndex);
+        public void decreaseKey(int idx, long newPriority) {
+            if (idx >= 0) {
+                priorityAndHValue[idx << 1] = newPriority;
+                siftUp(idx);
             }
         }
 
+        public long getPriority(int idx) {
+            return priorityAndHValue[idx << 1];
+        }
+
+        public long getHValue(int idx) {
+            return priorityAndHValue[(idx << 1) + 1];
+        }
+
         private void siftUp(int index) {
+            long lpt = priorityAndHValue[index << 1];
+            long lht = priorityAndHValue[(index << 1) + 1];
             SearchNode node = heap[index];
             while (index > 0) {
                 int parentIndex = (index - 1) >>> 1;
-                SearchNode parent = heap[parentIndex];
-                if (node.isGreaterEqual(parent)) {
+                long lpp = priorityAndHValue[parentIndex << 1];
+                long lhp = priorityAndHValue[(parentIndex << 1) + 1];
+                if (SearchNode.compare(lht, lhp, lpt, lpp) >= 0) {
                     break;
                 }
+                priorityAndHValue[index << 1] = lpp;
+                priorityAndHValue[(index << 1) + 1] = lhp;
+                SearchNode parent = heap[parentIndex];
                 heap[index] = parent;
                 parent.heapIndex = index;
                 index = parentIndex;
             }
+            priorityAndHValue[index << 1] = lpt;
+            priorityAndHValue[(index << 1) + 1] = lht;
             heap[index] = node;
             node.heapIndex = index;
         }
 
         private void siftDown(int index) {
+            long lpt = priorityAndHValue[index << 1];
+            long lht = priorityAndHValue[(index << 1) + 1];
             SearchNode node = heap[index];
             int half = size >>> 1;
             while (index < half) {
-                int childIndex = (index << 1) + 1;
-                SearchNode child = heap[childIndex];
-                int rightIndex = childIndex + 1;
-                if (rightIndex < size && !heap[rightIndex].isGreaterEqual(child)) {
-                    childIndex = rightIndex;
-                    child = heap[rightIndex];
-                }
-                if (child.isGreaterEqual(node)) {
+                int leftIndex = (index << 1) + 1;
+                int rightIndex = Math.min(leftIndex, size - 2) + 1;
+                long lpl = priorityAndHValue[leftIndex << 1];
+                long lhl = priorityAndHValue[(leftIndex << 1) + 1];
+                long lpr = priorityAndHValue[rightIndex << 1];
+                long lhr = priorityAndHValue[(rightIndex << 1) + 1];
+                long s =  SearchNode.compare(lhl, lhr, lpl, lpr) >> 63;
+                long as = ~s;
+                long lpc = (s & lpl) | (as & lpr);
+                long lhc = (s & lhl) | (as & lhr);
+                int sl = (int) s;
+                int asl = ~sl;
+                int childIndex = (sl & leftIndex) | (asl & rightIndex);
+                if (SearchNode.compare(lhc, lht, lpc, lpt) >= 0) {
                     break;
                 }
+                priorityAndHValue[index << 1] = lpc;
+                priorityAndHValue[(index << 1) + 1] = lhc;
+                SearchNode child = heap[childIndex];
                 heap[index] = child;
                 child.heapIndex = index;
                 index = childIndex;
             }
+            priorityAndHValue[index << 1] = lpt;
+            priorityAndHValue[(index << 1) + 1] = lht;
             heap[index] = node;
             node.heapIndex = index;
         }

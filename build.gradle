@@ -36,6 +36,14 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            //jvmArgument '-XX:+UnlockExperimentalVMOptions'
+            //jvmArgument '-XX:+UnlockDiagnosticVMOptions'
+            //jvmArgument '-XX:+DebugNonSafepoints'
+            //jvmArgument '-XX:CompileCommand=print,io/github/kunosayo/simplepathfinder/nav/finder/NavPathFinder$SearchNodeHeap.siftDown'
+            //jvmArgument '-XX:CompileCommand=print,io/github/kunosayo/simplepathfinder/nav/finder/NavPathFinder$SearchNodeHeap.pop'
+            //jvmArgument '-XX:CompileCommand=print,io/github/kunosayo/simplepathfinder/nav/finder/NavPathFinder._search'
+            //jvmArgument '-XX:CompileCommand=print,io/github/kunosayo/simplepathfinder/nav/finder/NavPathFinder.search'
+            //jvmArgument '-XX:CompileCommand=print,io/github/kunosayo/simplepathfinder/nav/LevelNavData.findNav'
             gameDirectory = project.file('runs/client')
         }
 
@@ -134,7 +142,7 @@ dependencies {
     // Cloth Config (配置界面库)
     implementation "maven.modrinth:cloth-config:26.1.154+neoforge"
 
-    implementation "com.xkball:x3d_map:1.0.11"
+    implementation "com.xkball:x3d_map:1.0.12"
     // JEI
     runtimeOnly("mezz.jei:jei-26.1.2-neoforge:29.5.0.26")
 
