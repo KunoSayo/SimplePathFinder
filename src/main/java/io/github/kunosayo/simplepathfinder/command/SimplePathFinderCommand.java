@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.kunosayo.simplepathfinder.SimplePathFinder;
+import io.github.kunosayo.simplepathfinder.config.NavAlgorithm;
 import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.data.LevelNavDataSavedData;
 import io.github.kunosayo.simplepathfinder.nav.layered.BatchScheduler;
@@ -17,6 +18,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.server.command.EnumArgument;
 
 public final class SimplePathFinderCommand {
     private static final IntegerArgumentType LAYER_ARG = IntegerArgumentType.integer(Byte.MIN_VALUE, Byte.MAX_VALUE);
@@ -29,8 +31,10 @@ public final class SimplePathFinderCommand {
                         .then(Commands.literal("config")
                                 .then(Commands.literal("maxConcurrentTasks")
                                         .then(Commands.argument("value", IntegerArgumentType.integer(1, 16))
-                                                .executes(SimplePathFinderCommand::adjustMaxConcurrentTasks))))
-
+                                                .executes(SimplePathFinderCommand::adjustMaxConcurrentTasks)))
+                                .then(Commands.literal("navAlgorithm")
+                                        .then(Commands.argument("algorithm", EnumArgument.enumArgument(NavAlgorithm.class))
+                                                .executes(SimplePathFinderCommand::adjustAlgorithm))))
                         .then(Commands.literal("stats")
                                 .executes(SimplePathFinderCommand::requestStats))
 
@@ -53,6 +57,7 @@ public final class SimplePathFinderCommand {
                                 ))));
         dispatcher.register(Commands.literal("simple_path_finder").redirect(root));
     }
+
 
     private static void trap(ServerLevel level) {
         if (level.isClientSide()) {
@@ -147,6 +152,12 @@ public final class SimplePathFinderCommand {
     private static int adjustMaxConcurrentTasks(CommandContext<CommandSourceStack> context) {
         int concurrency = IntegerArgumentType.getInteger(context, "value");
         NavConfig.NAV_CONFIG.getLeft().maxConcurrentTasks.set(concurrency);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int adjustAlgorithm(CommandContext<CommandSourceStack> commandSourceStackCommandContext) {
+        var algorithm = commandSourceStackCommandContext.getArgument("algorithm", NavAlgorithm.class);
+        NavConfig.NAV_CONFIG.getLeft().navAlgorithm.set(algorithm);
         return Command.SINGLE_SUCCESS;
     }
 }
