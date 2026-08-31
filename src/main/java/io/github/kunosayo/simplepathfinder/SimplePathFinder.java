@@ -189,7 +189,7 @@ public final class SimplePathFinder {
     @SubscribeEvent
     public void onServerTick(PlayerTickEvent.Post event) {
         if (isServerSidePathfindingEnabled()) {
-            if ((event.getEntity().tickCount & 0b1111) == 0) {
+            if ((event.getEntity().tickCount & 0b111) == 0) {
                 if (event.getEntity() instanceof ServerPlayer sp) {
                     if (NavUtil.shouldShowNav(event.getEntity().getMainHandItem())) {
                         var cp = event.getEntity().chunkPosition();
