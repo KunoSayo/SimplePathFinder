@@ -78,6 +78,33 @@ public class NearestNavPathFinder extends NavPathFinder {
         return Optional.empty();
     }
 
+    @Override
+    protected EdgeConsumer getNonCachedEdgeConsumer() {
+        return (int distance, int tx, int ty, int tz, AbstractLayeredNavChunk layer, NavLinkType type) -> {
+            var node = currentSearchingNode;
+            SearchNode existingNode = layer.getSearchNode(this, tx, tz);
+
+            if (existingNode != null && existingNode.heapIndex == -2) {
+                return;
+            }
+
+            long extraCost = node.getExtraCost(tx, ty, tz);
+            long new_g = extraCost + distance + node.cost;
+
+            if (existingNode == null) {
+                long h = getHeuristic(tx, ty, tz);
+                SearchNode targetNode = new SearchNode(new_g, h, tx, ty, tz, layer, node, type);
+                layer.putSearchNode(this, targetNode);
+                searchNodes.push(targetNode, new_g, h);
+            } else if (new_g < existingNode.cost) {
+                existingNode.cost = new_g;
+                existingNode.lastNode = node;
+                final int heapIdx = existingNode.heapIndex;
+                searchNodes.decreaseKey(heapIdx, new_g);
+            }
+        };
+    }
+
 
     @Override
     public void acceptEdge(int distance, int tx, int ty, int tz, AbstractLayeredNavChunk layer, NavLinkType type) {

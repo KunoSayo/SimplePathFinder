@@ -659,31 +659,7 @@ public abstract class NavPathFinder implements EdgeConsumer {
             }
         }
         if (this.cacheIndex == -1) {
-            finalEdgeConsumer = (int distance, int tx, int ty, int tz, AbstractLayeredNavChunk layer, NavLinkType type) -> {
-                var node = currentSearchingNode;
-                SearchNode existingNode = layer.getSearchNode(this, tx, tz);
-
-                if (existingNode != null && existingNode.heapIndex == -2) {
-                    return;
-                }
-
-                long extraCost = node.getExtraCost(tx, ty, tz);
-                long new_g = extraCost + distance + node.cost;
-
-                if (existingNode == null) {
-                    long h = getHeuristic(tx, ty, tz);
-                    long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    SearchNode targetNode = new SearchNode(new_g, h, tx, ty, tz, layer, node, type);
-                    layer.putSearchNode(this, targetNode);
-                    searchNodes.push(targetNode, new_f, h);
-                } else if (new_g < existingNode.cost) {
-                    existingNode.cost = new_g;
-                    existingNode.lastNode = node;
-                    final int heapIdx = existingNode.heapIndex;
-                    final long newPriority = new_g + (searchNodes.getHValue(heapIdx) * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    searchNodes.decreaseKey(heapIdx, newPriority);
-                }
-            };
+            finalEdgeConsumer = getNonCachedEdgeConsumer();
         }
         try {
             return _search();
@@ -694,6 +670,8 @@ public abstract class NavPathFinder implements EdgeConsumer {
             }
         }
     }
+
+    protected abstract EdgeConsumer getNonCachedEdgeConsumer();
 
     protected static void addCacheCount(int i) {
         if (i >= 0) {
