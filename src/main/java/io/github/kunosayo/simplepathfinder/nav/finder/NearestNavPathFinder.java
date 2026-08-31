@@ -130,8 +130,7 @@ public class NearestNavPathFinder extends NavPathFinder {
                 existingNode.cost = new_g;
                 existingNode.lastNode = node;
                 final int heapIdx = existingNode.heapIndex;
-                final long newPriority = new_g + (searchNodes.getHValue(heapIdx) * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                searchNodes.decreaseKey(heapIdx, newPriority);
+                searchNodes.decreaseKey(heapIdx, new_g);
             }
         }
     }
