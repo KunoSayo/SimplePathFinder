@@ -28,6 +28,7 @@ public class NavConfig {
     public final ModConfigSpec.ConfigValue<Boolean> serverSidePathfinding;
     public final ModConfigSpec.ConfigValue<List<? extends String>> blockDistance;
     public final ModConfigSpec.ConfigValue<Integer> defaultBlockDistance;
+    public final ModConfigSpec.ConfigValue<NavAlgorithm> navAlgorithm;
     public final HashMap<Identifier, Integer> blockDistanceMap = new HashMap<>();
 
     NavConfig(ModConfigSpec.Builder builder) {
@@ -59,6 +60,8 @@ public class NavConfig {
                 .comment("Execute pathfinding on server side. When true, nav data sync is disabled and pathfinding results are sent to clients.")
                 .define("server_side_pathfinding", true);
 
+        navAlgorithm = builder.comment("Select the pathfinding algorithm to use.")
+                .defineEnum("nav_algorithm", NavAlgorithm.Dij);
         blockDistance = builder.comment("The block distance for each block.")
                 .defineList("block_distance", new ArrayList<>() {{
                     add("minecraft:dirt_path:3");

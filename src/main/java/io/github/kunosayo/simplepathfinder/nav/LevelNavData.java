@@ -287,7 +287,7 @@ public class LevelNavData {
             return Optional.empty();
         }
 
-        var finder = new NavPathFinder(this, from, to, ctx);
+        var finder = NavPathFinder.getFinder(this, from, to, ctx);
 
         return finder.search();
     }

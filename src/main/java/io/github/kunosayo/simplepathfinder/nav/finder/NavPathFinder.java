@@ -1,5 +1,6 @@
 package io.github.kunosayo.simplepathfinder.nav.finder;
 
+import io.github.kunosayo.simplepathfinder.config.NavConfig;
 import io.github.kunosayo.simplepathfinder.nav.INavChunk;
 import io.github.kunosayo.simplepathfinder.nav.LevelNavData;
 import io.github.kunosayo.simplepathfinder.nav.NavLink;
@@ -16,13 +17,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-public class NavPathFinder implements EdgeConsumer {
+public abstract class NavPathFinder implements EdgeConsumer {
     public static boolean requireDebug = false;
     public static List<SearchNode> bugNodes = null;
     // Wh 权重参数，100L 代表 1.0，150L 代表 1.5
@@ -50,14 +50,14 @@ public class NavPathFinder implements EdgeConsumer {
     public final HashSet<Object> visitedObjects = new HashSet<>();
     public final IdentityHashMap<Object, Object> extraFinderData = new IdentityHashMap<>();
     public final Long2ObjectOpenHashMap<SearchNode> visitedNodes = new Long2ObjectOpenHashMap<>(1024, 0.5f);
-    private final LevelNavData levelNavData;
-    private final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
-    private SearchNode currentSearchingNode = null;
-    private BlockPos start;
-    private BlockPos end;
-    private final ResourceKey<Level> dimension;
-    private int cacheIndex = -1;
-    private final PathfindingContext ctx;
+    protected final LevelNavData levelNavData;
+    protected final SearchNodeHeap searchNodes = new SearchNodeHeap(1024);
+    protected SearchNode currentSearchingNode = null;
+    protected BlockPos start;
+    protected BlockPos end;
+    protected final ResourceKey<Level> dimension;
+    protected int cacheIndex = -1;
+    protected final PathfindingContext ctx;
     EdgeConsumer finalEdgeConsumer = this;
 
     public NavPathFinder(LevelNavData levelNavData, ResourceKey<Level> dimension, BlockPos start, BlockPos end, PathfindingContext ctx) {
@@ -76,6 +76,18 @@ public class NavPathFinder implements EdgeConsumer {
         this.ctx = ctx;
     }
 
+    public static NavPathFinder getFinder(LevelNavData levelNavData, BlockPos from, BlockPos to, PathfindingContext ctx) {
+        switch (NavConfig.NAV_CONFIG.getLeft().navAlgorithm.get()) {
+            case A -> {
+                return new ANavPathFinder(levelNavData, from, to, ctx);
+            }
+            case Dij -> {
+                return new NearestNavPathFinder(levelNavData, from, to, ctx);
+            }
+        }
+        return new NearestNavPathFinder(levelNavData, from, to, ctx);
+    }
+
     public int getCacheIndex() {
         return cacheIndex;
     }
@@ -88,7 +100,7 @@ public class NavPathFinder implements EdgeConsumer {
         return this.end;
     }
 
-    private long getHeuristic(int tx, int ty, int tz) {
+    protected long getHeuristic(int tx, int ty, int tz) {
         long dx = Math.abs(tx - end.getX());
         long dz = Math.abs(tz - end.getZ());
         long dy = Math.abs(ty - end.getY());
@@ -110,28 +122,9 @@ public class NavPathFinder implements EdgeConsumer {
         return h;
     }
 
-    private void init() {
-        if (this.cacheIndex != -1) {
-            VISIT_NODE_CACHE.get(this.cacheIndex).clear();
-        }
-        var startChunk = ChunkPos.containing(start);
-        levelNavData.getNavChunk(startChunk, false)
-                .map(navChunk -> navChunk.getLayerNav(start))
-                .ifPresent(layeredNavChunks -> layeredNavChunks.forEach(layeredNavChunk -> {
-                    long h = getHeuristic(start.getX(), start.getY(), start.getZ());
-                    ctx.setInitialH(h);
-                    long priority = (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                    SearchNode startNode = new SearchNode(0, h, start.getX(), start.getY(), start.getZ(), layeredNavChunk, null, null);
-                    if (this.cacheIndex == -1) {
-                        layeredNavChunk.putSearchNode(this, startNode);
-                    } else {
-                        layeredNavChunk.putSearchNodeEnsureCached(this, startNode);
-                    }
-                    searchNodes.push(startNode, priority, h);
-                }));
-    }
+    protected abstract void init();
 
-    private void getEdge(INavChunk chunk, int bx, int bz, int y, int currentDistance, EdgeConsumer edgeInfoConsumer) {
+    protected void getEdge(INavChunk chunk, int bx, int bz, int y, int currentDistance, EdgeConsumer edgeInfoConsumer) {
         if (chunk == null || currentDistance < 0) {
             return;
         }
@@ -141,7 +134,7 @@ public class NavPathFinder implements EdgeConsumer {
         chunk.getEdgeForLayers(bx, y, bz, currentDistance, edgeInfoConsumer);
     }
 
-    private int getDistance(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y) {
+    protected int getDistance(INavChunk navChunk, INavChunk bNavChunk, int ax, int az, int bx, int bz, int y) {
         int situation = LayeredNavChunk.getPosSituation(ax, az, bx, bz);
         boolean isZ = (situation & 1) == 1;
         if (situation > 1) {
@@ -155,7 +148,7 @@ public class NavPathFinder implements EdgeConsumer {
      * Get edges from navigation links at the current position.
      * This allows the pathfinder to consider teleports, vehicles, and other travel methods.
      */
-    private void getNavLinkEdges(INavChunk navChunk, int x, int y, int z, EdgeConsumer edgeInfoConsumer) {
+    protected void getNavLinkEdges(INavChunk navChunk, int x, int y, int z, EdgeConsumer edgeInfoConsumer) {
 
         // Get all nav links from this position
         List<NavLink> navLinks = navChunk.getNavLinks(x, y, z);
@@ -182,7 +175,7 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    private void getEdgeForCheckConnection(INavChunk navChunk, int x, int y, int z, EdgeConsumer edgeInfoConsumer) {
+    protected void getEdgeForCheckConnection(INavChunk navChunk, int x, int y, int z, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
         getNavLinkEdges(navChunk, x, y, z, edgeInfoConsumer);
 
@@ -206,7 +199,7 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    private void getEdge(INavChunk navChunk, AbstractLayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int lz, EdgeConsumer edgeInfoConsumer) {
+    protected void getEdge(INavChunk navChunk, AbstractLayeredNavChunk layeredNavChunk, int x, int y, int z, int lx, int lz, EdgeConsumer edgeInfoConsumer) {
         // First, get edges from navigation links (teleports, vehicles, etc.)
         getNavLinkEdges(navChunk, x, y, z, edgeInfoConsumer);
 
@@ -540,7 +533,7 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    private void getEdge(SearchNode node, EdgeConsumer edgeInfoConsumer) {
+    protected void getEdge(SearchNode node, EdgeConsumer edgeInfoConsumer) {
         if (node.lastNode == null) {
             getEdge(node.layer.getParentChunk(), node.layer(), node.x, node.y, node.z,
                     Integer.MIN_VALUE + 9,
@@ -553,7 +546,7 @@ public class NavPathFinder implements EdgeConsumer {
 
     }
 
-    private boolean checkConnectivity() {
+    protected boolean checkConnectivity() {
         // Target check
         var endChunkPos = ChunkPos.containing(end);
         var endChunkOpt = levelNavData.getNavChunk(endChunkPos, false);
@@ -628,7 +621,7 @@ public class NavPathFinder implements EdgeConsumer {
         return false;
     }
 
-    private void adjustStartEnd() {
+    protected void adjustStartEnd() {
         var startChunk = ChunkPos.containing(start);
         boolean isEmpty = levelNavData.getNavChunk(startChunk, false)
                 .flatMap(navChunk -> navChunk.getLayerNav(start).findAny())
@@ -653,45 +646,14 @@ public class NavPathFinder implements EdgeConsumer {
     }
 
 
-    private Optional<NavResult> _search() {
-        adjustStartEnd();
-        if (!checkConnectivity()) {
-            ctx.markCompleted();
-            return Optional.empty();
-        }
-        addCacheCount(this.cacheIndex, 1);
-        init();
-
-
-        while (!searchNodes.isEmpty()) {
-            var node = searchNodes.pop();
-            currentSearchingNode = node;
-            ctx.onNodePopped(node.hValue);
-
-            if (NavUtil.distManhattan(this.end, node.x, node.y, node.z) <= 1) {
-                ctx.markCompleted();
-                if (this.cacheIndex != -1 && requireDebug) {
-                    bugNodes = new ArrayList<>(VISIT_NODE_CACHE.get(this.cacheIndex));
-                }
-                return Optional.of(new NavResult(node, this.end));
-            }
-            getEdge(node, finalEdgeConsumer);
-//            node.layer.checkExtraPath(this, node, this);
-        }
-        ctx.markCompleted();
-        // this should be bug.
-        if (this.cacheIndex != -1 && requireDebug) {
-            bugNodes = new ArrayList<>(VISIT_NODE_CACHE.get(this.cacheIndex));
-        }
-        return Optional.empty();
-    }
+    protected abstract Optional<NavResult> _search();
 
     public Optional<NavResult> search() {
         this.cacheIndex = -1;
         for (int i = 0; i < VISIT_CACHE_SIZE; i++) {
             if (USING_CACHE_VISIT[i].compareAndSet(false, true)) {
                 this.cacheIndex = i;
-                addCacheCount(i, 1);
+                addCacheCount(i);
 
                 break;
             }
@@ -733,40 +695,9 @@ public class NavPathFinder implements EdgeConsumer {
         }
     }
 
-    private static void addCacheCount(int i, int cnt) {
+    protected static void addCacheCount(int i) {
         if (i >= 0) {
-            CACHE_COUNT[i] += cnt;
-        }
-    }
-
-    @Override
-    public void acceptEdge(int distance, int tx, int ty, int tz, AbstractLayeredNavChunk layer, NavLinkType type) {
-        // By default, we use cached method.
-
-        var node = currentSearchingNode;
-        SearchNode existingNode = layer.getSearchNodeEnsureCached(this, tx, tz);
-
-        if (existingNode == null) {
-            long extraCost = node.getExtraCost(tx, ty, tz);
-            long new_g = extraCost + distance + node.cost;
-            long h = getHeuristic(tx, ty, tz);
-            long new_f = new_g + (h * HEURISTIC_WEIGHT_PERCENT) / 100L;
-            SearchNode targetNode = new SearchNode(new_g, h, tx, ty, tz, layer, node, type);
-            layer.putSearchNodeEnsureCached(this, targetNode);
-            searchNodes.push(targetNode, new_f, h);
-        } else {
-            if (existingNode.heapIndex == -2) {
-                return;
-            }
-            long extraCost = node.getExtraCost(tx, ty, tz);
-            long new_g = extraCost + distance + node.cost;
-            if (new_g < existingNode.cost) {
-                existingNode.cost = new_g;
-                existingNode.lastNode = node;
-                final int heapIdx = existingNode.heapIndex;
-                final long newPriority = new_g + (searchNodes.getHValue(heapIdx) * HEURISTIC_WEIGHT_PERCENT) / 100L;
-                searchNodes.decreaseKey(heapIdx, newPriority);
-            }
+            CACHE_COUNT[i] += 1;
         }
     }
 
@@ -987,7 +918,7 @@ public class NavPathFinder implements EdgeConsumer {
                 long lhl = priorityAndHValue[(leftIndex << 1) + 1];
                 long lpr = priorityAndHValue[rightIndex << 1];
                 long lhr = priorityAndHValue[(rightIndex << 1) + 1];
-                long s =  SearchNode.compare(lhl, lhr, lpl, lpr) >> 63;
+                long s = SearchNode.compare(lhl, lhr, lpl, lpr) >> 63;
                 long as = ~s;
                 long lpc = (s & lpl) | (as & lpr);
                 long lhc = (s & lhl) | (as & lhr);
