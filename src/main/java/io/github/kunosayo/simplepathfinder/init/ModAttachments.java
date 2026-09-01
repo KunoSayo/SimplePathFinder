@@ -31,5 +31,6 @@ public class ModAttachments {
             ATTACHMENT_TYPES.register("player_block_distance",
                     () -> AttachmentType.serializable(() -> new PlayerBlockDistanceAttachment())
                             .sync(PlayerBlockDistanceAttachment.STREAM_CODEC)
+                            .copyOnDeath()
                             .build());
 }
